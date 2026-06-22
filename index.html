@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
@@ -287,10 +287,10 @@
       justify-content: center;
       align-items: center;
     }
-    .medallion-svg {
+    .hero-logo {
       width: min(420px, 100%);
       height: auto;
-      filter: drop-shadow(0 0 40px rgba(201,168,76,0.18));
+      filter: drop-shadow(0 0 48px rgba(201,168,76,0.22));
       animation: floatMedallion 6s ease-in-out infinite;
     }
     @keyframes floatMedallion {
@@ -361,13 +361,40 @@
 
     /* ── SYSTEM & PRIZES ── */
     #system { background: var(--bg-1); }
-    .system-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 52px; align-items: start; }
-    .system-block { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 32px; }
+    .system-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 52px;
+      align-items: start;
+    }
+    .system-block {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 28px;
+    }
     .system-block-title { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-    .rule-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
-    .rule-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 0.9rem; color: var(--text-2); line-height: 1.55; }
-    .rule-list li::before { content: '◆'; color: var(--gold-dim); font-size: 0.55rem; margin-top: 5px; flex-shrink: 0; }
-    .rule-list li strong { color: var(--text-1); font-weight: 500; }
+    .rule-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .rule-list li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 0.9rem;
+      color: var(--text-2);
+      line-height: 1.65;
+    }
+    .rule-list li::before {
+      content: '◆';
+      color: var(--gold-dim);
+      font-size: 0.5rem;
+      position: absolute;
+      left: 0;
+      top: 6px;
+    }
+    .rule-list li strong { color: var(--text-1); font-weight: 600; }
+    @media (max-width: 860px) {
+      .system-grid { grid-template-columns: 1fr; }
+    }
     .prize-tier { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; transition: border-color 0.2s; }
     .prize-tier:hover { border-color: var(--gold-dim); }
     .tier-badge { min-width: 52px; height: 52px; background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.06)); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: 0.7rem; color: var(--gold); font-weight: 600; letter-spacing: 0.05em; line-height: 1.2; }
@@ -414,9 +441,8 @@
       .hero-corner { display: none; }
       .nav-links { display: none; }
       .hamburger { display: flex; }
-      .system-grid { grid-template-columns: 1fr; gap: 24px; }
       .info-grid { grid-template-columns: 1fr; }
-      .medallion-svg { width: min(300px, 85vw); }
+      .hero-logo { width: min(300px, 85vw); }
     }
     @media (max-width: 480px) {
       .hero h1 { font-size: clamp(1.7rem, 8vw, 2.6rem); }
@@ -488,237 +514,12 @@
       </div>
     </div>
 
-    <!-- MTG Medallion SVG art -->
+    <!-- Logo -->
     <div class="hero-art reveal">
-      <svg class="medallion-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stop-color="rgba(201,168,76,0.18)"/>
-            <stop offset="60%"  stop-color="rgba(201,168,76,0.04)"/>
-            <stop offset="100%" stop-color="rgba(201,168,76,0)"/>
-          </radialGradient>
-          <radialGradient id="innerFill" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stop-color="#1a1a2e"/>
-            <stop offset="100%" stop-color="#0d0d0f"/>
-          </radialGradient>
-          <radialGradient id="bladeGrad" cx="50%" cy="0%" r="100%">
-            <stop offset="0%"   stop-color="#f0e8b0"/>
-            <stop offset="100%" stop-color="rgba(201,168,76,0.6)"/>
-          </radialGradient>
-          <filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="6" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <!-- Spoke template: from outer ring (r=185) to inner circle (r=78) pointing up -->
-          <line id="spoke" x1="250" y1="65" x2="250" y2="172"
-                stroke="rgba(201,168,76,0.18)" stroke-width="0.8"/>
-          <!-- Long spoke for decorative cross -->
-          <line id="spoke-long" x1="250" y1="55" x2="250" y2="445"
-                stroke="rgba(201,168,76,0.07)" stroke-width="0.5"/>
-        </defs>
-
-        <!-- Ambient glow -->
-        <circle cx="250" cy="250" r="240" fill="url(#bgGlow)"/>
-
-        <!-- Outer decorative ring — dashed tick marks -->
-        <circle cx="250" cy="250" r="192"
-                fill="none"
-                stroke="rgba(201,168,76,0.35)"
-                stroke-width="1.5"
-                stroke-dasharray="4 27.6"
-                stroke-dashoffset="-2"/>
-
-        <!-- Outer solid ring -->
-        <circle cx="250" cy="250" r="186"
-                fill="none"
-                stroke="rgba(201,168,76,0.5)"
-                stroke-width="1"/>
-
-        <!-- 8 full-diameter cross lines (very subtle) -->
-        <use href="#spoke-long" transform="rotate(0,   250,250)"/>
-        <use href="#spoke-long" transform="rotate(45,  250,250)"/>
-        <use href="#spoke-long" transform="rotate(90,  250,250)"/>
-        <use href="#spoke-long" transform="rotate(135, 250,250)"/>
-
-        <!-- 8 radial spokes from outer ring to inner circle -->
-        <use href="#spoke" transform="rotate(0,   250,250)"/>
-        <use href="#spoke" transform="rotate(45,  250,250)"/>
-        <use href="#spoke" transform="rotate(90,  250,250)"/>
-        <use href="#spoke" transform="rotate(135, 250,250)"/>
-        <use href="#spoke" transform="rotate(180, 250,250)"/>
-        <use href="#spoke" transform="rotate(225, 250,250)"/>
-        <use href="#spoke" transform="rotate(270, 250,250)"/>
-        <use href="#spoke" transform="rotate(315, 250,250)"/>
-
-        <!-- Middle decorative ring -->
-        <circle cx="250" cy="250" r="148"
-                fill="none"
-                stroke="rgba(201,168,76,0.2)"
-                stroke-width="0.8"
-                stroke-dasharray="2 18.5"/>
-
-        <!--
-          Pentagon vertices (center 250,250, r=165):
-            W (top):         (250, 85)
-            U (upper-right): (407, 199)
-            B (lower-right): (347, 384)
-            R (lower-left):  (153, 384)
-            G (upper-left):  (93,  199)
-        -->
-
-        <!-- Outer pentagon (connecting adjacent points) -->
-        <polygon points="250,85 407,199 347,384 153,384 93,199"
-                 fill="none"
-                 stroke="rgba(201,168,76,0.2)"
-                 stroke-width="0.8"
-                 stroke-linejoin="round"/>
-
-        <!-- Pentagram star (connecting every other point: W→B→G→U→R→W) -->
-        <polygon points="250,85 347,384 93,199 407,199 153,384"
-                 fill="rgba(201,168,76,0.04)"
-                 stroke="rgba(201,168,76,0.45)"
-                 stroke-width="1.2"
-                 stroke-linejoin="round"/>
-
-        <!-- Inner ring -->
-        <circle cx="250" cy="250" r="78"
-                fill="url(#innerFill)"
-                stroke="rgba(201,168,76,0.55)"
-                stroke-width="1.5"/>
-        <circle cx="250" cy="250" r="68"
-                fill="none"
-                stroke="rgba(201,168,76,0.18)"
-                stroke-width="0.6"/>
-
-        <!-- ── Sword ── -->
-        <!-- Blade glow -->
-        <path d="M 250 178 L 245.5 242 L 254.5 242 Z"
-              fill="rgba(201,168,76,0.12)" filter="url(#glowFilter)"/>
-        <!-- Blade -->
-        <path d="M 250 176 L 246 240 L 254 240 Z"
-              fill="url(#bladeGrad)"
-              stroke="rgba(201,168,76,0.9)"
-              stroke-width="0.5"
-              stroke-linejoin="round"/>
-        <!-- Blade center line (highlight) -->
-        <line x1="250" y1="180" x2="250" y2="238"
-              stroke="rgba(255,255,220,0.5)" stroke-width="0.6"/>
-        <!-- Crossguard -->
-        <rect x="228" y="238" width="44" height="7" rx="3"
-              fill="rgba(201,168,76,0.75)"
-              stroke="rgba(201,168,76,1)"
-              stroke-width="0.5"/>
-        <!-- Crossguard gems -->
-        <circle cx="231" cy="241.5" r="2.5" fill="rgba(201,100,80,0.9)"/>
-        <circle cx="269" cy="241.5" r="2.5" fill="rgba(100,160,220,0.9)"/>
-        <!-- Grip -->
-        <rect x="246" y="245" width="8" height="20" rx="2"
-              fill="rgba(90,60,30,0.9)"
-              stroke="rgba(180,130,60,0.6)"
-              stroke-width="0.5"/>
-        <!-- Grip wrapping lines -->
-        <line x1="246" y1="250" x2="254" y2="250" stroke="rgba(201,168,76,0.4)" stroke-width="0.6"/>
-        <line x1="246" y1="255" x2="254" y2="255" stroke="rgba(201,168,76,0.4)" stroke-width="0.6"/>
-        <line x1="246" y1="260" x2="254" y2="260" stroke="rgba(201,168,76,0.4)" stroke-width="0.6"/>
-        <!-- Pommel -->
-        <circle cx="250" cy="273" r="9"
-                fill="rgba(201,168,76,0.65)"
-                stroke="rgba(201,168,76,1)"
-                stroke-width="1"/>
-        <circle cx="250" cy="273" r="4"
-                fill="rgba(201,168,76,0.35)"
-                stroke="rgba(255,230,140,0.6)"
-                stroke-width="0.5"/>
-
-        <!-- ── 5 Mana pips at pentagon vertices ── -->
-        <!-- WHITE (W) — top (250, 85) -->
-        <circle cx="250" cy="85" r="18" fill="#0d0d0f" stroke="rgba(201,168,76,0.6)" stroke-width="1.5"/>
-        <circle cx="250" cy="85" r="15"
-                fill="url(#pipW)"/>
-        <defs>
-          <radialGradient id="pipW" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stop-color="#f8f0d0"/>
-            <stop offset="100%" stop-color="#b89830"/>
-          </radialGradient>
-          <radialGradient id="pipU" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stop-color="#80bef0"/>
-            <stop offset="100%" stop-color="#0a40a0"/>
-          </radialGradient>
-          <radialGradient id="pipB" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stop-color="#7858b0"/>
-            <stop offset="100%" stop-color="#100818"/>
-          </radialGradient>
-          <radialGradient id="pipR" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stop-color="#f07848"/>
-            <stop offset="100%" stop-color="#900808"/>
-          </radialGradient>
-          <radialGradient id="pipG" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stop-color="#58c868"/>
-            <stop offset="100%" stop-color="#083818"/>
-          </radialGradient>
-        </defs>
-        <!-- Sun symbol in W pip -->
-        <circle cx="250" cy="85" r="5.5" fill="rgba(255,240,160,0.9)"/>
-        <g stroke="rgba(255,240,160,0.85)" stroke-width="1.2" stroke-linecap="round">
-          <line x1="250" y1="75.5" x2="250" y2="73"/>
-          <line x1="250" y1="94.5" x2="250" y2="97"/>
-          <line x1="240.5" y1="85" x2="238" y2="85"/>
-          <line x1="259.5" y1="85" x2="262" y2="85"/>
-          <line x1="243.6" y1="78.6" x2="241.8" y2="76.8"/>
-          <line x1="256.4" y1="91.4" x2="258.2" y2="93.2"/>
-          <line x1="256.4" y1="78.6" x2="258.2" y2="76.8"/>
-          <line x1="243.6" y1="91.4" x2="241.8" y2="93.2"/>
-        </g>
-
-        <!-- BLUE (U) — upper-right (407, 199) -->
-        <circle cx="407" cy="199" r="18" fill="#0d0d0f" stroke="rgba(201,168,76,0.6)" stroke-width="1.5"/>
-        <circle cx="407" cy="199" r="15" fill="url(#pipU)"/>
-        <!-- Wave symbol in U pip -->
-        <path d="M 398 197 Q 402 194 405 197 Q 408 200 412 197 Q 415 194 416 196"
-              fill="none" stroke="rgba(180,220,255,0.9)" stroke-width="1.4" stroke-linecap="round"/>
-        <path d="M 398 202 Q 402 199 405 202 Q 408 205 412 202 Q 415 199 416 201"
-              fill="none" stroke="rgba(180,220,255,0.7)" stroke-width="1.2" stroke-linecap="round"/>
-
-        <!-- BLACK (B) — lower-right (347, 384) -->
-        <circle cx="347" cy="384" r="18" fill="#0d0d0f" stroke="rgba(201,168,76,0.6)" stroke-width="1.5"/>
-        <circle cx="347" cy="384" r="15" fill="url(#pipB)"/>
-        <!-- Skull-like shape in B pip -->
-        <circle cx="347" cy="381" r="6" fill="rgba(200,170,240,0.85)"/>
-        <rect x="343" y="385" width="8" height="5" rx="1" fill="rgba(200,170,240,0.85)"/>
-        <circle cx="344.8" cy="381" r="1.6" fill="rgba(16,8,24,0.9)"/>
-        <circle cx="349.2" cy="381" r="1.6" fill="rgba(16,8,24,0.9)"/>
-        <line x1="345" y1="386.5" x2="345" y2="390" stroke="rgba(16,8,24,0.9)" stroke-width="1"/>
-        <line x1="347" y1="386.5" x2="347" y2="390" stroke="rgba(16,8,24,0.9)" stroke-width="1"/>
-        <line x1="349" y1="386.5" x2="349" y2="390" stroke="rgba(16,8,24,0.9)" stroke-width="1"/>
-
-        <!-- RED (R) — lower-left (153, 384) -->
-        <circle cx="153" cy="384" r="18" fill="#0d0d0f" stroke="rgba(201,168,76,0.6)" stroke-width="1.5"/>
-        <circle cx="153" cy="384" r="15" fill="url(#pipR)"/>
-        <!-- Flame symbol in R pip -->
-        <path d="M 153 374 C 153 374 159 380 158 385 C 162 379 162 374 159 371 C 159 376 155 378 155 381 C 153 377 152 374 153 374 Z"
-              fill="rgba(255,220,140,0.9)"/>
-        <path d="M 153 381 C 153 381 157 383 156 387 C 158 384 158 381 156 379 C 156 382 154 383 154 385 C 153 383 152 381 153 381 Z"
-              fill="rgba(255,180,60,0.9)"/>
-
-        <!-- GREEN (G) — upper-left (93, 199) -->
-        <circle cx="93" cy="199" r="18" fill="#0d0d0f" stroke="rgba(201,168,76,0.6)" stroke-width="1.5"/>
-        <circle cx="93" cy="199" r="15" fill="url(#pipG)"/>
-        <!-- Tree symbol in G pip -->
-        <line x1="93" y1="207" x2="93" y2="213" stroke="rgba(180,120,60,0.9)" stroke-width="1.8" stroke-linecap="round"/>
-        <path d="M 86 207 L 93 196 L 100 207 Z" fill="rgba(160,240,140,0.9)"/>
-        <path d="M 87 204 L 93 194 L 99 204 Z" fill="rgba(180,255,160,0.85)"/>
-        <path d="M 88.5 200.5 L 93 192 L 97.5 200.5 Z" fill="rgba(200,255,180,0.8)"/>
-
-        <!-- Subtle outer glow ring -->
-        <circle cx="250" cy="250" r="198"
-                fill="none"
-                stroke="rgba(201,168,76,0.08)"
-                stroke-width="6"/>
-      </svg>
+      <img class="hero-logo" src="logo.png" alt="Plzeňská Pauper Liga 2026" />
     </div>
   </div>
 </section>
-
 <!-- ── INFO ── -->
 <section id="info">
   <div class="container">
@@ -799,24 +600,10 @@
       </div>
       <div class="system-block reveal">
         <div class="system-block-title" data-i18n="system.prizes.title"></div>
-        <div class="prize-tier">
-          <div class="tier-badge"><span class="score">4–0</span></div>
-          <div class="tier-info">
-            <h4 data-i18n="system.tier1.name"></h4>
-            <p data-i18n="system.tier1.desc"></p>
-          </div>
-        </div>
-        <div class="prize-tier">
-          <div class="tier-badge"><span class="score">3–1</span></div>
-          <div class="tier-info">
-            <h4 data-i18n="system.tier2.name"></h4>
-            <p data-i18n="system.tier2.desc"></p>
-          </div>
-        </div>
+        <ul class="rule-list" id="prize-list"></ul>
         <div class="grand-prize">
           <div class="gp-label" data-i18n="system.grand.label"></div>
           <div class="gp-title">
-            <!-- Trophy SVG inline -->
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(224,192,112,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px">
               <path d="M8 21h8M12 17v4M7 4H4a2 2 0 00-2 2v1c0 3.31 2.69 6 6 6h.5M17 4h3a2 2 0 012 2v1c0 3.31-2.69 6-6 6h-.5"/>
               <path d="M7 4h10v7a5 5 0 01-10 0V4z" fill="rgba(201,168,76,0.1)"/>
@@ -898,10 +685,11 @@ const i18n = {
       "TOP 8 hráčů se v září utkají ve <strong>finále s Double Elimination</strong> bracketem.",
       "Finálový turnaj se hraje <strong>bez proxy karet</strong> – vyžadují se originální karty."
     ],
-    "system.tier1.name":  "Elite Winner",
-    "system.tier1.desc":  "Získává <strong>2× podíl</strong> z banku kola",
-    "system.tier2.name":  "Contender Winner",
-    "system.tier2.desc":  "Získává <strong>1× podíl</strong> z banku kola",
+    "system.prizes": [
+      "<strong>Elite Winner (4–0)</strong> získává <strong>2× podíl</strong> z banku kola.",
+      "<strong>Contender Winner (3–1)</strong> získává <strong>1× podíl</strong> z banku kola.",
+      "Zbývající bank se dělí rovnoměrně mezi všechny zúčastněné hráče."
+    ],
     "system.grand.label": "Hlavní Cena",
     "system.grand.title": "Finálový Vítěz",
     "system.grand.desc":  "Přímá kvalifikace na <strong>MČR v Pauperu 2026</strong>",
@@ -950,10 +738,11 @@ const i18n = {
       "The TOP 8 compete in September at a <strong>Double Elimination Finals</strong> bracket.",
       "The finals event is played <strong>without proxies</strong> — original cards required."
     ],
-    "system.tier1.name":  "Elite Winner",
-    "system.tier1.desc":  "Earns a <strong>2× share</strong> of the round bank",
-    "system.tier2.name":  "Contender Winner",
-    "system.tier2.desc":  "Earns a <strong>1× share</strong> of the round bank",
+    "system.prizes": [
+      "<strong>Elite Winner (4–0)</strong> earns a <strong>2× share</strong> of the round bank.",
+      "<strong>Contender Winner (3–1)</strong> earns a <strong>1× share</strong> of the round bank.",
+      "The remaining bank is split equally among all participants."
+    ],
     "system.grand.label": "Grand Prize",
     "system.grand.title": "Finals Champion",
     "system.grand.desc":  "Direct qualification to <strong>Czech Pauper Championship 2026</strong>",
@@ -991,6 +780,17 @@ function setLang(lang) {
     li.innerHTML = rule;
     ruleList.appendChild(li);
   });
+
+  // Prize list
+  const prizeList = document.getElementById('prize-list');
+  if (prizeList) {
+    prizeList.innerHTML = '';
+    t['system.prizes'].forEach(item => {
+      const li = document.createElement('li');
+      li.innerHTML = item;
+      prizeList.appendChild(li);
+    });
+  }
 }
 
 // ── Mobile menu ───────────────────────────────────────────────
