@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PPL Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-0: #0d0d0f; --bg-1: #13131a; --bg-2: #1a1a24; --bg-3: #22222f;
+      --border: #2e2e40; --gold: #c9a84c; --gold-light: #e0c070; --gold-dim: #8a6e30;
+      --text-1: #e8e4d9; --text-2: #a09880; --text-3: #5a5445;
+      --radius-sm: 6px; --radius-md: 12px; --red: #c0392b; --green: #27ae60;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg-0); color: var(--text-1); min-height: 100vh; }
+
+    /* ── Login ── */
+    .login-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .login-card {
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 48px 40px; width: 100%; max-width: 380px;
+    }
+    .login-logo { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 32px; text-align: center; }
+    .login-title { font-size: 1.1rem; font-weight: 600; color: var(--text-1); margin-bottom: 24px; text-align: center; }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .field label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+    .field input {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-family: 'Inter', sans-serif; font-size: 0.9rem; color: var(--text-1); width: 100%;
+    }
+    .field input:focus { outline: none; border-color: var(--gold-dim); }
+    .btn-primary {
+      width: 100%; padding: 12px; background: linear-gradient(135deg, #c9a84c, #a07830);
+      color: #0d0d0f; border: none; border-radius: var(--radius-sm); font-size: 0.88rem;
+      font-weight: 600; letter-spacing: 0.06em; cursor: pointer; margin-top: 8px; transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .login-error { font-size: 0.82rem; color: #e74c3c; margin-top: 12px; text-align: center; min-height: 20px; }
+
+    /* ── Admin shell ── */
+    #admin { display: none; }
+    .admin-nav {
+      background: rgba(13,13,15,0.95); border-bottom: 1px solid var(--border);
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .admin-nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold); letter-spacing: 0.1em; }
+    .admin-user { font-size: 0.8rem; color: var(--text-2); display: flex; align-items: center; gap: 16px; }
+    .btn-logout {
+      background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 6px 14px; color: var(--text-2); font-size: 0.78rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--gold-dim); color: var(--text-1); }
+
+    .admin-body { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 32px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; width: fit-content; }
+    .tab-btn {
+      background: none; border: none; cursor: pointer; padding: 8px 20px;
+      border-radius: 4px; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-3); transition: all 0.2s;
+    }
+    .tab-btn.active { background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f; }
+    .tab-btn:not(.active):hover { color: var(--text-1); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Editor panel */
+    .panel-title {
+      font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    .post-title-input {
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 14px 18px; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--text-1);
+      width: 100%; margin-bottom: 16px;
+    }
+    .post-title-input:focus { outline: none; border-color: var(--gold-dim); }
+    .post-title-input::placeholder { color: var(--text-3); }
+
+    /* Quill overrides */
+    .ql-toolbar.ql-snow { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+    .ql-toolbar.ql-snow .ql-picker, .ql-toolbar.ql-snow button { color: var(--text-2) !important; }
+    .ql-toolbar.ql-snow button:hover, .ql-toolbar.ql-snow .ql-picker-label:hover { color: var(--gold) !important; }
+    .ql-toolbar.ql-snow .ql-stroke { stroke: var(--text-2) !important; }
+    .ql-toolbar.ql-snow button:hover .ql-stroke { stroke: var(--gold) !important; }
+    .ql-toolbar.ql-snow .ql-fill { fill: var(--text-2) !important; }
+    .ql-container.ql-snow { background: var(--bg-2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm); min-height: 320px; }
+    .ql-editor { color: var(--text-1); font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; min-height: 280px; }
+    .ql-editor.ql-blank::before { color: var(--text-3) !important; font-style: normal; }
+    .ql-snow .ql-picker-options { background: var(--bg-3) !important; border-color: var(--border) !important; }
+
+    .editor-actions { display: flex; gap: 12px; margin-top: 20px; align-items: center; flex-wrap: wrap; }
+    .btn-save {
+      background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f;
+      border: none; border-radius: var(--radius-sm); padding: 11px 28px;
+      font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; transition: opacity 0.2s;
+    }
+    .btn-save:hover { opacity: 0.9; }
+    .btn-save:disabled { opacity: 0.5; cursor: default; }
+    .btn-outline {
+      background: transparent; color: var(--text-2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 11px 22px;
+      font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-outline:hover { border-color: var(--gold-dim); color: var(--text-1); }
+    .save-status { font-size: 0.82rem; color: var(--text-3); }
+    .save-status.ok { color: var(--green); }
+    .save-status.err { color: var(--red); }
+
+    .publish-toggle { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .publish-toggle label { font-size: 0.82rem; color: var(--text-2); cursor: pointer; }
+    .toggle-switch { position: relative; width: 40px; height: 22px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: 100px; cursor: pointer; transition: all 0.2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      background: var(--text-3); border-radius: 50%; top: 2px; left: 2px; transition: all 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: rgba(201,168,76,0.2); border-color: var(--gold-dim); }
+    .toggle-switch input:checked + .toggle-slider::before { background: var(--gold); transform: translateX(18px); }
+
+    /* Posts list */
+    .posts-list { display: flex; flex-direction: column; gap: 12px; }
+    .post-item {
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 20px 24px; display: flex; align-items: flex-start; gap: 16px;
+    }
+    .post-item-info { flex: 1; min-width: 0; }
+    .post-item-title { font-weight: 600; color: var(--text-1); font-size: 0.95rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .post-item-meta { font-size: 0.78rem; color: var(--text-3); display: flex; gap: 12px; flex-wrap: wrap; }
+    .post-item-author { color: var(--gold-dim); }
+    .status-badge {
+      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 100px; border: 1px solid;
+    }
+    .status-badge.published { color: var(--green); border-color: var(--green); background: rgba(39,174,96,0.08); }
+    .status-badge.draft     { color: var(--text-3); border-color: var(--border); }
+    .post-item-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+    .btn-sm {
+      background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 6px 14px; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+      color: var(--text-2); transition: all 0.2s; white-space: nowrap;
+    }
+    .btn-sm:hover { border-color: var(--gold-dim); color: var(--text-1); }
+    .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
+    .btn-sm.publish-btn.active { border-color: var(--green); color: var(--green); }
+    .posts-empty { color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
+    .posts-loading { color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
+
+    @media (max-width: 600px) {
+      .admin-body { padding: 24px 16px; }
+      .login-card { padding: 32px 24px; }
+      .post-item { flex-direction: column; }
+      .editor-actions { flex-direction: column; align-items: flex-start; }
+      .publish-toggle { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">PPL 2026 · Admin</div>
+    <div class="login-title">Přihlášení</div>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="login-email" placeholder="vas@email.cz" autocomplete="email" />
+    </div>
+    <div class="field">
+      <label>Heslo</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">Přihlásit se</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── Admin panel ── -->
+<div id="admin">
+  <nav class="admin-nav">
+    <div class="admin-nav-logo">PPL 2026 · Admin</div>
+    <div class="admin-user">
+      <span id="admin-user-name"></span>
+      <button class="btn-logout" onclick="doLogout()">Odhlásit</button>
+    </div>
+  </nav>
+
+  <div class="admin-body">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('editor', this)">✏️ Nový příspěvek</button>
+      <button class="tab-btn"       onclick="switchTab('posts',  this)">📋 Všechny příspěvky</button>
+    </div>
+
+    <!-- Editor tab -->
+    <div class="tab-panel active" id="tab-editor">
+      <div class="panel-title" id="editor-panel-title">Nový příspěvek</div>
+      <input class="post-title-input" id="post-title" type="text" placeholder="Název příspěvku…" />
+      <div id="quill-editor"></div>
+      <div class="editor-actions">
+        <button class="btn-save" id="save-btn" onclick="savePost()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Uložit
+        </button>
+        <button class="btn-outline" onclick="resetEditor()">Nový</button>
+        <span class="save-status" id="save-status"></span>
+        <div class="publish-toggle">
+          <label for="publish-toggle-input">Zveřejnit</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="publish-toggle-input" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Posts list tab -->
+    <div class="tab-panel" id="tab-posts">
+      <div class="panel-title">Všechny příspěvky</div>
+      <div class="posts-list" id="posts-list">
+        <div class="posts-loading">Načítám…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<!-- Quill -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
+<script>
+// ── Firebase config — same values as in index.html ──
+const firebaseConfig = {
+  apiKey:            "AIzaSyB6dEHtPEk6Ml9p09IQPW-BU3nFcmID88A",
+  authDomain:        "pilsenpauperleague.firebaseapp.com",
+  projectId:         "pilsenpauperleague",
+  storageBucket:     "pilsenpauperleague.firebasestorage.app",
+  messagingSenderId: "786427947147",
+  appId:             "1:786427947147:web:e77ea63364ef432e044c8e"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ── Auth ──────────────────────────────────────────────────────
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('login-wrap').style.display = 'none';
+    document.getElementById('admin').style.display = 'block';
+    document.getElementById('admin-user-name').textContent = user.displayName || user.email;
+    loadAllPosts();
+  } else {
+    document.getElementById('login-wrap').style.display = '';
+    document.getElementById('admin').style.display = 'none';
+  }
+});
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-error');
+  err.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Přihlašuji…';
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(e) {
+    err.textContent = 'Špatný e-mail nebo heslo.';
+    btn.disabled = false;
+    btn.textContent = 'Přihlásit se';
+  }
+}
+
+function doLogout() { auth.signOut(); }
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ── Quill editor ──────────────────────────────────────────────
+const quill = new Quill('#quill-editor', {
+  theme: 'snow',
+  placeholder: 'Obsah příspěvku…',
+  modules: {
+    toolbar: {
+      container: [
+        [{ header: [2, 3, false] }],
+        ['bold', 'italic', 'underline'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['blockquote', 'code-block'],
+        ['link', 'image'],
+        ['clean']
+      ],
+      handlers: { image: imageUploadHandler }
+    }
+  }
+});
+
+function imageUploadHandler() {
+  const url = prompt('URL obrázku:');
+  if (!url) return;
+  const range = quill.getSelection(true);
+  quill.insertEmbed(range.index, 'image', url);
+}
+
+// ── Editor state ──────────────────────────────────────────────
+let editingPostId = null;
+
+function resetEditor() {
+  editingPostId = null;
+  document.getElementById('post-title').value = '';
+  quill.setContents([]);
+  document.getElementById('publish-toggle-input').checked = false;
+  document.getElementById('save-status').textContent = '';
+  document.getElementById('save-status').className = 'save-status';
+  document.getElementById('editor-panel-title').textContent = 'Nový příspěvek';
+  switchTab('editor', document.querySelector('.tab-btn'));
+}
+
+async function savePost() {
+  const title   = document.getElementById('post-title').value.trim();
+  const content = quill.root.innerHTML;
+  const published = document.getElementById('publish-toggle-input').checked;
+  const btn = document.getElementById('save-btn');
+  const statusEl = document.getElementById('save-status');
+
+  if (!title) { statusEl.textContent = 'Zadej název příspěvku.'; statusEl.className = 'save-status err'; return; }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Ukládám…';
+  statusEl.className = 'save-status';
+
+  const user = auth.currentUser;
+  try {
+    const data = {
+      title,
+      content,
+      published,
+      authorId:   user.uid,
+      authorName: user.displayName || user.email,
+      updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (editingPostId) {
+      await db.collection('posts').doc(editingPostId).update(data);
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      const ref = await db.collection('posts').add(data);
+      editingPostId = ref.id;
+      document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
+    }
+    statusEl.textContent = '✓ Uloženo';
+    statusEl.className = 'save-status ok';
+    loadAllPosts();
+  } catch(e) {
+    statusEl.textContent = 'Chyba při ukládání.';
+    statusEl.className = 'save-status err';
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+// ── Posts list ────────────────────────────────────────────────
+async function loadAllPosts() {
+  const list = document.getElementById('posts-list');
+  list.innerHTML = '<div class="posts-loading">Načítám…</div>';
+  try {
+    const snap = await db.collection('posts').orderBy('createdAt', 'desc').get();
+    if (snap.empty) { list.innerHTML = '<div class="posts-empty">Žádné příspěvky.</div>'; return; }
+    list.innerHTML = '';
+    snap.forEach(doc => {
+      const p = doc.data();
+      const id = doc.id;
+      const date = p.createdAt?.toDate?.()?.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '—';
+      const item = document.createElement('div');
+      item.className = 'post-item';
+      item.innerHTML = `
+        <div class="post-item-info">
+          <div class="post-item-title">${p.title || '(bez názvu)'}</div>
+          <div class="post-item-meta">
+            <span class="post-item-author">${p.authorName || ''}</span>
+            <span>${date}</span>
+            <span class="status-badge ${p.published ? 'published' : 'draft'}">${p.published ? 'Zveřejněno' : 'Koncept'}</span>
+          </div>
+        </div>
+        <div class="post-item-actions">
+          <button class="btn-sm publish-btn ${p.published ? 'active' : ''}" onclick="togglePublish('${id}', ${p.published})">
+            ${p.published ? 'Skrýt' : 'Zveřejnit'}
+          </button>
+          <button class="btn-sm" onclick="editPost('${id}')">Upravit</button>
+          <button class="btn-sm danger" onclick="deletePost('${id}', this)">Smazat</button>
+        </div>
+      `;
+      list.appendChild(item);
+    });
+  } catch(e) {
+    list.innerHTML = '<div class="posts-empty">Chyba při načítání.</div>';
+    console.error(e);
+  }
+}
+
+async function togglePublish(id, current) {
+  await db.collection('posts').doc(id).update({ published: !current });
+  loadAllPosts();
+}
+
+async function editPost(id) {
+  const doc = await db.collection('posts').doc(id).get();
+  const p = doc.data();
+  editingPostId = id;
+  document.getElementById('post-title').value = p.title || '';
+  quill.root.innerHTML = p.content || '';
+  document.getElementById('publish-toggle-input').checked = !!p.published;
+  document.getElementById('save-status').textContent = '';
+  document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
+  switchTab('editor', document.querySelector('.tab-btn'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deletePost(id, btn) {
+  if (!confirm('Opravdu smazat tento příspěvek?')) return;
+  btn.disabled = true;
+  await db.collection('posts').doc(id).delete();
+  loadAllPosts();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────
+function switchTab(name, clickedBtn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  clickedBtn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'posts') loadAllPosts();
+}
+</script>
+</body>
+</html>

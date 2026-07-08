@@ -451,6 +451,93 @@
       .social-buttons { flex-direction: column; align-items: center; }
       .social-btn { width: 100%; justify-content: center; }
     }
+
+    /* ── BLOG ── */
+    #blog { background: var(--bg-1); }
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-top: 52px; }
+    .blog-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 28px 24px;
+      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+      cursor: pointer; display: flex; flex-direction: column; gap: 12px;
+      position: relative; overflow: hidden;
+    }
+    .blog-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .blog-card:hover { border-color: var(--gold-dim); transform: translateY(-4px); box-shadow: var(--shadow-card), var(--shadow-glow); }
+    .blog-card:hover::before { opacity: 1; }
+    .blog-card-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--text-1); font-weight: 600; line-height: 1.4; }
+    .blog-card-meta { font-size: 0.75rem; color: var(--text-3); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .blog-card-author { color: var(--gold-dim); }
+    .blog-card-excerpt { font-size: 0.87rem; color: var(--text-2); line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .blog-card-read { font-size: 0.75rem; font-weight: 600; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-top: auto; }
+    .blog-loading { color: var(--text-3); font-size: 0.9rem; margin-top: 40px; text-align: center; }
+
+    .blog-modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.78); backdrop-filter: blur(4px);
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 40px 24px; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s; overflow-y: auto;
+    }
+    .blog-modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .blog-modal {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); max-width: 720px; width: 100%;
+      padding: 40px; position: relative; margin: auto;
+    }
+    .blog-modal-close {
+      position: absolute; top: 16px; right: 18px;
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3); font-size: 1.5rem; line-height: 1;
+      transition: color 0.2s;
+    }
+    .blog-modal-close:hover { color: var(--text-1); }
+    .blog-modal-title { font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--text-1); margin-bottom: 12px; padding-right: 32px; }
+    .blog-modal-meta { font-size: 0.78rem; color: var(--text-3); margin-bottom: 28px; display: flex; gap: 16px; }
+    .blog-modal-author { color: var(--gold-dim); }
+    .blog-modal-content { font-size: 0.93rem; color: var(--text-2); line-height: 1.8; }
+    .blog-modal-content h1,.blog-modal-content h2,.blog-modal-content h3 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 24px 0 12px; }
+    .blog-modal-content p { margin-bottom: 14px; }
+    .blog-modal-content img { max-width: 100%; border-radius: var(--radius-sm); margin: 16px 0; }
+    .blog-modal-content a { color: var(--gold); }
+    .blog-modal-content strong { color: var(--text-1); }
+    .blog-modal-content ul,.blog-modal-content ol { padding-left: 20px; margin-bottom: 14px; }
+    .blog-modal-content blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
+
+    /* ── MERCH ── */
+    #merch { background: var(--bg-0); }
+    .merch-coming {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px; padding: 56px 24px;
+      background: var(--bg-2); border: 1px dashed var(--border);
+      border-radius: var(--radius-md); margin-top: 40px; text-align: center;
+    }
+    .merch-coming-icon { font-size: 2.5rem; opacity: 0.45; }
+    .merch-coming-text { font-size: 0.9rem; color: var(--text-3); }
+    .merch-form-wrap { margin-top: 48px; max-width: 640px; }
+    .merch-form-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .merch-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+    .form-input, .form-select, .form-textarea {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 14px;
+      font-family: 'Inter', sans-serif; font-size: 0.88rem;
+      color: var(--text-1); transition: border-color 0.2s; width: 100%;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--gold-dim); }
+    .form-select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5445' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--text-3); }
+    .form-note { font-size: 0.78rem; color: var(--text-3); margin-top: 12px; }
+    .form-success { display: none; padding: 16px 20px; background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--gold); margin-top: 16px; }
+    .form-success.visible { display: block; }
+    @media (max-width: 600px) { .merch-form { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -463,6 +550,8 @@
     <ul class="nav-links" id="nav-links-desktop">
       <li><a href="#info"><span     data-i18n="nav.info"></span></a></li>
       <li><a href="#system"><span   data-i18n="nav.system"></span></a></li>
+      <li><a href="#blog"><span data-i18n="nav.blog"></span></a></li>
+      <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
       <li><a href="#komunita"><span data-i18n="nav.community"></span></a></li>
       <li><a href="https://docs.google.com/spreadsheets/d/1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ/edit?usp=sharing" target="_blank" rel="noopener"><span data-i18n="nav.results"></span></a></li>
     </ul>
@@ -482,6 +571,8 @@
   <div class="mobile-menu" id="mobile-menu">
     <a href="#info"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
     <a href="#system"   onclick="closeMenu()"><span data-i18n="nav.system"></span></a>
+    <a href="#blog"     onclick="closeMenu()"><span data-i18n="nav.blog"></span></a>
+    <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
     <a href="#komunita" onclick="closeMenu()"><span data-i18n="nav.community"></span></a>
     <a href="https://docs.google.com/spreadsheets/d/1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ/edit?usp=sharing" target="_blank" rel="noopener"><span data-i18n="nav.results"></span></a>
   </div>
@@ -617,6 +708,93 @@
   </div>
 </section>
 
+<!-- ── BLOG ── -->
+<section id="blog">
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="blog.label"></span>
+      <h2 class="section-title" data-i18n="blog.title"></h2>
+      <p class="section-desc" data-i18n="blog.desc"></p>
+    </div>
+    <div id="blog-grid" class="blog-grid">
+      <p class="blog-loading" data-i18n="blog.loading"></p>
+    </div>
+  </div>
+</section>
+
+<!-- Blog post modal -->
+<div class="blog-modal-overlay" id="blog-modal-overlay" onclick="closeBlogModal(event)">
+  <div class="blog-modal">
+    <button class="blog-modal-close" onclick="closeBlogModal(null)" aria-label="Zavřít">×</button>
+    <h2 class="blog-modal-title" id="modal-title"></h2>
+    <div class="blog-modal-meta">
+      <span class="blog-modal-author" id="modal-author"></span>
+      <span id="modal-date"></span>
+    </div>
+    <div class="blog-modal-content" id="modal-content"></div>
+  </div>
+</div>
+
+<!-- ── MERCH ── -->
+<section id="merch">
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="merch.label"></span>
+      <h2 class="section-title" data-i18n="merch.title"></h2>
+      <p class="section-desc" data-i18n="merch.desc"></p>
+    </div>
+    <div class="merch-coming reveal">
+      <div class="merch-coming-icon">🛡️</div>
+      <p class="merch-coming-text" data-i18n="merch.coming"></p>
+    </div>
+    <div class="merch-form-wrap reveal">
+      <div class="merch-form-title" data-i18n="merch.form.title"></div>
+      <form class="merch-form" id="merch-form" action="https://formspree.io/f/FORMSPREE_ID" method="POST">
+        <input type="hidden" name="_subject" value="Nová objednávka merch – PPL 2026" />
+        <div class="form-group">
+          <label class="form-label" data-i18n="merch.form.name"></label>
+          <input class="form-input" type="text" name="name" required placeholder="Jan Novák" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="merch.form.email"></label>
+          <input class="form-input" type="email" name="email" required placeholder="jan@email.cz" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="merch.form.item"></label>
+          <select class="form-select" name="item" required>
+            <option value="" data-i18n="merch.form.item.placeholder"></option>
+            <option value="tshirt" data-i18n="merch.form.item.tshirt"></option>
+            <option value="hoodie" data-i18n="merch.form.item.hoodie"></option>
+            <option value="other" data-i18n="merch.form.item.other"></option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="merch.form.size"></label>
+          <select class="form-select" name="size">
+            <option value="">—</option>
+            <option>XS</option><option>S</option><option>M</option>
+            <option>L</option><option>XL</option><option>XXL</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label" data-i18n="merch.form.note"></label>
+          <textarea class="form-textarea" name="note" rows="3"></textarea>
+        </div>
+        <div class="form-group full">
+          <button class="btn btn-primary form-submit" type="submit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+            <span data-i18n="merch.form.submit"></span>
+          </button>
+          <p class="form-note" data-i18n="merch.form.note.text"></p>
+        </div>
+      </form>
+      <div class="form-success" id="merch-success" data-i18n="merch.form.success"></div>
+    </div>
+  </div>
+</section>
+
 <!-- ── COMMUNITY ── -->
 <section id="komunita">
   <div class="container">
@@ -694,6 +872,34 @@ const i18n = {
     "system.grand.title": "Finálový Vítěz",
     "system.grand.desc":  "Přímá kvalifikace na <strong>MČR v Pauperu 2026</strong>",
 
+    "nav.blog":  "Blog",
+    "nav.merch": "Merch",
+
+    "blog.label":   "Zápisky",
+    "blog.title":   "Blog",
+    "blog.desc":    "Reporty z turnajů, decklists, novinky z Pauper metagame.",
+    "blog.loading": "Načítám příspěvky…",
+    "blog.empty":   "Zatím žádné příspěvky.",
+    "blog.read":    "Číst dál →",
+
+    "merch.label":        "Merch",
+    "merch.title":        "Oblečení & Merch",
+    "merch.desc":         "Trička, mikiny a další liga merch. Aktuálně připravujeme kolekci.",
+    "merch.coming":       "Kolekce se připravuje. Předběžně si může zaregistrovat zájem níže.",
+    "merch.form.title":   "Registrace Zájmu",
+    "merch.form.name":    "Jméno",
+    "merch.form.email":   "E-mail",
+    "merch.form.item":    "Typ",
+    "merch.form.item.placeholder": "— Vyber položku —",
+    "merch.form.item.tshirt": "Tričko",
+    "merch.form.item.hoodie": "Mikina",
+    "merch.form.item.other":  "Jiné",
+    "merch.form.size":    "Velikost",
+    "merch.form.note":    "Poznámka",
+    "merch.form.submit":  "Odeslat zájem",
+    "merch.form.note.text": "Nejde o závaznou objednávku. Ozvu se až bude merch připravený.",
+    "merch.form.success": "✓ Zájem zaregistrován, ozvu se!",
+
     "community.label": "Komunita",
     "community.title": "Zůstaň v Kontaktu",
     "community.desc":  "Sleduj aktuální dění, propozice a domlouvej testování. Komunita je aktivní – přidej se.",
@@ -746,6 +952,34 @@ const i18n = {
     "system.grand.label": "Grand Prize",
     "system.grand.title": "Finals Champion",
     "system.grand.desc":  "Direct qualification to <strong>Czech Pauper Championship 2026</strong>",
+
+    "nav.blog":  "Blog",
+    "nav.merch": "Merch",
+
+    "blog.label":   "Journal",
+    "blog.title":   "Blog",
+    "blog.desc":    "Tournament reports, decklists, and Pauper metagame updates.",
+    "blog.loading": "Loading posts…",
+    "blog.empty":   "No posts yet.",
+    "blog.read":    "Read more →",
+
+    "merch.label":        "Merch",
+    "merch.title":        "Clothing & Merch",
+    "merch.desc":         "T-shirts, hoodies and more. Collection coming soon.",
+    "merch.coming":       "Collection in preparation. Register your interest below.",
+    "merch.form.title":   "Interest Registration",
+    "merch.form.name":    "Name",
+    "merch.form.email":   "E-mail",
+    "merch.form.item":    "Item",
+    "merch.form.item.placeholder": "— Select item —",
+    "merch.form.item.tshirt": "T-shirt",
+    "merch.form.item.hoodie": "Hoodie",
+    "merch.form.item.other":  "Other",
+    "merch.form.size":    "Size",
+    "merch.form.note":    "Note",
+    "merch.form.submit":  "Submit interest",
+    "merch.form.note.text": "This is not a binding order. I'll reach out once merch is ready.",
+    "merch.form.success": "✓ Interest registered, I'll be in touch!",
 
     "community.label": "Community",
     "community.title": "Stay Connected",
@@ -825,6 +1059,153 @@ document.querySelectorAll('.reveal').forEach((el, i) => {
   el.style.transitionDelay = `${(i % 4) * 0.07}s`;
   observer.observe(el);
 });
+
+
+// ── Blog language refresh ─────────────────────────────────────
+const _origSetLang = setLang;
+// patched below after Firebase block loads
+</script>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// FIREBASE CONFIG
+// Nahraď níže hodnotami ze svého Firebase projektu
+// ══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyB6dEHtPEk6Ml9p09IQPW-BU3nFcmID88A",
+  authDomain:        "pilsenpauperleague.firebaseapp.com",
+  projectId:         "pilsenpauperleague",
+  storageBucket:     "pilsenpauperleague.firebasestorage.app",
+  messagingSenderId: "786427947147",
+  appId:             "1:786427947147:web:e77ea63364ef432e044c8e"
+};
+
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch(e) { console.warn('Firebase not configured yet.'); }
+
+// ── Blog state ────────────────────────────────────────────────
+let cachedPosts = null;
+
+function formatDate(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function renderBlogCards(lang) {
+  const grid = document.getElementById('blog-grid');
+  const t = i18n[lang];
+  if (!cachedPosts) {
+    grid.innerHTML = `<p class="blog-loading">${t['blog.loading']}</p>`;
+    return;
+  }
+  if (cachedPosts.length === 0) {
+    grid.innerHTML = `<p class="blog-loading">${t['blog.empty']}</p>`;
+    return;
+  }
+  grid.innerHTML = '';
+  cachedPosts.forEach((p, idx) => {
+    const date = formatDate(p.createdAt);
+    const excerpt = (p.content || '').replace(/<[^>]+>/g, '').slice(0, 180).trim() + '…';
+    const card = document.createElement('div');
+    card.className = 'blog-card reveal';
+    card.style.transitionDelay = `${(idx % 3) * 0.07}s`;
+    card.innerHTML = `
+      <div class="blog-card-title">${p.title || ''}</div>
+      <div class="blog-card-meta">
+        <span class="blog-card-author">${p.authorName || ''}</span>
+        <span>${date}</span>
+      </div>
+      <div class="blog-card-excerpt">${excerpt}</div>
+      <div class="blog-card-read">${t['blog.read']}</div>
+    `;
+    card.addEventListener('click', () => openBlogModal(p));
+    grid.appendChild(card);
+    observer.observe(card);
+  });
+}
+
+async function loadBlogPosts() {
+  if (!db) {
+    cachedPosts = [];
+    renderBlogCards(document.documentElement.lang || 'cs');
+    return;
+  }
+  try {
+    const snap = await db.collection('posts')
+      .where('published', '==', true)
+      .orderBy('createdAt', 'desc')
+      .get();
+    cachedPosts = snap.docs.map(d => d.data());
+    renderBlogCards(document.documentElement.lang || 'cs');
+  } catch(e) {
+    console.error('Blog load error:', e);
+    cachedPosts = [];
+    renderBlogCards(document.documentElement.lang || 'cs');
+  }
+}
+
+function openBlogModal(post) {
+  document.getElementById('modal-title').textContent   = post.title || '';
+  document.getElementById('modal-author').textContent  = post.authorName || '';
+  document.getElementById('modal-date').textContent    = formatDate(post.createdAt);
+  document.getElementById('modal-content').innerHTML   = post.content || '';
+  const overlay = document.getElementById('blog-modal-overlay');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBlogModal(e) {
+  if (e && e.target !== document.getElementById('blog-modal-overlay')) return;
+  document.getElementById('blog-modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBlogModal(null); });
+
+// Patch setLang to re-render blog cards on language switch
+const __origSetLang = window.setLang;
+window.setLang = function(lang) {
+  __origSetLang(lang);
+  renderBlogCards(lang);
+};
+
+// ── Merch form ────────────────────────────────────────────────
+document.getElementById('merch-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type=submit]');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span>Odesílám…</span>';
+  try {
+    const res = await fetch(this.action, {
+      method: 'POST',
+      body: new FormData(this),
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      this.style.display = 'none';
+      document.getElementById('merch-success').classList.add('visible');
+    } else {
+      throw new Error();
+    }
+  } catch {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+    alert('Odeslání se nezdařilo, zkus to prosím znovu.');
+  }
+});
+
+// ── Start ─────────────────────────────────────────────────────
+loadBlogPosts();
 </script>
 </body>
 </html>
