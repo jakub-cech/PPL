@@ -503,6 +503,9 @@
     }
     .blog-card:hover { border-color: var(--gold-dim); transform: translateY(-4px); box-shadow: var(--shadow-card), var(--shadow-glow); }
     .blog-card:hover::before { opacity: 1; }
+    .blog-card-cover { margin: -28px -24px 4px; aspect-ratio: 16 / 9; background: var(--bg-3); overflow: hidden; }
+    .blog-card-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s; }
+    .blog-card:hover .blog-card-cover img { transform: scale(1.04); }
     .blog-card-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--text-1); font-weight: 600; line-height: 1.4; }
     .blog-card-meta { font-size: 0.75rem; color: var(--text-3); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .blog-card-author { color: var(--gold-dim); }
@@ -541,6 +544,49 @@
     .blog-modal-content strong { color: var(--text-1); }
     .blog-modal-content ul,.blog-modal-content ol { padding-left: 20px; margin-bottom: 14px; }
     .blog-modal-content blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
+
+    /* ── Fotogalerie u příspěvku ── */
+    .blog-gallery-label {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold-dim); margin: 32px 0 14px; padding-top: 24px; border-top: 1px solid var(--border);
+    }
+    .blog-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .blog-gallery-item {
+      aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden;
+      border: 1px solid var(--border); cursor: zoom-in; background: var(--bg-3);
+      padding: 0; transition: border-color 0.25s;
+    }
+    .blog-gallery-item:hover { border-color: var(--gold-dim); }
+    .blog-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s; }
+    .blog-gallery-item:hover img { transform: scale(1.06); }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.94);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; padding: 56px 20px 32px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .lightbox.open { opacity: 1; pointer-events: auto; }
+    .lightbox-figure { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; }
+    .lightbox-figure img { max-width: min(1100px, 92vw); max-height: 78vh; object-fit: contain; border-radius: var(--radius-sm); display: block; }
+    .lightbox-caption { color: var(--text-2); font-size: 0.88rem; text-align: center; max-width: 640px; }
+    .lightbox-counter { color: var(--text-3); font-size: 0.75rem; letter-spacing: 0.1em; }
+    .lightbox-close, .lightbox-nav {
+      position: absolute; background: rgba(26,26,36,0.85); border: 1px solid var(--border);
+      color: var(--text-1); cursor: pointer; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .lightbox-close { top: 18px; right: 20px; width: 40px; height: 40px; font-size: 1.3rem; line-height: 1; }
+    .lightbox-nav { top: 50%; transform: translateY(-50%); width: 46px; height: 46px; font-size: 1.2rem; }
+    .lightbox-nav.prev { left: 20px; }
+    .lightbox-nav.next { right: 20px; }
+    .lightbox-close:hover, .lightbox-nav:hover { border-color: var(--gold); color: var(--gold); }
+    @media (max-width: 600px) {
+      .lightbox-nav { width: 38px; height: 38px; }
+      .lightbox-nav.prev { left: 8px; }
+      .lightbox-nav.next { right: 8px; }
+      .lightbox-figure img { max-height: 66vh; }
+    }
 
     /* ── MERCH ── */
     #merch { background: var(--bg-1); }
@@ -691,7 +737,20 @@
       <span id="modal-date"></span>
     </div>
     <div class="blog-modal-content" id="modal-content"></div>
+    <div id="modal-gallery"></div>
   </div>
+</div>
+
+<!-- Lightbox pro fotogalerii -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox(null)" aria-label="Zavřít">×</button>
+  <button class="lightbox-nav prev" onclick="stepLightbox(event, -1)" aria-label="Předchozí">‹</button>
+  <button class="lightbox-nav next" onclick="stepLightbox(event,  1)" aria-label="Další">›</button>
+  <figure class="lightbox-figure">
+    <img id="lightbox-img" src="" alt="" />
+    <figcaption class="lightbox-caption" id="lightbox-caption"></figcaption>
+  </figure>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
 </div>
 
 <!-- ── INFO ── -->
@@ -946,6 +1005,7 @@ const i18n = {
     "blog.loading": "Načítám příspěvky…",
     "blog.empty":   "Zatím žádné příspěvky.",
     "blog.read":    "Číst dál →",
+    "blog.gallery": "Fotogalerie",
 
     "merch.label":        "Merch",
     "merch.title":        "Oblečení & Merch",
@@ -1034,6 +1094,7 @@ const i18n = {
     "blog.loading": "Loading posts…",
     "blog.empty":   "No posts yet.",
     "blog.read":    "Read more →",
+    "blog.gallery": "Photo gallery",
 
     "merch.label":        "Merch",
     "merch.title":        "Clothing & Merch",
@@ -1186,10 +1247,14 @@ function renderBlogCards(lang) {
   cachedPosts.forEach((p, idx) => {
     const date = formatDate(p.createdAt);
     const excerpt = (p.content || '').replace(/<[^>]+>/g, '').slice(0, 180).trim() + '…';
+    const cover = Array.isArray(p.gallery) && p.gallery.length
+      ? `<div class="blog-card-cover"><img src="${escapeAttr(p.gallery[0].url)}" alt="" loading="lazy" /></div>`
+      : '';
     const card = document.createElement('div');
     card.className = 'blog-card reveal';
     card.style.transitionDelay = `${(idx % 3) * 0.07}s`;
     card.innerHTML = `
+      ${cover}
       <div class="blog-card-title">${p.title || ''}</div>
       <div class="blog-card-meta">
         <span class="blog-card-author">${p.authorName || ''}</span>
@@ -1294,11 +1359,33 @@ async function loadTournaments() {
   }
 }
 
+function escapeAttr(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderGallery(post, lang) {
+  const wrap = document.getElementById('modal-gallery');
+  currentGallery = Array.isArray(post.gallery) ? post.gallery : [];
+  if (!currentGallery.length) { wrap.innerHTML = ''; return; }
+  const items = currentGallery.map((img, i) => `
+    <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeAttr(img.caption) || 'Fotka ' + (i + 1)}">
+      <img src="${escapeAttr(img.url)}" alt="${escapeAttr(img.caption)}" loading="lazy" />
+    </button>
+  `).join('');
+  wrap.innerHTML = `
+    <div class="blog-gallery-label">${i18n[lang]['blog.gallery']}</div>
+    <div class="blog-gallery">${items}</div>
+  `;
+}
+
 function openBlogModal(post) {
+  const lang = document.documentElement.lang || 'cs';
   document.getElementById('modal-title').textContent   = post.title || '';
   document.getElementById('modal-author').textContent  = post.authorName || '';
   document.getElementById('modal-date').textContent    = formatDate(post.createdAt);
   document.getElementById('modal-content').innerHTML   = post.content || '';
+  renderGallery(post, lang);
   const overlay = document.getElementById('blog-modal-overlay');
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1310,7 +1397,55 @@ function closeBlogModal(e) {
   document.body.style.overflow = '';
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBlogModal(null); });
+// ── Lightbox ──────────────────────────────────────────────────
+let currentGallery = [];
+let lightboxIndex  = 0;
+
+function showLightboxImage() {
+  const img = currentGallery[lightboxIndex];
+  if (!img) return;
+  document.getElementById('lightbox-img').src           = img.url;
+  document.getElementById('lightbox-img').alt           = img.caption || '';
+  document.getElementById('lightbox-caption').textContent = img.caption || '';
+  document.getElementById('lightbox-counter').textContent =
+    currentGallery.length > 1 ? `${lightboxIndex + 1} / ${currentGallery.length}` : '';
+  const multiple = currentGallery.length > 1;
+  document.querySelector('.lightbox-nav.prev').style.display = multiple ? '' : 'none';
+  document.querySelector('.lightbox-nav.next').style.display = multiple ? '' : 'none';
+}
+
+function openLightbox(i) {
+  lightboxIndex = i;
+  showLightboxImage();
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function stepLightbox(e, dir) {
+  if (e) e.stopPropagation();
+  if (!currentGallery.length) return;
+  lightboxIndex = (lightboxIndex + dir + currentGallery.length) % currentGallery.length;
+  showLightboxImage();
+}
+
+function closeLightbox(e) {
+  // Klik na samotny obrazek nebo na sipky lightbox nezavira.
+  if (e && e.target !== document.getElementById('lightbox')) return;
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+function lightboxOpen() {
+  return document.getElementById('lightbox').classList.contains('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (lightboxOpen()) {
+    if (e.key === 'Escape')     closeLightbox(null);
+    if (e.key === 'ArrowLeft')  stepLightbox(null, -1);
+    if (e.key === 'ArrowRight') stepLightbox(null,  1);
+    return;
+  }
+  if (e.key === 'Escape') closeBlogModal(null);
+});
 
 // Patch setLang to re-render blog cards on language switch
 const __origSetLang = window.setLang;

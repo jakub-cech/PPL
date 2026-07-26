@@ -1,0 +1,29 @@
+// Bezpecnostni pravidla pro Firebase Storage.
+//
+// Nasazeni: Firebase konzole → Storage → Rules → vloz obsah tohoto souboru
+// a klikni Publish. Soubor v repu slouzi jako zdroj pravdy k tomu, co ma
+// byt v projektu nastavene.
+//
+// Fotky k prispevkum lezi v posts/{postId}/… — cist je muze kdokoli,
+// protoze se zobrazuji na verejnem webu. Nahravat a mazat smi jen
+// prihlaseny uzivatel, tedy admin s uctem ve Firebase Auth.
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /posts/{postId}/{fileName} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                            && request.resource.size < 5 * 1024 * 1024
+                            && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+
+    // Vse ostatni je zavrene.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
