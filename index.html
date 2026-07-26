@@ -1196,8 +1196,10 @@ document.querySelectorAll('.reveal').forEach((el, i) => {
 </script>
 
 <!-- Firebase SDK (compat) -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
+        integrity="sha384-yuGdyIzzYtOBlBG6JOWn+Ey9kpq7HocusNuxEGyyohr1eEyXpeEyehIIXC/hznw4" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
+        integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
 
 <script>
 // ══════════════════════════════════════════════════════════════
@@ -1427,7 +1429,8 @@ async function loadFullImage(imageId) {
   if (fullImageCache.has(imageId)) return fullImageCache.get(imageId);
   if (!db) return null;
   try {
-    const doc = await db.collection('postImages').doc(imageId).get();
+    const doc = await db.collection('postImages').doc(imageId)
+      .collection('data').doc('full').get();
     const data = doc.exists ? doc.data().data : null;
     fullImageCache.set(imageId, data);
     return data;

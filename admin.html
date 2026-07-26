@@ -6,7 +6,8 @@
   <title>PPL Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" />
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"
+        integrity="sha384-cPa8kzsYWhqpAfWOLWYIw3V0BhPi/m3lrd8tBTPxr2NrYCHRVZ7xy1cEoRGOM/03" crossorigin="anonymous" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -210,6 +211,13 @@
     .btn-sm:hover { border-color: var(--gold-dim); color: var(--text-1); }
     .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
     .btn-sm.publish-btn.active { border-color: var(--green); color: var(--green); }
+    .cleanup-bar {
+      display: none; align-items: center; gap: 14px; flex-wrap: wrap;
+      background: var(--bg-2); border: 1px solid var(--border); border-left: 2px solid var(--gold-dim);
+      border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 16px;
+    }
+    .cleanup-bar.show { display: flex; }
+    .cleanup-text { font-size: 0.83rem; color: var(--text-2); flex: 1; min-width: 200px; }
     .posts-empty { color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
     .posts-loading { color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
 
@@ -344,6 +352,10 @@
     <!-- Posts list tab -->
     <div class="tab-panel" id="tab-posts">
       <div class="panel-title">Všechny příspěvky</div>
+      <div class="cleanup-bar" id="cleanup-bar">
+        <span class="cleanup-text" id="cleanup-text"></span>
+        <button class="btn-sm" id="cleanup-btn" onclick="cleanupOrphans()">Uklidit</button>
+      </div>
       <div class="posts-list" id="posts-list">
         <div class="posts-loading">Načítám…</div>
       </div>
@@ -352,11 +364,15 @@
 </div>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
+        integrity="sha384-yuGdyIzzYtOBlBG6JOWn+Ey9kpq7HocusNuxEGyyohr1eEyXpeEyehIIXC/hznw4" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"
+        integrity="sha384-lI+CxEx/bCvWP1b0OK13j5HTrTZP7yf1xle8TVOFq2smz6KC1RChTarRV/RHP5PP" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
+        integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
 <!-- Quill -->
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"
+        integrity="sha384-QUJ+ckWz1M+a7w0UfG1sEn4pPrbQwSxGm/1TIPyioqXBrwuT9l4f9gdHWLDLbVWI" crossorigin="anonymous"></script>
 
 <script>
 // ── Firebase config — same values as in index.html ──
@@ -512,18 +528,42 @@ async function encodeWithin(file, steps, maxBytes) {
   throw new Error('too-large');
 }
 
+// Metadata a samotna data lezi zvlast: seznam fotek se pak da nacist
+// bez stahovani megabajtu base64 (potrebuje to uklid osirelych fotek)
+// a priznak published jde u obou drzet aktualni bez cteni navic.
+function imageRef(imageId) { return db.collection('postImages').doc(imageId); }
+function imageDataRef(imageId) { return imageRef(imageId).collection('data').doc('full'); }
+
 async function uploadImage(file) {
   const [full, thumb] = [
     await encodeWithin(file, FULL_STEPS,  FULL_MAX_BYTES),
     await encodeWithin(file, THUMB_STEPS, THUMB_MAX_BYTES)
   ];
   const imageId = db.collection('postImages').doc().id;
-  await db.collection('postImages').doc(imageId).set({
+  // Viditelnost se srovna pri ulozeni prispevku; do te doby je fotka skryta.
+  await imageDataRef(imageId).set({ data: full, published: false });
+  await imageRef(imageId).set({
     postId:    draftId,
-    data:      full,
+    published: false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
   return { imageId, thumb };
+}
+
+async function deleteImage(imageId) {
+  await imageDataRef(imageId).delete();
+  await imageRef(imageId).delete();
+}
+
+// Fotky nezverejneneho prispevku nemaji byt verejne citelne. Priznak proto
+// kopirujeme z prispevku na jeho fotky pri kazde zmene stavu.
+async function syncImageVisibility(postId, published) {
+  const snap = await db.collection('postImages').where('postId', '==', postId).get();
+  const stale = snap.docs.filter(d => d.data().published !== published);
+  for (const d of stale) {
+    await imageDataRef(d.id).update({ published });
+    await d.ref.update({ published });
+  }
 }
 
 function uploadErrorText(e) {
@@ -613,7 +653,7 @@ async function removeImage(i) {
   // Plnou verzi mazeme az po odebrani z pole — kdyz se to nepovede,
   // z galerie uz je pryc a zbyde jen osirely dokument.
   if (img.imageId) {
-    try { await db.collection('postImages').doc(img.imageId).delete(); }
+    try { await deleteImage(img.imageId); }
     catch(e) { console.warn('Smazání fotky selhalo:', e); }
   }
 }
@@ -696,6 +736,7 @@ async function savePost() {
       editingPostId = draftId;
       document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
     }
+    await syncImageVisibility(editingPostId, published);
     statusEl.textContent = '✓ Uloženo';
     statusEl.className = 'save-status ok';
     loadAllPosts();
@@ -713,17 +754,68 @@ function escapeHtml(str) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// ── Osiřelé fotky ─────────────────────────────────────────────
+// Fotka se do Firestore zapise hned pri nahrani, takze kdyz prispevek
+// nakonec neulozis, zustane viset. Rozdelene dokumenty umoznuji projit
+// seznam fotek lacino — stahuji se jen metadata, ne base64.
+const ORPHAN_GRACE_MS = 24 * 60 * 60 * 1000;
+let orphanIds = [];
+
+async function scanOrphans(posts) {
+  const bar = document.getElementById('cleanup-bar');
+  const used = new Set();
+  posts.forEach(p => (p.gallery || []).forEach(g => g.imageId && used.add(g.imageId)));
+  try {
+    const snap = await db.collection('postImages').get();
+    const now = Date.now();
+    orphanIds = snap.docs.filter(d => {
+      if (used.has(d.id)) return false;
+      // Cerstve nahrane fotky vynechavame — muze jit o rozdelany koncept,
+      // ktery jeste nikdo neulozil. serverTimestamp je chvili null, proto 0.
+      const created = d.data().createdAt?.toMillis?.() ?? 0;
+      return created > 0 && now - created > ORPHAN_GRACE_MS;
+    }).map(d => d.id);
+  } catch(e) {
+    console.warn('Kontrola osiřelých fotek selhala:', e);
+    orphanIds = [];
+  }
+  const n = orphanIds.length;
+  bar.classList.toggle('show', n > 0);
+  if (n > 0) {
+    document.getElementById('cleanup-text').textContent =
+      `Nepoužité fotky: ${n} — nepatří k žádnému příspěvku a jsou starší než den.`;
+  }
+}
+
+async function cleanupOrphans() {
+  const n = orphanIds.length;
+  if (!n || !confirm(`Smazat ${n} nepoužitých fotek?`)) return;
+  const btn  = document.getElementById('cleanup-btn');
+  const text = document.getElementById('cleanup-text');
+  btn.disabled = true;
+  let done = 0;
+  for (const id of orphanIds) {
+    try { await deleteImage(id); done++; }
+    catch(e) { console.warn('Nepodařilo se smazat fotku', id, e); }
+    text.textContent = `Mažu ${done}/${n}…`;
+  }
+  btn.disabled = false;
+  document.getElementById('cleanup-bar').classList.remove('show');
+  loadAllPosts();
+}
+
 // ── Posts list ────────────────────────────────────────────────
 async function loadAllPosts() {
   const list = document.getElementById('posts-list');
   list.innerHTML = '<div class="posts-loading">Načítám…</div>';
   try {
     const snap = await db.collection('posts').orderBy('createdAt', 'desc').get();
+    const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    scanOrphans(posts);
     if (snap.empty) { list.innerHTML = '<div class="posts-empty">Žádné příspěvky.</div>'; return; }
     list.innerHTML = '';
-    snap.forEach(doc => {
-      const p = doc.data();
-      const id = doc.id;
+    posts.forEach(p => {
+      const id = p.id;
       const date = p.createdAt?.toDate?.()?.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '—';
       const item = document.createElement('div');
       item.className = 'post-item';
@@ -754,6 +846,7 @@ async function loadAllPosts() {
 
 async function togglePublish(id, current) {
   await db.collection('posts').doc(id).update({ published: !current });
+  await syncImageVisibility(id, !current);
   loadAllPosts();
 }
 
@@ -781,7 +874,7 @@ async function deletePost(id, btn) {
   // prispevek zustane a da se to zkusit znovu.
   try {
     const imgs = await db.collection('postImages').where('postId', '==', id).get();
-    await Promise.all(imgs.docs.map(d => d.ref.delete()));
+    for (const d of imgs.docs) await deleteImage(d.id);
   } catch(e) {
     console.warn('Mazání fotek selhalo:', e);
   }
