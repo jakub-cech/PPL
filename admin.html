@@ -52,6 +52,12 @@
     }
     .admin-nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold); letter-spacing: 0.1em; }
     .admin-user { font-size: 0.8rem; color: var(--text-2); display: flex; align-items: center; gap: 16px; }
+    .btn-name {
+      background: none; border: none; padding: 0; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--text-2);
+      border-bottom: 1px dashed var(--text-3); transition: all 0.2s;
+    }
+    .btn-name:hover { color: var(--gold); border-bottom-color: var(--gold-dim); }
     .btn-logout {
       background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 6px 14px; color: var(--text-2); font-size: 0.78rem; cursor: pointer; transition: all 0.2s;
@@ -194,7 +200,9 @@
   <nav class="admin-nav">
     <div class="admin-nav-logo">PPL 2026 · Admin</div>
     <div class="admin-user">
-      <span id="admin-user-name"></span>
+      <button class="btn-name" id="admin-user-name"
+              onclick="editDisplayName()"
+              title="Změnit jméno zobrazované u příspěvků"></button>
       <button class="btn-logout" onclick="doLogout()">Odhlásit</button>
     </div>
   </nav>
@@ -264,7 +272,7 @@ auth.onAuthStateChanged(user => {
   if (user) {
     document.getElementById('login-wrap').style.display = 'none';
     document.getElementById('admin').style.display = 'block';
-    document.getElementById('admin-user-name').textContent = user.displayName || user.email;
+    document.getElementById('admin-user-name').textContent = authorLabel(user);
     loadAllPosts();
   } else {
     document.getElementById('login-wrap').style.display = '';
@@ -290,6 +298,29 @@ async function doLogin() {
 }
 
 function doLogout() { auth.signOut(); }
+
+// Jméno autora se vypisuje verejne na blogu, proto se sem nikdy nesmi
+// dostat cely e-mail - bez nastaveneho jmena se pouzije jen cast pred @.
+function authorLabel(user) {
+  return user.displayName || user.email.split('@')[0];
+}
+
+async function editDisplayName() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const name = prompt('Jméno, které se zobrazí u tvých příspěvků:', authorLabel(user));
+  if (name === null) return;
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  try {
+    await user.updateProfile({ displayName: trimmed });
+    document.getElementById('admin-user-name').textContent = trimmed;
+    alert('Jméno uloženo. U starších příspěvků se projeví až po jejich opětovném uložení.');
+  } catch(e) {
+    alert('Jméno se nepodařilo uložit.');
+    console.error(e);
+  }
+}
 
 document.getElementById('login-password').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
@@ -355,7 +386,7 @@ async function savePost() {
       content,
       published,
       authorId:   user.uid,
-      authorName: user.displayName || user.email,
+      authorName: authorLabel(user),
       updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
     };
     if (editingPostId) {
