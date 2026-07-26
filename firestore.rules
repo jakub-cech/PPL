@@ -4,25 +4,44 @@
 // tohoto souboru a klikni Publish. Soubor v repu slouzi jako zdroj pravdy
 // k tomu, co ma byt v projektu nastavene.
 //
-// Pozor: pravidla nize pokryvaji vsechny tri kolekce, ktere web pouziva.
-// Nez je publikujes, srovnej si je s tim, co uz v konzoli mas — muze tam
-// byt neco navic, co tenhle soubor nezna.
+// ── Kdo je admin ──────────────────────────────────────────────────────
+// Zapisovat smi jen ucet, ktery ma svuj dokument v kolekci admins.
+// Nestaci byt prihlaseny: kdokoli si totiz muze pomoci verejneho API klice
+// ze zdrojaku stranky zalozit ucet, a "request.auth != null" by mu tim
+// padem dalo pravo prepisovat blog i turnaje.
+//
+// Admina pridas v konzoli: Firestore → kolekce "admins" → novy dokument,
+// jehoz ID je UID uctu (najdes v Authentication → Users). Obsah dokumentu
+// je jedno, staci treba pole "email" pro prehled.
+//
+// Kolekce admins zamerne neni verejne citelna a nikdo do ni nesmi zapisovat
+// z aplikace — meni se jen rucne z konzole.
 
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Prispevky — verejne jen zverejnene, zapisovat smi prihlaseny admin.
+    function isAdmin() {
+      return request.auth != null
+             && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow read:  if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Prispevky — verejne jen zverejnene, koncepty vidi jen admin.
     match /posts/{postId} {
-      allow read:  if resource.data.published == true || request.auth != null;
-      allow write: if request.auth != null;
+      allow read:  if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
     }
 
     // Turnaje — stejny princip jako prispevky.
     match /tournaments/{tournamentId} {
-      allow read:  if resource.data.published == true || request.auth != null;
-      allow write: if request.auth != null;
+      allow read:  if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
     }
 
     // Plne verze fotek z galerie. Ctou se az pri otevreni lightboxu,
@@ -33,8 +52,16 @@ service cloud.firestore {
     // z nezverejneneho konceptu. Svazat to se stavem prispevku by slo,
     // ale kazde zobrazeni fotky by pak stalo jedno cteni navic.
     match /postImages/{imageId} {
-      allow read:  if true;
-      allow write: if request.auth != null;
+      allow read:   if true;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin()
+                            && request.resource.data.data is string
+                            && request.resource.data.data.size() < 1000000;
+    }
+
+    // Vse ostatni je zavrene.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

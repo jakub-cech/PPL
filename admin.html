@@ -509,7 +509,6 @@ async function encodeWithin(file, steps, maxBytes) {
     last = dataUrl;
     if (dataUrl.length <= maxBytes) return dataUrl;
   }
-  if (last && last.length <= maxBytes * 1.05) return last;
   throw new Error('too-large');
 }
 
@@ -580,7 +579,7 @@ function renderGallery() {
     const item = document.createElement('div');
     item.className = 'gallery-item';
     item.innerHTML = `
-      <div class="gallery-thumb"><img src="${img.thumb}" alt="" loading="lazy" /></div>
+      <div class="gallery-thumb"><img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" /></div>
       <input class="gallery-caption" type="text" placeholder="Popisek…" value="" />
       <div class="gallery-item-actions">
         <button type="button" title="Posunout doleva"  ${i === 0 ? 'disabled' : ''}>◀</button>
@@ -619,9 +618,15 @@ async function removeImage(i) {
   }
 }
 
+const GALLERY_MAX_ITEMS = 20;
+
 async function handleFiles(files) {
   const images = [...files].filter(f => f.type.startsWith('image/'));
   if (!images.length) return;
+  if (gallery.length + images.length > GALLERY_MAX_ITEMS) {
+    setGalleryStatus(`Do jednoho příspěvku se vejde nejvýš ${GALLERY_MAX_ITEMS} fotek.`, true);
+    return;
+  }
   let done = 0;
   for (const file of images) {
     setGalleryStatus(`Nahrávám ${done + 1}/${images.length}…`);
@@ -702,6 +707,12 @@ async function savePost() {
   btn.disabled = false;
 }
 
+// Nazvy z Firestore koncí v innerHTML, proto se escapuji i tady.
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 // ── Posts list ────────────────────────────────────────────────
 async function loadAllPosts() {
   const list = document.getElementById('posts-list');
@@ -718,9 +729,9 @@ async function loadAllPosts() {
       item.className = 'post-item';
       item.innerHTML = `
         <div class="post-item-info">
-          <div class="post-item-title">${p.title || '(bez názvu)'}</div>
+          <div class="post-item-title">${escapeHtml(p.title) || '(bez názvu)'}</div>
           <div class="post-item-meta">
-            <span class="post-item-author">${p.authorName || ''}</span>
+            <span class="post-item-author">${escapeHtml(p.authorName)}</span>
             <span>${date}</span>
             <span class="status-badge ${p.published ? 'published' : 'draft'}">${p.published ? 'Zveřejněno' : 'Koncept'}</span>
           </div>
@@ -855,7 +866,7 @@ async function loadTournamentList() {
       item.className = 'post-item';
       item.innerHTML = `
         <div class="post-item-info">
-          <div class="post-item-title">${x.title || '(bez názvu)'}</div>
+          <div class="post-item-title">${escapeHtml(x.title) || '(bez názvu)'}</div>
           <div class="post-item-meta">
             <span class="post-item-author">${kdy}</span>
             <span class="status-badge ${x.published ? 'published' : 'draft'}">${x.published ? 'Zveřejněno' : 'Koncept'}</span>

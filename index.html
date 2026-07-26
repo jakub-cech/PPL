@@ -1198,7 +1198,6 @@ document.querySelectorAll('.reveal').forEach((el, i) => {
 <!-- Firebase SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <script>
 // ══════════════════════════════════════════════════════════════
@@ -1234,6 +1233,28 @@ function toMillis(ts) {
   return ts.toMillis ? ts.toMillis() : new Date(ts).getTime();
 }
 
+// Vse, co prijde z Firestore, se pred vlozenim do HTML escapuje. Jedina
+// vyjimka je obsah prispevku, ktery je HTML zamerne.
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Do href pustime jen http(s) — jinak by sel do odkazu propasovat
+// javascript: a spustit skript kliknutim.
+function safeUrl(u) {
+  try {
+    const parsed = new URL(String(u), location.href);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+  } catch { return ''; }
+}
+
+// Fotky z galerie jsou vzdy data: URL vyrobene v adminu. Cokoli jineho
+// (treba odkaz na cizi server) do stranky nepustime.
+function safeImage(s) {
+  return /^data:image\//.test(String(s ?? '')) ? String(s) : '';
+}
+
 function renderBlogCards(lang) {
   const grid = document.getElementById('blog-grid');
   const t = i18n[lang];
@@ -1249,20 +1270,20 @@ function renderBlogCards(lang) {
   cachedPosts.forEach((p, idx) => {
     const date = formatDate(p.createdAt);
     const excerpt = (p.content || '').replace(/<[^>]+>/g, '').slice(0, 180).trim() + '…';
-    const cover = Array.isArray(p.gallery) && p.gallery.length
-      ? `<div class="blog-card-cover"><img src="${escapeAttr(p.gallery[0].thumb)}" alt="" loading="lazy" /></div>`
+    const cover = Array.isArray(p.gallery) && p.gallery.length && safeImage(p.gallery[0].thumb)
+      ? `<div class="blog-card-cover"><img src="${escapeHtml(safeImage(p.gallery[0].thumb))}" alt="" loading="lazy" /></div>`
       : '';
     const card = document.createElement('div');
     card.className = 'blog-card reveal';
     card.style.transitionDelay = `${(idx % 3) * 0.07}s`;
     card.innerHTML = `
       ${cover}
-      <div class="blog-card-title">${p.title || ''}</div>
+      <div class="blog-card-title">${escapeHtml(p.title)}</div>
       <div class="blog-card-meta">
-        <span class="blog-card-author">${p.authorName || ''}</span>
+        <span class="blog-card-author">${escapeHtml(p.authorName)}</span>
         <span>${date}</span>
       </div>
-      <div class="blog-card-excerpt">${excerpt}</div>
+      <div class="blog-card-excerpt">${escapeHtml(excerpt)}</div>
       <div class="blog-card-read">${t['blog.read']}</div>
     `;
     card.addEventListener('click', () => openBlogModal(p));
@@ -1321,14 +1342,14 @@ function renderTournaments(lang) {
         <div class="tournament-month">${d.toLocaleDateString(locale, { month: 'short' })}</div>
       </div>
       <div class="tournament-info">
-        <div class="tournament-title">${x.title || ''}</div>
-        ${x.note ? `<div class="tournament-note">${x.note}</div>` : ''}
+        <div class="tournament-title">${escapeHtml(x.title)}</div>
+        ${x.note ? `<div class="tournament-note">${escapeHtml(x.note)}</div>` : ''}
         <div class="tournament-when">
           ${d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
           · ${d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}
         </div>
       </div>
-      ${x.eventUrl ? `<a class="tournament-link" href="${x.eventUrl}" target="_blank" rel="noopener">${t['tournaments.link']}</a>` : ''}
+      ${safeUrl(x.eventUrl) ? `<a class="tournament-link" href="${escapeHtml(safeUrl(x.eventUrl))}" target="_blank" rel="noopener">${t['tournaments.link']}</a>` : ''}
     `;
     list.appendChild(card);
     observer.observe(card);
@@ -1361,18 +1382,13 @@ async function loadTournaments() {
   }
 }
 
-function escapeAttr(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
 function renderGallery(post, lang) {
   const wrap = document.getElementById('modal-gallery');
   currentGallery = Array.isArray(post.gallery) ? post.gallery : [];
   if (!currentGallery.length) { wrap.innerHTML = ''; return; }
   const items = currentGallery.map((img, i) => `
-    <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeAttr(img.caption) || 'Fotka ' + (i + 1)}">
-      <img src="${escapeAttr(img.thumb)}" alt="${escapeAttr(img.caption)}" loading="lazy" />
+    <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeHtml(img.caption) || 'Fotka ' + (i + 1)}">
+      <img src="${escapeHtml(safeImage(img.thumb))}" alt="${escapeHtml(img.caption)}" loading="lazy" />
     </button>
   `).join('');
   wrap.innerHTML = `
@@ -1426,7 +1442,7 @@ async function showLightboxImage() {
   if (!img) return;
   const el = document.getElementById('lightbox-img');
   // Nahled se ukaze hned, plna verze ho vymeni, jakmile dorazi.
-  el.src = img.thumb || '';
+  el.src = safeImage(img.thumb);
   el.alt = img.caption || '';
   document.getElementById('lightbox-caption').textContent = img.caption || '';
   document.getElementById('lightbox-counter').textContent =
@@ -1440,7 +1456,7 @@ async function showLightboxImage() {
   const shownIndex = lightboxIndex;
   const full = await loadFullImage(img.imageId);
   // Mezitim uzivatel mohl prelistovat jinam — pak uz vysledek nepatri sem.
-  if (full && shownIndex === lightboxIndex) el.src = full;
+  if (safeImage(full) && shownIndex === lightboxIndex) el.src = full;
   if (shownIndex === lightboxIndex) el.classList.remove('loading');
 }
 
