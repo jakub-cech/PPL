@@ -287,6 +287,8 @@
       justify-content: center;
       align-items: center;
     }
+    /* keeps .hero-logo the flex item so its sizing rules still apply */
+    .hero-art picture { display: contents; }
     .hero-logo {
       width: min(420px, 100%);
       height: auto;
@@ -607,7 +609,11 @@
 
     <!-- Logo -->
     <div class="hero-art reveal">
-      <img class="hero-logo" src="logo.png" alt="Plzeňská Pauper Liga 2026" />
+      <picture>
+        <source srcset="logo.webp" type="image/webp" />
+        <img class="hero-logo" src="logo.png" width="752" height="752"
+             fetchpriority="high" alt="Plzeňská Pauper Liga 2026" />
+      </picture>
     </div>
   </div>
 </section>
@@ -751,8 +757,14 @@
     </div>
     <div class="merch-form-wrap reveal">
       <div class="merch-form-title" data-i18n="merch.form.title"></div>
-      <form class="merch-form" id="merch-form" action="https://formspree.io/f/FORMSPREE_ID" method="POST">
-        <input type="hidden" name="_subject" value="Nová objednávka merch – PPL 2026" />
+      <form class="merch-form" id="merch-form" action="https://api.web3forms.com/submit" method="POST">
+        <input type="hidden" name="access_key" value="07712b78-b2ff-4833-8f16-109f0f06d16e" />
+        <input type="hidden" name="subject" value="Nová objednávka merch – PPL 2026" />
+        <input type="hidden" name="from_name" value="PPL Merch" />
+        <!-- replyto se záměrně nenastavuje: Web3Forms použije adresu z pole email,
+             takže na notifikaci lze rovnou odpovědět zájemci -->
+        <!-- honeypot proti spamu – skutečný uživatel toto pole nikdy nevyplní -->
+        <input type="checkbox" name="botcheck" style="display:none" />
         <div class="form-group">
           <label class="form-label" data-i18n="merch.form.name"></label>
           <input class="form-input" type="text" name="name" required placeholder="Jan Novák" />
@@ -1059,11 +1071,6 @@ document.querySelectorAll('.reveal').forEach((el, i) => {
   el.style.transitionDelay = `${(i % 4) * 0.07}s`;
   observer.observe(el);
 });
-
-
-// ── Blog language refresh ─────────────────────────────────────
-const _origSetLang = setLang;
-// patched below after Firebase block loads
 </script>
 
 <!-- Firebase SDK (compat) -->
@@ -1098,6 +1105,11 @@ function formatDate(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   return d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function toMillis(ts) {
+  if (!ts) return 0;
+  return ts.toMillis ? ts.toMillis() : new Date(ts).getTime();
 }
 
 function renderBlogCards(lang) {
@@ -1140,11 +1152,14 @@ async function loadBlogPosts() {
     return;
   }
   try {
+    // Řazení je záměrně až tady: where() vyžadují bezpečnostní pravidla,
+    // ale spolu s orderBy() by dotaz potřeboval složený index ve Firestore.
     const snap = await db.collection('posts')
       .where('published', '==', true)
-      .orderBy('createdAt', 'desc')
       .get();
-    cachedPosts = snap.docs.map(d => d.data());
+    cachedPosts = snap.docs
+      .map(d => d.data())
+      .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
     renderBlogCards(document.documentElement.lang || 'cs');
   } catch(e) {
     console.error('Blog load error:', e);
