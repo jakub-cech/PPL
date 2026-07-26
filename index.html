@@ -5,7 +5,7 @@
   <!-- Content-Security-Policy: omezuje, odkud smi stranka nacitat kod a kam
        smi posilat data. frame-ancestors tu chybi zamerne — v <meta> ho
        prohlizec ignoruje a GitHub Pages vlastni hlavicky nastavit neumi. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://api.web3forms.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://api.web3forms.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Plzeňská Pauper Liga 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -947,6 +947,8 @@
   <p class="footer-copy" data-i18n="footer.copy"></p>
 </footer>
 
+<script src="vendor/firebase-12.16.0-app-compat.js"></script>
+<script src="vendor/firebase-12.16.0-firestore-compat.js"></script>
 <script>
 // ── Translations ──────────────────────────────────────────────
 const i18n = {
@@ -1200,10 +1202,6 @@ document.querySelectorAll('.reveal').forEach((el, i) => {
 </script>
 
 <!-- Firebase SDK (compat) -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"
-        integrity="sha384-yuGdyIzzYtOBlBG6JOWn+Ey9kpq7HocusNuxEGyyohr1eEyXpeEyehIIXC/hznw4" crossorigin="anonymous"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"
-        integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
 
 <script>
 // ══════════════════════════════════════════════════════════════
@@ -1267,6 +1265,59 @@ function safeImage(s) {
 // "&amp;" neukaze doslova.
 function htmlToText(html) {
   return new DOMParser().parseFromString(String(html ?? ''), 'text/html').body.textContent || '';
+}
+
+// Obsah prispevku je HTML z editoru a vykresluje se jako HTML. Nez ho
+// vlozime do stranky, projdeme strom a nechame jen znacky a atributy,
+// ktere editor umi vyrobit. Kdyby nekdo ziskal admin ucet, dokaze tak
+// nanejvys pokazit formatovani, ne propasovat na web skript.
+const ALLOWED_TAGS = new Set([
+  'P','BR','HR','STRONG','B','EM','I','U','S','SUB','SUP',
+  'H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG'
+]);
+// Znacky, u kterych by rozbaleni obsahu vypsalo na stranku kod misto textu.
+const DROP_TAGS  = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META','SVG','MATH','TEMPLATE','FORM','INPUT','BUTTON','SELECT','TEXTAREA','NOSCRIPT']);
+const ALLOWED_ATTRS = { A: ['href'], IMG: ['src','alt'] };
+
+function cleanElement(el) {
+  // Nejdriv deti — pracujeme nad kopii seznamu, protoze se meni za pochodu.
+  for (const node of [...el.childNodes]) {
+    if (node.nodeType === Node.ELEMENT_NODE) cleanElement(node);
+    else if (node.nodeType !== Node.TEXT_NODE) node.remove();
+  }
+  const tag = el.tagName;
+  if (DROP_TAGS.has(tag)) { el.remove(); return; }
+  if (!ALLOWED_TAGS.has(tag)) { el.replaceWith(...el.childNodes); return; }
+
+  const allowed = ALLOWED_ATTRS[tag] || [];
+  for (const attr of [...el.attributes]) {
+    if (!allowed.includes(attr.name.toLowerCase())) el.removeAttribute(attr.name);
+  }
+  if (tag === 'A') {
+    const href = safeUrl(el.getAttribute('href'));
+    if (href) {
+      el.setAttribute('href', href);
+      el.setAttribute('target', '_blank');
+      el.setAttribute('rel', 'noopener noreferrer');
+    } else {
+      el.removeAttribute('href');
+    }
+  }
+  if (tag === 'IMG') {
+    const src = el.getAttribute('src') || '';
+    // Obrazek bud z galerie (data:), nebo odkaz vlozeny v editoru (https).
+    if (!/^data:image\//i.test(src) && !/^https:\/\//i.test(src)) el.remove();
+  }
+}
+
+function sanitizeHtml(html) {
+  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+  // Prochazime az deti body — samotne body by se jinak rozbalilo.
+  for (const node of [...doc.body.childNodes]) {
+    if (node.nodeType === Node.ELEMENT_NODE) cleanElement(node);
+    else if (node.nodeType !== Node.TEXT_NODE) node.remove();
+  }
+  return doc.body.innerHTML;
 }
 
 function renderBlogCards(lang) {
@@ -1417,7 +1468,7 @@ function openBlogModal(post) {
   document.getElementById('modal-title').textContent   = post.title || '';
   document.getElementById('modal-author').textContent  = post.authorName || '';
   document.getElementById('modal-date').textContent    = formatDate(post.createdAt);
-  document.getElementById('modal-content').innerHTML   = post.content || '';
+  document.getElementById('modal-content').innerHTML   = sanitizeHtml(post.content);
   renderGallery(post, lang);
   const overlay = document.getElementById('blog-modal-overlay');
   overlay.classList.add('open');
