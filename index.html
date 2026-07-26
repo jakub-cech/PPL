@@ -365,7 +365,7 @@
     }
 
     /* ── INFO CARDS ── */
-    #info { background: var(--bg-0); }
+    #info { background: var(--bg-1); }
     .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 52px; }
     .info-card {
       background: var(--bg-2);
@@ -396,7 +396,7 @@
     .info-card strong { color: var(--text-1); font-weight: 500; }
 
     /* ── SYSTEM & PRIZES ── */
-    #system { background: var(--bg-1); }
+    #system { background: var(--bg-0); }
     .system-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -487,7 +487,7 @@
     }
 
     /* ── BLOG ── */
-    #blog { background: var(--bg-1); }
+    #blog { background: var(--bg-0); }
     .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-top: 52px; }
     .blog-card {
       background: var(--bg-2); border: 1px solid var(--border);
@@ -543,7 +543,7 @@
     .blog-modal-content blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
 
     /* ── MERCH ── */
-    #merch { background: var(--bg-0); }
+    #merch { background: var(--bg-1); }
     .merch-coming {
       display: flex; flex-direction: column; align-items: center;
       gap: 14px; padding: 56px 24px;
@@ -583,9 +583,9 @@
 
     <ul class="nav-links" id="nav-links-desktop">
       <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
+      <li><a href="#blog"><span     data-i18n="nav.blog"></span></a></li>
       <li><a href="#info"><span     data-i18n="nav.info"></span></a></li>
       <li><a href="#system"><span   data-i18n="nav.system"></span></a></li>
-      <li><a href="#blog"><span data-i18n="nav.blog"></span></a></li>
       <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
       <li><a href="#komunita"><span data-i18n="nav.community"></span></a></li>
       <li><a href="https://docs.google.com/spreadsheets/d/1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ/edit?usp=sharing" target="_blank" rel="noopener"><span data-i18n="nav.results"></span></a></li>
@@ -605,9 +605,9 @@
   <!-- Mobile dropdown -->
   <div class="mobile-menu" id="mobile-menu">
     <a href="#turnaje"  onclick="closeMenu()"><span data-i18n="nav.tournaments"></span></a>
+    <a href="#blog"     onclick="closeMenu()"><span data-i18n="nav.blog"></span></a>
     <a href="#info"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
     <a href="#system"   onclick="closeMenu()"><span data-i18n="nav.system"></span></a>
-    <a href="#blog"     onclick="closeMenu()"><span data-i18n="nav.blog"></span></a>
     <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
     <a href="#komunita" onclick="closeMenu()"><span data-i18n="nav.community"></span></a>
     <a href="https://docs.google.com/spreadsheets/d/1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ/edit?usp=sharing" target="_blank" rel="noopener"><span data-i18n="nav.results"></span></a>
@@ -665,6 +665,34 @@
     </div>
   </div>
 </section>
+
+<!-- ── BLOG ── -->
+<section id="blog">
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="blog.label"></span>
+      <h2 class="section-title" data-i18n="blog.title"></h2>
+      <p class="section-desc" data-i18n="blog.desc"></p>
+    </div>
+    <div id="blog-grid" class="blog-grid">
+      <p class="blog-loading" data-i18n="blog.loading"></p>
+    </div>
+  </div>
+</section>
+
+<!-- Blog post modal -->
+<div class="blog-modal-overlay" id="blog-modal-overlay" onclick="closeBlogModal(event)">
+  <div class="blog-modal">
+    <button class="blog-modal-close" onclick="closeBlogModal(null)" aria-label="Zavřít">×</button>
+    <h2 class="blog-modal-title" id="modal-title"></h2>
+    <div class="blog-modal-meta">
+      <span class="blog-modal-author" id="modal-author"></span>
+      <span id="modal-date"></span>
+    </div>
+    <div class="blog-modal-content" id="modal-content"></div>
+  </div>
+</div>
 
 <!-- ── INFO ── -->
 <section id="info">
@@ -762,34 +790,6 @@
     </div>
   </div>
 </section>
-
-<!-- ── BLOG ── -->
-<section id="blog">
-  <div class="container">
-    <div class="ornament"><div class="ornament-diamond"></div></div>
-    <div class="reveal">
-      <span class="section-label" data-i18n="blog.label"></span>
-      <h2 class="section-title" data-i18n="blog.title"></h2>
-      <p class="section-desc" data-i18n="blog.desc"></p>
-    </div>
-    <div id="blog-grid" class="blog-grid">
-      <p class="blog-loading" data-i18n="blog.loading"></p>
-    </div>
-  </div>
-</section>
-
-<!-- Blog post modal -->
-<div class="blog-modal-overlay" id="blog-modal-overlay" onclick="closeBlogModal(event)">
-  <div class="blog-modal">
-    <button class="blog-modal-close" onclick="closeBlogModal(null)" aria-label="Zavřít">×</button>
-    <h2 class="blog-modal-title" id="modal-title"></h2>
-    <div class="blog-modal-meta">
-      <span class="blog-modal-author" id="modal-author"></span>
-      <span id="modal-date"></span>
-    </div>
-    <div class="blog-modal-content" id="modal-content"></div>
-  </div>
-</div>
 
 <!-- ── MERCH ── -->
 <section id="merch">
