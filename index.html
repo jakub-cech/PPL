@@ -1257,6 +1257,14 @@ function safeImage(s) {
   return /^data:image\//.test(String(s ?? '')) ? String(s) : '';
 }
 
+// Z HTML obsahu vytahne cisty text pro ukazku na karte. DOMParser
+// na rozdil od innerHTML nic nespousti ani nenacita, takze je i na
+// neduveryhodny obsah bezpecny — a zaroven prelozi entity, takze se
+// "&amp;" neukaze doslova.
+function htmlToText(html) {
+  return new DOMParser().parseFromString(String(html ?? ''), 'text/html').body.textContent || '';
+}
+
 function renderBlogCards(lang) {
   const grid = document.getElementById('blog-grid');
   const t = i18n[lang];
@@ -1271,7 +1279,8 @@ function renderBlogCards(lang) {
   grid.innerHTML = '';
   cachedPosts.forEach((p, idx) => {
     const date = formatDate(p.createdAt);
-    const excerpt = (p.content || '').replace(/<[^>]+>/g, '').slice(0, 180).trim() + '…';
+    const text = htmlToText(p.content).replace(/\s+/g, ' ').trim();
+    const excerpt = text.length > 180 ? text.slice(0, 180).trim() + '…' : text;
     const cover = Array.isArray(p.gallery) && p.gallery.length && safeImage(p.gallery[0].thumb)
       ? `<div class="blog-card-cover"><img src="${escapeHtml(safeImage(p.gallery[0].thumb))}" alt="" loading="lazy" /></div>`
       : '';
