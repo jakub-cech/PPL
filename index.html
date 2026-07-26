@@ -568,7 +568,9 @@
     }
     .lightbox.open { opacity: 1; pointer-events: auto; }
     .lightbox-figure { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; }
-    .lightbox-figure img { max-width: min(1100px, 92vw); max-height: 78vh; object-fit: contain; border-radius: var(--radius-sm); display: block; }
+    .lightbox-figure img { max-width: min(1100px, 92vw); max-height: 78vh; object-fit: contain; border-radius: var(--radius-sm); display: block; transition: filter 0.2s; }
+    /* Nez dorazi plna verze, drzi misto rozmazany nahled. */
+    .lightbox-figure img.loading { filter: blur(6px); }
     .lightbox-caption { color: var(--text-2); font-size: 0.88rem; text-align: center; max-width: 640px; }
     .lightbox-counter { color: var(--text-3); font-size: 0.75rem; letter-spacing: 0.1em; }
     .lightbox-close, .lightbox-nav {
@@ -1248,7 +1250,7 @@ function renderBlogCards(lang) {
     const date = formatDate(p.createdAt);
     const excerpt = (p.content || '').replace(/<[^>]+>/g, '').slice(0, 180).trim() + '…';
     const cover = Array.isArray(p.gallery) && p.gallery.length
-      ? `<div class="blog-card-cover"><img src="${escapeAttr(p.gallery[0].url)}" alt="" loading="lazy" /></div>`
+      ? `<div class="blog-card-cover"><img src="${escapeAttr(p.gallery[0].thumb)}" alt="" loading="lazy" /></div>`
       : '';
     const card = document.createElement('div');
     card.className = 'blog-card reveal';
@@ -1370,7 +1372,7 @@ function renderGallery(post, lang) {
   if (!currentGallery.length) { wrap.innerHTML = ''; return; }
   const items = currentGallery.map((img, i) => `
     <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeAttr(img.caption) || 'Fotka ' + (i + 1)}">
-      <img src="${escapeAttr(img.url)}" alt="${escapeAttr(img.caption)}" loading="lazy" />
+      <img src="${escapeAttr(img.thumb)}" alt="${escapeAttr(img.caption)}" loading="lazy" />
     </button>
   `).join('');
   wrap.innerHTML = `
@@ -1401,17 +1403,45 @@ function closeBlogModal(e) {
 let currentGallery = [];
 let lightboxIndex  = 0;
 
-function showLightboxImage() {
+// Plne verze fotek lezi ve Firestore zvlast, aby nezdrzovaly nacteni blogu.
+// Nactou se az pri prvnim otevreni a pak uz se drzi v pameti.
+const fullImageCache = new Map();
+
+async function loadFullImage(imageId) {
+  if (fullImageCache.has(imageId)) return fullImageCache.get(imageId);
+  if (!db) return null;
+  try {
+    const doc = await db.collection('postImages').doc(imageId).get();
+    const data = doc.exists ? doc.data().data : null;
+    fullImageCache.set(imageId, data);
+    return data;
+  } catch(e) {
+    console.error('Image load error:', e);
+    return null;
+  }
+}
+
+async function showLightboxImage() {
   const img = currentGallery[lightboxIndex];
   if (!img) return;
-  document.getElementById('lightbox-img').src           = img.url;
-  document.getElementById('lightbox-img').alt           = img.caption || '';
+  const el = document.getElementById('lightbox-img');
+  // Nahled se ukaze hned, plna verze ho vymeni, jakmile dorazi.
+  el.src = img.thumb || '';
+  el.alt = img.caption || '';
   document.getElementById('lightbox-caption').textContent = img.caption || '';
   document.getElementById('lightbox-counter').textContent =
     currentGallery.length > 1 ? `${lightboxIndex + 1} / ${currentGallery.length}` : '';
   const multiple = currentGallery.length > 1;
   document.querySelector('.lightbox-nav.prev').style.display = multiple ? '' : 'none';
   document.querySelector('.lightbox-nav.next').style.display = multiple ? '' : 'none';
+
+  if (!img.imageId) return;
+  el.classList.add('loading');
+  const shownIndex = lightboxIndex;
+  const full = await loadFullImage(img.imageId);
+  // Mezitim uzivatel mohl prelistovat jinam — pak uz vysledek nepatri sem.
+  if (full && shownIndex === lightboxIndex) el.src = full;
+  if (shownIndex === lightboxIndex) el.classList.remove('loading');
 }
 
 function openLightbox(i) {

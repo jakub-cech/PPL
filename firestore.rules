@@ -1,0 +1,40 @@
+// Bezpecnostni pravidla pro Firestore.
+//
+// Nasazeni: Firebase konzole → Firestore Database → Rules → vloz obsah
+// tohoto souboru a klikni Publish. Soubor v repu slouzi jako zdroj pravdy
+// k tomu, co ma byt v projektu nastavene.
+//
+// Pozor: pravidla nize pokryvaji vsechny tri kolekce, ktere web pouziva.
+// Nez je publikujes, srovnej si je s tim, co uz v konzoli mas — muze tam
+// byt neco navic, co tenhle soubor nezna.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Prispevky — verejne jen zverejnene, zapisovat smi prihlaseny admin.
+    match /posts/{postId} {
+      allow read:  if resource.data.published == true || request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Turnaje — stejny princip jako prispevky.
+    match /tournaments/{tournamentId} {
+      allow read:  if resource.data.published == true || request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Plne verze fotek z galerie. Ctou se az pri otevreni lightboxu,
+    // proto jsou v samostatne kolekci a ne primo u prispevku.
+    // Nahledy (thumb) lezi v poli gallery u prispevku a ridi se pravidly vyse.
+    //
+    // Cteni je otevrene vsem — kdo uhodne ID, dostane se i k fotce
+    // z nezverejneneho konceptu. Svazat to se stavem prispevku by slo,
+    // ale kazde zobrazeni fotky by pak stalo jedno cteni navic.
+    match /postImages/{imageId} {
+      allow read:  if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

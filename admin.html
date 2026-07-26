@@ -271,7 +271,7 @@
       <div class="gallery-block">
         <div class="gallery-head">
           <span class="gallery-label">Fotogalerie</span>
-          <span class="gallery-hint">Fotky se před nahráním zmenší na 1600 px a převedou do WebP.</span>
+          <span class="gallery-hint">Fotky se zmenší na 1600 px a převedou do WebP. Vejde se jich zhruba 20 na příspěvek.</span>
         </div>
         <div class="dropzone" id="dropzone">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -355,7 +355,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <!-- Quill -->
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 
@@ -371,9 +370,8 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const auth    = firebase.auth();
-const db      = firebase.firestore();
-const storage = firebase.storage();
+const auth = firebase.auth();
+const db   = firebase.firestore();
 
 // ── Auth ──────────────────────────────────────────────────────
 auth.onAuthStateChanged(user => {
@@ -454,30 +452,26 @@ const quill = new Quill('#quill-editor', {
 });
 
 function imageUploadHandler() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    const range = quill.getSelection(true);
-    setGalleryStatus('Nahrávám obrázek…');
-    try {
-      const { url } = await uploadImage(file);
-      quill.insertEmbed(range.index, 'image', url);
-      quill.setSelection(range.index + 1);
-      setGalleryStatus('');
-    } catch(e) {
-      setGalleryStatus(uploadErrorText(e), true);
-    }
-  };
-  input.click();
+  const url = prompt('URL obrázku (vlastní fotky vkládej přes Fotogalerii pod editorem):');
+  if (!url) return;
+  const range = quill.getSelection(true);
+  quill.insertEmbed(range.index, 'image', url);
 }
 
 // ── Nahrávání obrázků ─────────────────────────────────────────
-// Zmenseni a prevod do WebP probiha v prohlizeci, do Storage jde uz
-// jen vysledny blob — usetri to misto i cas nacitani na webu.
-function compressImage(file, maxDim = 1600, quality = 0.82) {
+// Fotky se ukladaji jako base64 primo do Firestore — projekt tak zustava
+// cely na bezplatnem tarifu. Dokument ma limit 1 MiB, proto se kazda
+// fotka v prohlizeci zmensi, prevede do WebP a zabali do dvou velikosti:
+//   thumb — nahled v mrizce a cover na karte, lezi primo u prispevku
+//   full  — plna verze ve zvlastni kolekci, nacte se az v lightboxu
+const FULL_MAX_BYTES  = 900 * 1024;   // rezerva pod limitem dokumentu (1 MiB)
+const THUMB_MAX_BYTES = 60 * 1024;
+const POST_MAX_BYTES  = 900 * 1024;   // strop pro prispevek i s nahledy
+// Postupne agresivnejsi nastaveni — bere se prvni, ktere se vejde do limitu.
+const FULL_STEPS  = [[1600, 0.80], [1400, 0.70], [1100, 0.62], [900, 0.55]];
+const THUMB_STEPS = [[420, 0.60], [360, 0.50], [300, 0.42]];
+
+function compressImage(file, maxDim, quality) {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
@@ -498,21 +492,56 @@ function compressImage(file, maxDim = 1600, quality = 0.82) {
   });
 }
 
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('read-failed'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Zkousi jednotliva nastaveni, dokud vysledek nesplni limit.
+async function encodeWithin(file, steps, maxBytes) {
+  let last = null;
+  for (const [dim, q] of steps) {
+    const dataUrl = await blobToDataUrl(await compressImage(file, dim, q));
+    last = dataUrl;
+    if (dataUrl.length <= maxBytes) return dataUrl;
+  }
+  if (last && last.length <= maxBytes * 1.05) return last;
+  throw new Error('too-large');
+}
+
 async function uploadImage(file) {
-  const blob = await compressImage(file);
-  const name = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
-  const path = `posts/${draftId}/${name}`;
-  const ref  = storage.ref(path);
-  await ref.put(blob, { contentType: 'image/webp' });
-  return { url: await ref.getDownloadURL(), path };
+  const [full, thumb] = [
+    await encodeWithin(file, FULL_STEPS,  FULL_MAX_BYTES),
+    await encodeWithin(file, THUMB_STEPS, THUMB_MAX_BYTES)
+  ];
+  const imageId = db.collection('postImages').doc().id;
+  await db.collection('postImages').doc(imageId).set({
+    postId:    draftId,
+    data:      full,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  return { imageId, thumb };
 }
 
 function uploadErrorText(e) {
   console.error(e);
-  if (e?.message === 'decode-failed')  return 'Tenhle formát prohlížeč neumí načíst (např. HEIC z iPhonu) — převeď fotku na JPEG nebo PNG.';
+  if (e?.message === 'decode-failed') return 'Tenhle formát prohlížeč neumí načíst (např. HEIC z iPhonu) — převeď fotku na JPEG nebo PNG.';
   if (e?.message === 'convert-failed') return 'Obrázek se nepodařilo zpracovat.';
-  if (e?.code === 'storage/unauthorized') return 'Nahrávání zamítnuto — zkontroluj bezpečnostní pravidla Storage.';
-  return 'Nahrávání selhalo. Ověř, že je v projektu zapnutý Firebase Storage.';
+  if (e?.message === 'too-large')      return 'Fotku se nepodařilo zmenšit pod limit Firestore. Zkus ji nejdřív oříznout.';
+  if (e?.code === 'permission-denied') return 'Zápis zamítnut — zkontroluj pravidla Firestore pro kolekci postImages.';
+  return 'Nahrávání selhalo. Zkus to prosím znovu.';
+}
+
+// Odhad velikosti prispevku, aby se dalo varovat driv, nez Firestore
+// zapis odmitne kvuli limitu dokumentu.
+function postSizeBytes() {
+  const content = quill.root.innerHTML.length;
+  const thumbs  = gallery.reduce((sum, g) => sum + (g.thumb?.length || 0), 0);
+  return content + thumbs;
 }
 
 function setGalleryStatus(text, isError = false) {
@@ -551,7 +580,7 @@ function renderGallery() {
     const item = document.createElement('div');
     item.className = 'gallery-item';
     item.innerHTML = `
-      <div class="gallery-thumb"><img src="${img.url}" alt="" loading="lazy" /></div>
+      <div class="gallery-thumb"><img src="${img.thumb}" alt="" loading="lazy" /></div>
       <input class="gallery-caption" type="text" placeholder="Popisek…" value="" />
       <div class="gallery-item-actions">
         <button type="button" title="Posunout doleva"  ${i === 0 ? 'disabled' : ''}>◀</button>
@@ -582,11 +611,11 @@ async function removeImage(i) {
   if (!confirm('Odebrat tuhle fotku z galerie?')) return;
   gallery.splice(i, 1);
   renderGallery();
-  // Soubor ve Storage smazeme az po odebrani z pole — kdyz se to nepovede,
-  // z galerie uz je pryc a zbyde jen osirely soubor.
-  if (img.path) {
-    try { await storage.ref(img.path).delete(); }
-    catch(e) { console.warn('Smazání souboru selhalo:', e); }
+  // Plnou verzi mazeme az po odebrani z pole — kdyz se to nepovede,
+  // z galerie uz je pryc a zbyde jen osirely dokument.
+  if (img.imageId) {
+    try { await db.collection('postImages').doc(img.imageId).delete(); }
+    catch(e) { console.warn('Smazání fotky selhalo:', e); }
   }
 }
 
@@ -597,8 +626,8 @@ async function handleFiles(files) {
   for (const file of images) {
     setGalleryStatus(`Nahrávám ${done + 1}/${images.length}…`);
     try {
-      const { url, path } = await uploadImage(file);
-      gallery.push({ url, path, caption: '' });
+      const { imageId, thumb } = await uploadImage(file);
+      gallery.push({ imageId, thumb, caption: '' });
       renderGallery();
       done++;
     } catch(e) {
@@ -632,6 +661,11 @@ async function savePost() {
   const statusEl = document.getElementById('save-status');
 
   if (!title) { statusEl.textContent = 'Zadej název příspěvku.'; statusEl.className = 'save-status err'; return; }
+  if (postSizeBytes() > POST_MAX_BYTES) {
+    statusEl.textContent = 'Příspěvek je i s náhledy moc velký — uber pár fotek z galerie.';
+    statusEl.className = 'save-status err';
+    return;
+  }
 
   btn.disabled = true;
   statusEl.textContent = 'Ukládám…';
@@ -643,7 +677,7 @@ async function savePost() {
       title,
       content,
       published,
-      gallery:    gallery.map(({ url, path, caption }) => ({ url, path, caption: caption || '' })),
+      gallery:    gallery.map(({ imageId, thumb, caption }) => ({ imageId, thumb, caption: caption || '' })),
       authorId:   user.uid,
       authorName: authorLabel(user),
       updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
@@ -735,8 +769,8 @@ async function deletePost(id, btn) {
   // Nejdriv soubory, pak dokument — kdyby mazani souboru selhalo,
   // prispevek zustane a da se to zkusit znovu.
   try {
-    const files = await storage.ref(`posts/${id}`).listAll();
-    await Promise.all(files.items.map(item => item.delete()));
+    const imgs = await db.collection('postImages').where('postId', '==', id).get();
+    await Promise.all(imgs.docs.map(d => d.ref.delete()));
   } catch(e) {
     console.warn('Mazání fotek selhalo:', e);
   }
