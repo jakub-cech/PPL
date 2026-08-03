@@ -343,7 +343,9 @@
       border-radius: var(--radius-md); padding: 20px 24px;
       transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
     }
-    .tournament-main { display: flex; align-items: center; gap: 24px; }
+    .tournament-main { display: flex; align-items: center; gap: 24px; cursor: pointer; }
+    .tournament-card:hover .tournament-title { color: var(--gold-light); }
+    .tournament-title { transition: color 0.2s; }
     .tournament-card:hover { border-color: var(--gold-dim); transform: translateY(-3px); box-shadow: var(--shadow-card); }
     .tournament-date {
       flex-shrink: 0; width: 74px; text-align: center; padding: 10px 6px;
@@ -588,37 +590,37 @@
     .blog-card-read { font-size: 0.75rem; font-weight: 600; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-top: auto; }
     .blog-loading { color: var(--text-3); font-size: 0.9rem; margin-top: 40px; text-align: center; }
 
-    .blog-modal-overlay {
+    .modal-overlay {
       position: fixed; inset: 0; z-index: 200;
       background: rgba(0,0,0,0.78); backdrop-filter: blur(4px);
       display: flex; align-items: flex-start; justify-content: center;
       padding: 40px 24px; opacity: 0; pointer-events: none;
       transition: opacity 0.25s; overflow-y: auto;
     }
-    .blog-modal-overlay.open { opacity: 1; pointer-events: auto; }
-    .blog-modal {
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal-box {
       background: var(--bg-2); border: 1px solid var(--border);
       border-radius: var(--radius-md); max-width: 720px; width: 100%;
       padding: 40px; position: relative; margin: auto;
     }
-    .blog-modal-close {
+    .modal-close {
       position: absolute; top: 16px; right: 18px;
       background: none; border: none; cursor: pointer;
       color: var(--text-3); font-size: 1.5rem; line-height: 1;
       transition: color 0.2s;
     }
-    .blog-modal-close:hover { color: var(--text-1); }
-    .blog-modal-title { font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--text-1); margin-bottom: 12px; padding-right: 32px; }
-    .blog-modal-meta { font-size: 0.78rem; color: var(--text-3); margin-bottom: 28px; display: flex; gap: 16px; }
-    .blog-modal-author { color: var(--gold-dim); }
-    .blog-modal-content { font-size: 0.93rem; color: var(--text-2); line-height: 1.8; }
-    .blog-modal-content h1,.blog-modal-content h2,.blog-modal-content h3 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 24px 0 12px; }
-    .blog-modal-content p { margin-bottom: 14px; }
-    .blog-modal-content img { max-width: 100%; border-radius: var(--radius-sm); margin: 16px 0; }
-    .blog-modal-content a { color: var(--gold); }
-    .blog-modal-content strong { color: var(--text-1); }
-    .blog-modal-content ul,.blog-modal-content ol { padding-left: 20px; margin-bottom: 14px; }
-    .blog-modal-content blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
+    .modal-close:hover { color: var(--text-1); }
+    .modal-title-text { font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--text-1); margin-bottom: 12px; padding-right: 32px; }
+    .modal-meta { font-size: 0.78rem; color: var(--text-3); margin-bottom: 28px; display: flex; gap: 16px; }
+    .modal-author-text { color: var(--gold-dim); }
+    .modal-content-box { font-size: 0.93rem; color: var(--text-2); line-height: 1.8; }
+    .modal-content-box h1,.modal-content-box h2,.modal-content-box h3 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 24px 0 12px; }
+    .modal-content-box p { margin-bottom: 14px; }
+    .modal-content-box img { max-width: 100%; border-radius: var(--radius-sm); margin: 16px 0; }
+    .modal-content-box a { color: var(--gold); }
+    .modal-content-box strong { color: var(--text-1); }
+    .modal-content-box ul,.modal-content-box ol { padding-left: 20px; margin-bottom: 14px; }
+    .modal-content-box blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
 
     /* ── Fotogalerie u příspěvku ── */
     .blog-gallery-label {
@@ -818,16 +820,30 @@
 </section>
 
 <!-- Blog post modal -->
-<div class="blog-modal-overlay" id="blog-modal-overlay" onclick="closeBlogModal(event)">
-  <div class="blog-modal">
-    <button class="blog-modal-close" onclick="closeBlogModal(null)" aria-label="Zavřít">×</button>
-    <h2 class="blog-modal-title" id="modal-title"></h2>
-    <div class="blog-modal-meta">
-      <span class="blog-modal-author" id="modal-author"></span>
-      <span id="modal-date"></span>
+<div class="modal-overlay" id="blog-overlay" onclick="closeBlogModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeBlogModal(null)" aria-label="Zavřít">×</button>
+    <h2 class="modal-title-text" id="blog-modal-title"></h2>
+    <div class="modal-meta">
+      <span class="modal-author-text" id="blog-modal-author"></span>
+      <span id="blog-modal-date"></span>
     </div>
-    <div class="blog-modal-content" id="modal-content"></div>
-    <div id="modal-gallery"></div>
+    <div class="modal-content-box" id="blog-modal-content"></div>
+    <div id="blog-modal-gallery"></div>
+  </div>
+</div>
+
+<!-- Detail turnaje -->
+<div class="modal-overlay" id="tournament-overlay" onclick="closeTournamentModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeTournamentModal(null)" aria-label="Zavřít">×</button>
+    <h2 class="modal-title-text" id="t-modal-title"></h2>
+    <div class="modal-meta">
+      <span class="modal-author-text" id="t-modal-when"></span>
+      <span id="t-modal-signed"></span>
+    </div>
+    <div class="modal-content-box" id="t-modal-note"></div>
+    <div id="t-modal-actions"></div>
   </div>
 </div>
 
@@ -1384,7 +1400,12 @@ function safeImage(s) {
 // neduveryhodny obsah bezpecny — a zaroven prelozi entity, takze se
 // "&amp;" neukaze doslova.
 function htmlToText(html) {
-  return new DOMParser().parseFromString(String(html ?? ''), 'text/html').body.textContent || '';
+  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+  // Za blokove znacky doplnime mezeru, jinak by se sousedni odstavce
+  // a odrazky v ukazce slily do jednoho slova.
+  doc.body.querySelectorAll('p, div, li, br, h1, h2, h3, h4, h5, h6, blockquote, pre, tr')
+    .forEach(el => el.after(doc.createTextNode(' ')));
+  return doc.body.textContent || '';
 }
 
 // Obsah prispevku je HTML z editoru a vykresluje se jako HTML. Nez ho
@@ -1440,6 +1461,8 @@ function sanitizeHtml(html) {
   return doc.body.innerHTML;
 }
 
+const BLOG_EXCERPT_LENGTH = 180;
+
 function renderBlogCards(lang) {
   const grid = document.getElementById('blog-grid');
   const t = i18n[lang];
@@ -1454,8 +1477,7 @@ function renderBlogCards(lang) {
   grid.innerHTML = '';
   cachedPosts.forEach((p, idx) => {
     const date = formatDate(p.createdAt);
-    const text = htmlToText(p.content).replace(/\s+/g, ' ').trim();
-    const excerpt = text.length > 180 ? text.slice(0, 180).trim() + '…' : text;
+    const excerpt = excerptFromHtml(p.content, BLOG_EXCERPT_LENGTH);
     const cover = Array.isArray(p.gallery) && p.gallery.length && safeImage(p.gallery[0].thumb)
       ? `<div class="blog-card-cover"><img src="${escapeHtml(safeImage(p.gallery[0].thumb))}" alt="" loading="lazy" /></div>`
       : '';
@@ -1596,6 +1618,8 @@ function renderTournaments(lang) {
   list.innerHTML = '';
   cachedTournaments.forEach((x, idx) => {
     const d = x.date.toDate ? x.date.toDate() : new Date(x.date);
+    // Na karte jen strucny nahled, cela poznamka je az v detailu.
+    const noteText = excerptFromHtml(x.note, TOURNAMENT_NOTE_PREVIEW);
     const card = document.createElement('div');
     card.className = 'tournament-card reveal';
     card.style.transitionDelay = `${(idx % 3) * 0.07}s`;
@@ -1607,7 +1631,7 @@ function renderTournaments(lang) {
         </div>
         <div class="tournament-info">
           <div class="tournament-title">${escapeHtml(x.title)}</div>
-          ${x.note ? `<div class="tournament-note">${escapeHtml(x.note)}</div>` : ''}
+          ${noteText ? `<div class="tournament-note">${escapeHtml(noteText)}</div>` : ''}
           <div class="tournament-when">
             ${d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
             · ${d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}
@@ -1616,10 +1640,54 @@ function renderTournaments(lang) {
         ${safeUrl(x.eventUrl) ? `<a class="tournament-link" href="${escapeHtml(safeUrl(x.eventUrl))}" target="_blank" rel="noopener">${t['tournaments.link']}</a>` : ''}
       </div>
     `;
+    const main = card.querySelector('.tournament-main');
+    main.addEventListener('click', e => {
+      // Odkaz na udalost ma vest ven, ne otvirat detail.
+      if (e.target.closest('.tournament-link')) return;
+      openTournamentModal(x, lang);
+    });
     card.appendChild(buildRegistration(x, t));
     list.appendChild(card);
     observer.observe(card);
   });
+}
+
+// Kolik znaku poznamky se vejde na kartu, nez se orizne.
+const TOURNAMENT_NOTE_PREVIEW = 110;
+
+function excerptFromHtml(html, limit) {
+  const text = htmlToText(html).replace(/\s+/g, ' ').trim();
+  return text.length > limit ? text.slice(0, limit).trim() + '…' : text;
+}
+
+// ── Detail turnaje ────────────────────────────────────────────
+function openTournamentModal(x, lang) {
+  const t = i18n[lang];
+  const locale = lang === 'cs' ? 'cs-CZ' : 'en-GB';
+  const d = x.date.toDate ? x.date.toDate() : new Date(x.date);
+  const regs = x.registrations || [];
+  const capacity = Number.isFinite(x.capacity) && x.capacity > 0 ? x.capacity : null;
+
+  document.getElementById('t-modal-title').textContent = x.title || '';
+  document.getElementById('t-modal-when').textContent =
+    d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    + ' · ' + d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+  document.getElementById('t-modal-signed').textContent =
+    `${t['tournaments.reg.count']} ${regs.length}${capacity ? ' / ' + capacity : ''}`;
+  // Poznamka je HTML z editoru, proto stejnym filtrem jako obsah prispevku.
+  document.getElementById('t-modal-note').innerHTML = sanitizeHtml(x.note);
+  document.getElementById('t-modal-actions').innerHTML = safeUrl(x.eventUrl)
+    ? `<a class="results-link" style="margin-top:24px" href="${escapeHtml(safeUrl(x.eventUrl))}" target="_blank" rel="noopener">${t['tournaments.link']}</a>`
+    : '';
+
+  document.getElementById('tournament-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTournamentModal(e) {
+  if (e && e.target !== document.getElementById('tournament-overlay')) return;
+  document.getElementById('tournament-overlay').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // ── Předregistrace ────────────────────────────────────────────
@@ -1759,7 +1827,7 @@ async function loadTournaments() {
 }
 
 function renderGallery(post, lang) {
-  const wrap = document.getElementById('modal-gallery');
+  const wrap = document.getElementById('blog-modal-gallery');
   currentGallery = Array.isArray(post.gallery) ? post.gallery : [];
   if (!currentGallery.length) { wrap.innerHTML = ''; return; }
   const items = currentGallery.map((img, i) => `
@@ -1775,19 +1843,19 @@ function renderGallery(post, lang) {
 
 function openBlogModal(post) {
   const lang = document.documentElement.lang || 'cs';
-  document.getElementById('modal-title').textContent   = post.title || '';
-  document.getElementById('modal-author').textContent  = post.authorName || '';
-  document.getElementById('modal-date').textContent    = formatDate(post.createdAt);
-  document.getElementById('modal-content').innerHTML   = sanitizeHtml(post.content);
+  document.getElementById('blog-modal-title').textContent   = post.title || '';
+  document.getElementById('blog-modal-author').textContent  = post.authorName || '';
+  document.getElementById('blog-modal-date').textContent    = formatDate(post.createdAt);
+  document.getElementById('blog-modal-content').innerHTML   = sanitizeHtml(post.content);
   renderGallery(post, lang);
-  const overlay = document.getElementById('blog-modal-overlay');
+  const overlay = document.getElementById('blog-overlay');
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeBlogModal(e) {
-  if (e && e.target !== document.getElementById('blog-modal-overlay')) return;
-  document.getElementById('blog-modal-overlay').classList.remove('open');
+  if (e && e.target !== document.getElementById('blog-overlay')) return;
+  document.getElementById('blog-overlay').classList.remove('open');
   document.body.style.overflow = '';
 }
 
@@ -1867,7 +1935,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') stepLightbox(null,  1);
     return;
   }
-  if (e.key === 'Escape') closeBlogModal(null);
+  if (e.key === 'Escape') { closeBlogModal(null); closeTournamentModal(null); }
 });
 
 // Patch setLang to re-render blog cards on language switch
