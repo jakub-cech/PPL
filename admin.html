@@ -224,6 +224,18 @@
     }
     .cleanup-bar.show { display: flex; }
     .cleanup-text { font-size: 0.83rem; color: var(--text-2); flex: 1; min-width: 200px; }
+    .reg-admin { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); width: 100%; }
+    .reg-admin-toggle {
+      background: none; border: none; padding: 0; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--gold-dim); transition: color 0.2s;
+    }
+    .reg-admin-toggle:hover { color: var(--gold); }
+    .reg-admin-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .reg-admin-row { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; }
+    .reg-admin-num  { color: var(--text-3); width: 24px; flex-shrink: 0; }
+    .reg-admin-name { color: var(--text-1); font-weight: 500; }
+    .reg-admin-note { color: var(--text-3); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .reg-admin-empty { color: var(--text-3); font-size: 0.82rem; }
     .posts-empty { color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
     .posts-loading { color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
 
@@ -324,6 +336,10 @@
         <div class="field">
           <label>Název</label>
           <input type="text" id="t-title" placeholder="Turnaj o Foil Lotus Petal" />
+        </div>
+        <div class="field">
+          <label>Počet míst</label>
+          <input type="number" id="t-capacity" min="1" max="999" placeholder="Nevyplněno = neomezeno" />
         </div>
         <div class="field full">
           <label>Poznámka</label>
@@ -897,7 +913,7 @@ function toLocalInput(d) {
 
 function resetTournamentForm() {
   editingTournamentId = null;
-  ['t-date','t-title','t-note','t-url'].forEach(id => document.getElementById(id).value = '');
+  ['t-date','t-title','t-note','t-url','t-capacity'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('t-publish').checked = false;
   document.getElementById('t-status').textContent = '';
   document.getElementById('t-status').className = 'save-status';
@@ -919,6 +935,7 @@ async function saveTournament() {
     date:      firebase.firestore.Timestamp.fromDate(new Date(dateStr)),
     title,
     note:      document.getElementById('t-note').value.trim(),
+    capacity:  Number(document.getElementById('t-capacity').value) || null,
     eventUrl:  document.getElementById('t-url').value.trim(),
     published: document.getElementById('t-publish').checked,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -960,6 +977,7 @@ async function loadTournamentList() {
       const minuly = d && d.getTime() < Date.now();
       const item = document.createElement('div');
       item.className = 'post-item';
+      item.style.flexWrap = 'wrap';
       item.innerHTML = `
         <div class="post-item-info">
           <div class="post-item-title">${escapeHtml(x.title) || '(bez názvu)'}</div>
@@ -967,6 +985,7 @@ async function loadTournamentList() {
             <span class="post-item-author">${kdy}</span>
             <span class="status-badge ${x.published ? 'published' : 'draft'}">${x.published ? 'Zveřejněno' : 'Koncept'}</span>
             ${minuly ? '<span class="status-badge draft">Proběhlý</span>' : ''}
+            <span>${x.capacity ? 'Kapacita ' + x.capacity : 'Bez omezení'}</span>
           </div>
         </div>
         <div class="post-item-actions">
@@ -976,7 +995,19 @@ async function loadTournamentList() {
           <button class="btn-sm" onclick="editTournament('${x.id}')">Upravit</button>
           <button class="btn-sm danger" onclick="deleteTournament('${x.id}', this)">Smazat</button>
         </div>
+        <div class="reg-admin">
+          <button class="reg-admin-toggle" type="button">Přihlášení hráči ▾</button>
+          <div class="reg-admin-list" hidden></div>
+        </div>
       `;
+      const regToggle = item.querySelector('.reg-admin-toggle');
+      const regBox    = item.querySelector('.reg-admin-list');
+      regToggle.addEventListener('click', () => {
+        const opening = regBox.hasAttribute('hidden');
+        regBox.toggleAttribute('hidden', !opening);
+        regToggle.textContent = 'Přihlášení hráči ' + (opening ? '▴' : '▾');
+        if (opening) renderRegistrations(x.id, regBox);
+      });
       list.appendChild(item);
     });
   } catch(e) {
@@ -999,6 +1030,7 @@ async function editTournament(id) {
   document.getElementById('t-title').value = x.title || '';
   document.getElementById('t-note').value  = x.note || '';
   document.getElementById('t-url').value   = x.eventUrl || '';
+  document.getElementById('t-capacity').value = x.capacity || '';
   document.getElementById('t-publish').checked = !!x.published;
   document.getElementById('t-status').textContent = '';
   document.getElementById('t-panel-title').textContent = 'Upravit turnaj';
@@ -1006,10 +1038,57 @@ async function editTournament(id) {
 }
 
 async function deleteTournament(id, btn) {
-  if (!confirm('Opravdu smazat tento turnaj?')) return;
+  if (!confirm('Opravdu smazat tento turnaj? Smaže se i seznam přihlášených.')) return;
   btn.disabled = true;
+  try {
+    const regs = await db.collection('tournaments').doc(id).collection('registrations').get();
+    await Promise.all(regs.docs.map(d => d.ref.delete()));
+  } catch(e) {
+    console.warn('Mazání přihlášených selhalo:', e);
+  }
   await db.collection('tournaments').doc(id).delete();
+  if (editingTournamentId === id) resetTournamentForm();
   loadTournamentList();
+}
+
+// ── Přihlášení hráči ──────────────────────────────────────────
+async function loadRegistrations(tournamentId) {
+  const snap = await db.collection('tournaments').doc(tournamentId)
+    .collection('registrations').get();
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0));
+}
+
+async function renderRegistrations(tournamentId, box) {
+  box.innerHTML = '<div class="reg-admin-empty">Načítám…</div>';
+  let regs;
+  try { regs = await loadRegistrations(tournamentId); }
+  catch(e) { box.innerHTML = '<div class="reg-admin-empty">Nepodařilo se načíst.</div>'; console.error(e); return; }
+  if (!regs.length) { box.innerHTML = '<div class="reg-admin-empty">Zatím nikdo.</div>'; return; }
+  box.innerHTML = '';
+  regs.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'reg-admin-row';
+    row.innerHTML = `
+      <span class="reg-admin-num">${i + 1}.</span>
+      <span class="reg-admin-name">${escapeHtml(r.name)}</span>
+      <span class="reg-admin-note">${escapeHtml(r.note)}</span>
+      <button class="btn-sm danger" type="button">Odebrat</button>
+    `;
+    row.querySelector('button').addEventListener('click', async ev => {
+      if (!confirm(`Odebrat ${r.name} ze seznamu?`)) return;
+      ev.target.disabled = true;
+      try {
+        await db.collection('tournaments').doc(tournamentId)
+          .collection('registrations').doc(r.id).delete();
+        // Prekreslujeme jen seznam prihlasenych — obnova cele tabulky
+        // turnaju by panel zavrela.
+        renderRegistrations(tournamentId, box);
+      } catch(e) { ev.target.disabled = false; console.error(e); }
+    });
+    box.appendChild(row);
+  });
 }
 
 // ── Tabs ──────────────────────────────────────────────────────
