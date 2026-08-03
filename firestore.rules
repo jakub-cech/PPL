@@ -48,7 +48,8 @@ service cloud.firestore {
       //   - jen tri ocekavana pole, nic navic
       //   - jmeno 2–40 znaku, poznamka nejvys 120
       //   - createdAt musi byt cas serveru, ne hodnota od klienta
-      //   - turnaj musi existovat, byt zverejneny a jeste se nekonat
+      //   - turnaj musi existovat, byt zverejneny, jeste se nekonat
+      //     a nesmi mit uzavrenou registraci (capacity == 0)
       // Menit uz zapsanou registraci nesmi nikdo, mazat jen admin.
       function tournament() {
         return get(/databases/$(database)/documents/tournaments/$(tournamentId)).data;
@@ -65,7 +66,9 @@ service cloud.firestore {
                               && request.resource.data.note.size() <= 120))
                       && request.resource.data.createdAt == request.time
                       && tournament().published == true
-                      && tournament().date > request.time;
+                      && tournament().date > request.time
+                      // capacity == 0 znamena, ze admin registraci uzavrel
+                      && !(tournament().get('capacity', -1) == 0);
         allow update: if false;
         allow delete: if isAdmin();
       }
