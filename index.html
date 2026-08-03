@@ -5,7 +5,7 @@
   <!-- Content-Security-Policy: omezuje, odkud smi stranka nacitat kod a kam
        smi posilat data. frame-ancestors tu chybi zamerne — v <meta> ho
        prohlizec ignoruje a GitHub Pages vlastni hlavicky nastavit neumi. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://api.web3forms.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://api.web3forms.com https://docs.google.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Plzeňská Pauper Liga 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -338,11 +338,12 @@
     #turnaje { background: var(--bg-1); }
     .tournament-list { display: flex; flex-direction: column; gap: 16px; margin-top: 52px; }
     .tournament-card {
-      display: flex; align-items: center; gap: 24px;
+      display: flex; flex-direction: column;
       background: var(--bg-2); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 20px 24px;
       transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
     }
+    .tournament-main { display: flex; align-items: center; gap: 24px; }
     .tournament-card:hover { border-color: var(--gold-dim); transform: translateY(-3px); box-shadow: var(--shadow-card); }
     .tournament-date {
       flex-shrink: 0; width: 74px; text-align: center; padding: 10px 6px;
@@ -364,12 +365,82 @@
     .tournament-link:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
     .tournament-empty { color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
     @media (max-width: 640px) {
-      .tournament-card { flex-direction: column; align-items: flex-start; gap: 14px; }
+      .tournament-main { flex-direction: column; align-items: flex-start; gap: 14px; }
       .tournament-link { width: 100%; justify-content: center; }
     }
 
+    /* ── Předregistrace ── */
+    .tournament-reg { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .reg-toggle {
+      background: none; border: none; cursor: pointer; padding: 0;
+      font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--gold-dim);
+      display: flex; align-items: center; gap: 8px; transition: color 0.2s;
+    }
+    .reg-toggle:hover { color: var(--gold); }
+    .reg-toggle .chev { transition: transform 0.25s; font-size: 0.7rem; }
+    .reg-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+    .reg-count { color: var(--text-2); }
+    .reg-full { color: var(--gold); font-weight: 600; }
+    .reg-body { margin-top: 16px; }
+    .reg-list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .reg-list li {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: 100px;
+      padding: 5px 14px; font-size: 0.8rem; color: var(--text-1);
+    }
+    .reg-list .reg-note { color: var(--text-3); }
+    .reg-empty { font-size: 0.82rem; color: var(--text-3); margin-bottom: 16px; }
+    .reg-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+    .reg-form input {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 9px 14px; font-family: 'Inter', sans-serif; font-size: 0.85rem;
+      color: var(--text-1); min-width: 0;
+    }
+    .reg-form input:focus { outline: none; border-color: var(--gold-dim); }
+    .reg-form input::placeholder { color: var(--text-3); }
+    .reg-form .reg-name { flex: 1 1 180px; }
+    .reg-form .reg-note-input { flex: 2 1 240px; }
+    /* Past na roboty — skutecny navstevnik pole nevidi ani na nej netabuje. */
+    .reg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .reg-submit {
+      background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f;
+      border: none; border-radius: var(--radius-sm); padding: 10px 22px;
+      font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s;
+    }
+    .reg-submit:hover { opacity: 0.9; }
+    .reg-submit:disabled { opacity: 0.5; cursor: default; }
+    .reg-status { font-size: 0.8rem; color: var(--text-3); margin-top: 10px; min-height: 18px; }
+    .reg-status.ok  { color: #27ae60; }
+    .reg-status.err { color: #e74c3c; }
+
+    /* ── PRŮBĚŽNÉ VÝSLEDKY ── */
+    #vysledky { background: var(--bg-0); }
+    .results-wrap { margin-top: 52px; overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 480px; }
+    .results-table th, .results-table td { padding: 11px 16px; text-align: left; white-space: nowrap; }
+    .results-table thead th {
+      background: var(--bg-2); color: var(--gold-dim); font-size: 0.7rem;
+      font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .results-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.2s; }
+    .results-table tbody tr:last-child { border-bottom: none; }
+    .results-table tbody tr:hover { background: var(--bg-2); }
+    .results-table tbody td { color: var(--text-2); }
+    .results-table tbody td:first-child { color: var(--gold-light); font-family: 'Cinzel', serif; font-weight: 600; width: 1%; }
+    .results-table tbody td:nth-child(2) { color: var(--text-1); }
+    .results-note { margin-top: 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .results-msg { color: var(--text-3); font-size: 0.9rem; }
+    .results-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 9px 18px; font-size: 0.8rem; font-weight: 600; color: var(--gold);
+      text-decoration: none; transition: all 0.2s;
+    }
+    .results-link:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+
     /* ── INFO CARDS ── */
-    #info { background: var(--bg-1); }
+    #info { background: var(--bg-0); }
     .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 52px; }
     .info-card {
       background: var(--bg-2);
@@ -400,7 +471,7 @@
     .info-card strong { color: var(--text-1); font-weight: 500; }
 
     /* ── SYSTEM & PRIZES ── */
-    #system { background: var(--bg-0); }
+    #system { background: var(--bg-1); }
     .system-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -447,7 +518,7 @@
     .grand-prize .gp-desc  { font-size: 0.85rem; color: var(--text-2); }
 
     /* ── COMMUNITY ── */
-    #komunita { background: var(--bg-0); }
+    #komunita { background: var(--bg-1); }
     .community-inner { display: flex; flex-direction: column; align-items: center; text-align: center; }
     .community-desc { font-size: 1rem; color: var(--text-2); max-width: 480px; margin: 0 auto 40px; line-height: 1.7; }
     .social-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
@@ -491,7 +562,7 @@
     }
 
     /* ── BLOG ── */
-    #blog { background: var(--bg-0); }
+    #blog { background: var(--bg-1); }
     .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-top: 52px; }
     .blog-card {
       background: var(--bg-2); border: 1px solid var(--border);
@@ -595,7 +666,7 @@
     }
 
     /* ── MERCH ── */
-    #merch { background: var(--bg-1); }
+    #merch { background: var(--bg-0); }
     .merch-coming {
       display: flex; flex-direction: column; align-items: center;
       gap: 14px; padding: 56px 24px;
@@ -635,12 +706,12 @@
 
     <ul class="nav-links" id="nav-links-desktop">
       <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
+      <li><a href="#vysledky"><span data-i18n="nav.results"></span></a></li>
       <li><a href="#blog"><span     data-i18n="nav.blog"></span></a></li>
       <li><a href="#info"><span     data-i18n="nav.info"></span></a></li>
       <li><a href="#system"><span   data-i18n="nav.system"></span></a></li>
       <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
       <li><a href="#komunita"><span data-i18n="nav.community"></span></a></li>
-      <li><a href="https://docs.google.com/spreadsheets/d/1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ/edit?usp=sharing" target="_blank" rel="noopener"><span data-i18n="nav.results"></span></a></li>
     </ul>
 
     <div class="nav-right">
@@ -657,12 +728,12 @@
   <!-- Mobile dropdown -->
   <div class="mobile-menu" id="mobile-menu">
     <a href="#turnaje"  onclick="closeMenu()"><span data-i18n="nav.tournaments"></span></a>
+    <a href="#vysledky" onclick="closeMenu()"><span data-i18n="nav.results"></span></a>
     <a href="#blog"     onclick="closeMenu()"><span data-i18n="nav.blog"></span></a>
     <a href="#info"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
     <a href="#system"   onclick="closeMenu()"><span data-i18n="nav.system"></span></a>
     <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
     <a href="#komunita" onclick="closeMenu()"><span data-i18n="nav.community"></span></a>
-    <a href="https://docs.google.com/spreadsheets/d/1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ/edit?usp=sharing" target="_blank" rel="noopener"><span data-i18n="nav.results"></span></a>
   </div>
 </nav>
 
@@ -715,6 +786,19 @@
     <div id="tournament-list" class="tournament-list">
       <p class="tournament-empty" data-i18n="tournaments.loading"></p>
     </div>
+  </div>
+</section>
+
+<!-- ── PRŮBĚŽNÉ VÝSLEDKY ── -->
+<section id="vysledky">
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="results.label"></span>
+      <h2 class="section-title" data-i18n="results.title"></h2>
+      <p class="section-desc" data-i18n="results.desc"></p>
+    </div>
+    <div id="results-body"></div>
   </div>
 </section>
 
@@ -1007,6 +1091,24 @@ const i18n = {
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
 
+    "tournaments.reg.count":    "Přihlášeno",
+    "tournaments.reg.full":     "obsazeno",
+    "tournaments.reg.empty":    "Zatím se nikdo nepřihlásil. Buď první.",
+    "tournaments.reg.name":     "Tvoje jméno",
+    "tournaments.reg.note":     "Poznámka (nepovinné)",
+    "tournaments.reg.submit":   "Přihlásit se",
+    "tournaments.reg.sending":  "Přihlašuji…",
+    "tournaments.reg.done":     "Díky, jsi na seznamu.",
+    "tournaments.reg.already":  "Z tohoto prohlížeče už ses přihlásil.",
+    "tournaments.reg.needName": "Zadej prosím jméno.",
+    "tournaments.reg.error":    "Přihlášení se nepodařilo. Zkus to prosím znovu.",
+    "results.label":       "Průběžné pořadí",
+    "results.title":       "Výsledky",
+    "results.desc":        "Aktuální tabulka ligy. Aktualizuje se po každém turnaji.",
+    "results.loading":     "Načítám výsledky…",
+    "results.unavailable": "Tabulku se teď nedaří načíst.",
+    "results.more":        "Zobrazeno prvních 60 řádků.",
+    "results.open":        "Otevřít celou tabulku →",
     "blog.label":   "Zápisky",
     "blog.title":   "Blog",
     "blog.desc":    "Reporty z turnajů, decklists, novinky z Pauper metagame.",
@@ -1096,6 +1198,24 @@ const i18n = {
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
 
+    "tournaments.reg.count":    "Signed up",
+    "tournaments.reg.full":     "full",
+    "tournaments.reg.empty":    "Nobody has signed up yet. Be the first.",
+    "tournaments.reg.name":     "Your name",
+    "tournaments.reg.note":     "Note (optional)",
+    "tournaments.reg.submit":   "Sign up",
+    "tournaments.reg.sending":  "Signing up…",
+    "tournaments.reg.done":     "Thanks, you're on the list.",
+    "tournaments.reg.already":  "You already signed up from this browser.",
+    "tournaments.reg.needName": "Please enter your name.",
+    "tournaments.reg.error":    "Sign-up failed. Please try again.",
+    "results.label":       "Standings",
+    "results.title":       "Results",
+    "results.desc":        "Current league table. Updated after every tournament.",
+    "results.loading":     "Loading results…",
+    "results.unavailable": "The table can't be loaded right now.",
+    "results.more":        "Showing the first 60 rows.",
+    "results.open":        "Open the full sheet →",
     "blog.label":   "Journal",
     "blog.title":   "Blog",
     "blog.desc":    "Tournament reports, decklists, and Pauper metagame updates.",
@@ -1381,6 +1501,83 @@ async function loadBlogPosts() {
   }
 }
 
+
+// ── Průběžné výsledky ─────────────────────────────────────────
+// Data se tahaji primo z Google tabulky. Aby to fungovalo, musi byt list
+// zverejneny pres Soubor → Sdilet → Publikovat na webu. Kdyz se stahnout
+// nepodari, sekce misto tabulky nabidne odkaz do tabulky.
+const RESULTS_SHEET_ID = '1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ';
+const RESULTS_CSV_URL  = `https://docs.google.com/spreadsheets/d/${RESULTS_SHEET_ID}/gviz/tq?tqx=out:csv`;
+const RESULTS_LINK     = `https://docs.google.com/spreadsheets/d/${RESULTS_SHEET_ID}/edit?usp=sharing`;
+const RESULTS_MAX_ROWS = 60;
+
+// CSV z Google tabulek ma uvozovkami obalena pole, ktera mohou obsahovat
+// carky i konce radku — proto vlastni pruchod misto split(',').
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      if (row.some(v => v.trim() !== '')) rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  row.push(field);
+  if (row.some(v => v.trim() !== '')) rows.push(row);
+  return rows;
+}
+
+function renderResults(lang) {
+  const box = document.getElementById('results-body');
+  const t = i18n[lang];
+  const link = `<a class="results-link" href="${RESULTS_LINK}" target="_blank" rel="noopener">${t['results.open']}</a>`;
+
+  if (cachedResults === null) { box.innerHTML = `<p class="results-msg">${t['results.loading']}</p>`; return; }
+  if (cachedResults === false || cachedResults.length < 2) {
+    box.innerHTML = `<div class="results-note"><span class="results-msg">${t['results.unavailable']}</span>${link}</div>`;
+    return;
+  }
+  const [head, ...body] = cachedResults;
+  const shown = body.slice(0, RESULTS_MAX_ROWS);
+  box.innerHTML = `
+    <div class="results-wrap">
+      <table class="results-table">
+        <thead><tr>${head.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>${shown.map(r => `<tr>${head.map((_, i) => `<td>${escapeHtml(r[i] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div class="results-note">
+      <span class="results-msg">${body.length > shown.length ? t['results.more'] : ''}</span>
+      ${link}
+    </div>
+  `;
+}
+
+let cachedResults = null;
+
+async function loadResults() {
+  try {
+    const res = await fetch(RESULTS_CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = parseCsv(await res.text());
+    cachedResults = rows.length >= 2 ? rows : false;
+  } catch(e) {
+    console.warn('Results load error:', e);
+    cachedResults = false;
+  }
+  renderResults(document.documentElement.lang || 'cs');
+}
+
 // ── Turnaje ───────────────────────────────────────────────────
 let cachedTournaments = null;
 
@@ -1403,23 +1600,134 @@ function renderTournaments(lang) {
     card.className = 'tournament-card reveal';
     card.style.transitionDelay = `${(idx % 3) * 0.07}s`;
     card.innerHTML = `
-      <div class="tournament-date">
-        <div class="tournament-day">${d.getDate()}</div>
-        <div class="tournament-month">${d.toLocaleDateString(locale, { month: 'short' })}</div>
-      </div>
-      <div class="tournament-info">
-        <div class="tournament-title">${escapeHtml(x.title)}</div>
-        ${x.note ? `<div class="tournament-note">${escapeHtml(x.note)}</div>` : ''}
-        <div class="tournament-when">
-          ${d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
-          · ${d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}
+      <div class="tournament-main">
+        <div class="tournament-date">
+          <div class="tournament-day">${d.getDate()}</div>
+          <div class="tournament-month">${d.toLocaleDateString(locale, { month: 'short' })}</div>
         </div>
+        <div class="tournament-info">
+          <div class="tournament-title">${escapeHtml(x.title)}</div>
+          ${x.note ? `<div class="tournament-note">${escapeHtml(x.note)}</div>` : ''}
+          <div class="tournament-when">
+            ${d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
+            · ${d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}
+          </div>
+        </div>
+        ${safeUrl(x.eventUrl) ? `<a class="tournament-link" href="${escapeHtml(safeUrl(x.eventUrl))}" target="_blank" rel="noopener">${t['tournaments.link']}</a>` : ''}
       </div>
-      ${safeUrl(x.eventUrl) ? `<a class="tournament-link" href="${escapeHtml(safeUrl(x.eventUrl))}" target="_blank" rel="noopener">${t['tournaments.link']}</a>` : ''}
     `;
+    card.appendChild(buildRegistration(x, t));
     list.appendChild(card);
     observer.observe(card);
   });
+}
+
+// ── Předregistrace ────────────────────────────────────────────
+const REG_NAME_MAX = 40;
+const REG_NOTE_MAX = 120;
+
+// Kdo se uz z tohohle prohlizece prihlasil — jen aby se mu neukazoval
+// formular podruhe. Neni to zadna ochrana, jen pohodli.
+function registeredHere(tournamentId) {
+  try { return localStorage.getItem('ppl-reg-' + tournamentId) === '1'; }
+  catch { return false; }
+}
+function rememberRegistered(tournamentId) {
+  try { localStorage.setItem('ppl-reg-' + tournamentId, '1'); } catch {}
+}
+
+function buildRegistration(x, t) {
+  const wrap = document.createElement('div');
+  wrap.className = 'tournament-reg';
+  const regs = x.registrations || [];
+  const capacity = Number.isFinite(x.capacity) && x.capacity > 0 ? x.capacity : null;
+  const full = capacity !== null && regs.length >= capacity;
+
+  const summary = capacity
+    ? `${t['tournaments.reg.count']} <span class="reg-count">${regs.length} / ${capacity}</span>`
+    : `${t['tournaments.reg.count']} <span class="reg-count">${regs.length}</span>`;
+
+  wrap.innerHTML = `
+    <button class="reg-toggle" type="button" aria-expanded="false">
+      <span class="chev">▼</span>
+      <span>${summary}</span>
+      ${full ? `<span class="reg-full">· ${t['tournaments.reg.full']}</span>` : ''}
+    </button>
+    <div class="reg-body" hidden>
+      ${regs.length
+        ? `<ul class="reg-list">${regs.map(r => `<li>${escapeHtml(r.name)}${r.note ? ` <span class="reg-note">· ${escapeHtml(r.note)}</span>` : ''}</li>`).join('')}</ul>`
+        : `<p class="reg-empty">${t['tournaments.reg.empty']}</p>`}
+      ${full || registeredHere(x.id) ? '' : `
+        <form class="reg-form" novalidate>
+          <input class="reg-name" name="name" type="text" maxlength="${REG_NAME_MAX}"
+                 placeholder="${escapeHtml(t['tournaments.reg.name'])}" autocomplete="name" />
+          <input class="reg-note-input" name="note" type="text" maxlength="${REG_NOTE_MAX}"
+                 placeholder="${escapeHtml(t['tournaments.reg.note'])}" />
+          <input class="reg-hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <button class="reg-submit" type="submit">${t['tournaments.reg.submit']}</button>
+        </form>`}
+      <p class="reg-status">${registeredHere(x.id) ? t['tournaments.reg.already'] : ''}</p>
+    </div>
+  `;
+
+  const toggle = wrap.querySelector('.reg-toggle');
+  const body   = wrap.querySelector('.reg-body');
+  toggle.addEventListener('click', () => {
+    const open = body.hasAttribute('hidden');
+    body.toggleAttribute('hidden', !open);
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+
+  const form = wrap.querySelector('.reg-form');
+  if (form) form.addEventListener('submit', e => {
+    e.preventDefault();
+    submitRegistration(form, x, wrap.querySelector('.reg-status'), t);
+  });
+  return wrap;
+}
+
+async function submitRegistration(form, tournament, statusEl, t) {
+  // Past na roboty: skutecny navstevnik tohle pole nevyplni.
+  if (form.website.value) { statusEl.textContent = t['tournaments.reg.done']; statusEl.className = 'reg-status ok'; return; }
+
+  const name = form.name.value.trim().slice(0, REG_NAME_MAX);
+  const note = form.note.value.trim().slice(0, REG_NOTE_MAX);
+  if (name.length < 2) {
+    statusEl.textContent = t['tournaments.reg.needName'];
+    statusEl.className = 'reg-status err';
+    return;
+  }
+  const btn = form.querySelector('.reg-submit');
+  btn.disabled = true;
+  statusEl.textContent = t['tournaments.reg.sending'];
+  statusEl.className = 'reg-status';
+  try {
+    await db.collection('tournaments').doc(tournament.id).collection('registrations').add({
+      name, note, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    rememberRegistered(tournament.id);
+    await loadRegistrations([tournament]);
+    renderTournaments(document.documentElement.lang || 'cs');
+  } catch(e) {
+    console.error('Registration error:', e);
+    statusEl.textContent = t['tournaments.reg.error'];
+    statusEl.className = 'reg-status err';
+    btn.disabled = false;
+  }
+}
+
+async function loadRegistrations(tournaments) {
+  await Promise.all(tournaments.map(async x => {
+    try {
+      const snap = await db.collection('tournaments').doc(x.id).collection('registrations').get();
+      x.registrations = snap.docs
+        .map(d => d.data())
+        .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
+    } catch(e) {
+      console.error('Registrations load error:', e);
+      x.registrations = [];
+    }
+  }));
 }
 
 async function loadTournaments() {
@@ -1437,9 +1745,11 @@ async function loadTournaments() {
     const dnes = new Date();
     dnes.setHours(0, 0, 0, 0);
     cachedTournaments = snap.docs
-      .map(d => d.data())
+      .map(d => ({ id: d.id, ...d.data() }))
       .filter(x => x.date && toMillis(x.date) >= dnes.getTime())
       .sort((a, b) => toMillis(a.date) - toMillis(b.date));
+    renderTournaments(document.documentElement.lang || 'cs');
+    await loadRegistrations(cachedTournaments);
     renderTournaments(document.documentElement.lang || 'cs');
   } catch(e) {
     console.error('Tournaments load error:', e);
@@ -1566,6 +1876,7 @@ window.setLang = function(lang) {
   __origSetLang(lang);
   renderBlogCards(lang);
   renderTournaments(lang);
+  renderResults(lang);
 };
 
 // ── Merch form ────────────────────────────────────────────────
@@ -1597,6 +1908,7 @@ document.getElementById('merch-form').addEventListener('submit', async function(
 // ── Start ─────────────────────────────────────────────────────
 loadBlogPosts();
 loadTournaments();
+loadResults();
 </script>
 </body>
 </html>
