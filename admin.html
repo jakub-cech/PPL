@@ -112,6 +112,11 @@
     .ql-editor.ql-blank::before { color: var(--text-3) !important; font-style: normal; }
     .ql-snow .ql-picker-options { background: var(--bg-3) !important; border-color: var(--border) !important; }
 
+    /* Editor poznámky u turnaje — nižší než editor příspěvku */
+    #t-note-editor + .ql-container.ql-snow,
+    .t-form .ql-container.ql-snow { min-height: 160px; }
+    .t-form .ql-editor { min-height: 130px; }
+
     /* Galerie */
     .gallery-block { margin-top: 28px; }
     .gallery-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -343,7 +348,7 @@
         </div>
         <div class="field full">
           <label>Poznámka</label>
-          <textarea id="t-note" rows="2" placeholder="Nepovinné – doplňující info k turnaji"></textarea>
+          <div id="t-note-editor"></div>
         </div>
         <div class="field full">
           <label>Odkaz na Facebook událost</label>
@@ -605,6 +610,26 @@ function setGalleryStatus(text, isError = false) {
   const el = document.getElementById('gallery-status');
   el.textContent = text;
   el.className = 'gallery-status' + (isError ? ' err' : '');
+}
+
+// Poznamka u turnaje je taky formatovany text — na webu se zobrazi
+// v detailu turnaje, na karte jen jako strucny nahled.
+const noteQuill = new Quill('#t-note-editor', {
+  theme: 'snow',
+  placeholder: 'Nepovinné – doplňující info k turnaji',
+  modules: {
+    toolbar: [
+      ['bold', 'italic', 'underline'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link'],
+      ['clean']
+    ]
+  }
+});
+
+// Prazdny Quill vraci <p><br></p> — do databaze at jde radeji nic.
+function noteHtml() {
+  return noteQuill.getText().trim() ? noteQuill.root.innerHTML : '';
 }
 
 // ── Editor state ──────────────────────────────────────────────
@@ -913,7 +938,8 @@ function toLocalInput(d) {
 
 function resetTournamentForm() {
   editingTournamentId = null;
-  ['t-date','t-title','t-note','t-url','t-capacity'].forEach(id => document.getElementById(id).value = '');
+  ['t-date','t-title','t-url','t-capacity'].forEach(id => document.getElementById(id).value = '');
+  noteQuill.setContents([]);
   document.getElementById('t-publish').checked = false;
   document.getElementById('t-status').textContent = '';
   document.getElementById('t-status').className = 'save-status';
@@ -934,7 +960,7 @@ async function saveTournament() {
   const data = {
     date:      firebase.firestore.Timestamp.fromDate(new Date(dateStr)),
     title,
-    note:      document.getElementById('t-note').value.trim(),
+    note:      noteHtml(),
     capacity:  Number(document.getElementById('t-capacity').value) || null,
     eventUrl:  document.getElementById('t-url').value.trim(),
     published: document.getElementById('t-publish').checked,
@@ -1028,7 +1054,7 @@ async function editTournament(id) {
   const d = x.date?.toDate?.();
   document.getElementById('t-date').value  = d ? toLocalInput(d) : '';
   document.getElementById('t-title').value = x.title || '';
-  document.getElementById('t-note').value  = x.note || '';
+  noteQuill.root.innerHTML = x.note || '';
   document.getElementById('t-url').value   = x.eventUrl || '';
   document.getElementById('t-capacity').value = x.capacity || '';
   document.getElementById('t-publish').checked = !!x.published;
