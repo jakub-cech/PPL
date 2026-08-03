@@ -1109,6 +1109,8 @@ const i18n = {
 
     "tournaments.reg.count":    "Přihlášeno",
     "tournaments.reg.full":     "obsazeno",
+    "tournaments.reg.closed":   "Registrace uzavřena",
+    "tournaments.reg.hidden":   "Seznam přihlášených není veřejný.",
     "tournaments.reg.empty":    "Zatím se nikdo nepřihlásil. Buď první.",
     "tournaments.reg.name":     "Tvoje jméno",
     "tournaments.reg.note":     "Poznámka (nepovinné)",
@@ -1216,6 +1218,8 @@ const i18n = {
 
     "tournaments.reg.count":    "Signed up",
     "tournaments.reg.full":     "full",
+    "tournaments.reg.closed":   "Registration closed",
+    "tournaments.reg.hidden":   "The list of players isn't public.",
     "tournaments.reg.empty":    "Nobody has signed up yet. Be the first.",
     "tournaments.reg.name":     "Your name",
     "tournaments.reg.note":     "Note (optional)",
@@ -1672,8 +1676,9 @@ function openTournamentModal(x, lang) {
   document.getElementById('t-modal-when').textContent =
     d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     + ' · ' + d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
-  document.getElementById('t-modal-signed').textContent =
-    `${t['tournaments.reg.count']} ${regs.length}${capacity ? ' / ' + capacity : ''}`;
+  document.getElementById('t-modal-signed').textContent = x.capacity === 0
+    ? t['tournaments.reg.closed']
+    : `${t['tournaments.reg.count']} ${regs.length}${capacity ? ' / ' + capacity : ''}`;
   // Poznamka je HTML z editoru, proto stejnym filtrem jako obsah prispevku.
   document.getElementById('t-modal-note').innerHTML = sanitizeHtml(x.note);
   document.getElementById('t-modal-actions').innerHTML = safeUrl(x.eventUrl)
@@ -1708,24 +1713,40 @@ function buildRegistration(x, t) {
   const wrap = document.createElement('div');
   wrap.className = 'tournament-reg';
   const regs = x.registrations || [];
+  // Kapacita: nevyplneno = neomezeno, 0 = registrace uzavrena, jinak strop.
+  const closed   = x.capacity === 0;
   const capacity = Number.isFinite(x.capacity) && x.capacity > 0 ? x.capacity : null;
-  const full = capacity !== null && regs.length >= capacity;
+  const full     = capacity !== null && regs.length >= capacity;
+  // Jmena prihlasenych jsou verejna, jen kdyz to admin u turnaje povoli.
+  const showNames = x.showRegistrations === true;
+  const showForm  = !closed && !full && !registeredHere(x.id);
 
-  const summary = capacity
-    ? `${t['tournaments.reg.count']} <span class="reg-count">${regs.length} / ${capacity}</span>`
-    : `${t['tournaments.reg.count']} <span class="reg-count">${regs.length}</span>`;
+  const summary = closed
+    ? t['tournaments.reg.closed']
+    : capacity
+      ? `${t['tournaments.reg.count']} <span class="reg-count">${regs.length} / ${capacity}</span>`
+      : `${t['tournaments.reg.count']} <span class="reg-count">${regs.length}</span>`;
+
+  let listHtml;
+  if (!showNames) {
+    listHtml = `<p class="reg-empty">${t['tournaments.reg.hidden']}</p>`;
+  } else if (regs.length) {
+    listHtml = `<ul class="reg-list">${regs.map(r =>
+      `<li>${escapeHtml(r.name)}${r.note ? ` <span class="reg-note">· ${escapeHtml(r.note)}</span>` : ''}</li>`
+    ).join('')}</ul>`;
+  } else {
+    listHtml = `<p class="reg-empty">${t['tournaments.reg.empty']}</p>`;
+  }
 
   wrap.innerHTML = `
     <button class="reg-toggle" type="button" aria-expanded="false">
       <span class="chev">▼</span>
       <span>${summary}</span>
-      ${full ? `<span class="reg-full">· ${t['tournaments.reg.full']}</span>` : ''}
+      ${full && !closed ? `<span class="reg-full">· ${t['tournaments.reg.full']}</span>` : ''}
     </button>
     <div class="reg-body" hidden>
-      ${regs.length
-        ? `<ul class="reg-list">${regs.map(r => `<li>${escapeHtml(r.name)}${r.note ? ` <span class="reg-note">· ${escapeHtml(r.note)}</span>` : ''}</li>`).join('')}</ul>`
-        : `<p class="reg-empty">${t['tournaments.reg.empty']}</p>`}
-      ${full || registeredHere(x.id) ? '' : `
+      ${listHtml}
+      ${showForm ? `
         <form class="reg-form" novalidate>
           <input class="reg-name" name="name" type="text" maxlength="${REG_NAME_MAX}"
                  placeholder="${escapeHtml(t['tournaments.reg.name'])}" autocomplete="name" />
@@ -1733,8 +1754,8 @@ function buildRegistration(x, t) {
                  placeholder="${escapeHtml(t['tournaments.reg.note'])}" />
           <input class="reg-hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
           <button class="reg-submit" type="submit">${t['tournaments.reg.submit']}</button>
-        </form>`}
-      <p class="reg-status">${registeredHere(x.id) ? t['tournaments.reg.already'] : ''}</p>
+        </form>` : ''}
+      <p class="reg-status">${registeredHere(x.id) && !closed ? t['tournaments.reg.already'] : ''}</p>
     </div>
   `;
 

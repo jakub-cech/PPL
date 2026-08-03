@@ -344,7 +344,7 @@
         </div>
         <div class="field">
           <label>Počet míst</label>
-          <input type="number" id="t-capacity" min="1" max="999" placeholder="Nevyplněno = neomezeno" />
+          <input type="number" id="t-capacity" min="0" max="999" placeholder="Prázdné = neomezeno, 0 = registrace zavřená" />
         </div>
         <div class="field full">
           <label>Poznámka</label>
@@ -363,6 +363,13 @@
         <button class="btn-outline" onclick="resetTournamentForm()">Nový</button>
         <span class="save-status" id="t-status"></span>
         <div class="publish-toggle">
+          <label for="t-show-regs" title="Když je vypnuté, návštěvníci vidí jen počet přihlášených, ne jména">Zveřejnit seznam hráčů</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="t-show-regs" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="publish-toggle" style="margin-left:0">
           <label for="t-publish">Zveřejnit</label>
           <label class="toggle-switch">
             <input type="checkbox" id="t-publish" />
@@ -941,9 +948,18 @@ function resetTournamentForm() {
   ['t-date','t-title','t-url','t-capacity'].forEach(id => document.getElementById(id).value = '');
   noteQuill.setContents([]);
   document.getElementById('t-publish').checked = false;
+  document.getElementById('t-show-regs').checked = false;
   document.getElementById('t-status').textContent = '';
   document.getElementById('t-status').className = 'save-status';
   document.getElementById('t-panel-title').textContent = 'Nový turnaj';
+}
+
+// Prazdne pole = neomezeno (null), 0 = registrace uzavrena, jinak strop.
+function parseCapacity(raw) {
+  const text = String(raw).trim();
+  if (text === '') return null;
+  const n = Number(text);
+  return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
 }
 
 async function saveTournament() {
@@ -961,7 +977,8 @@ async function saveTournament() {
     date:      firebase.firestore.Timestamp.fromDate(new Date(dateStr)),
     title,
     note:      noteHtml(),
-    capacity:  Number(document.getElementById('t-capacity').value) || null,
+    capacity:  parseCapacity(document.getElementById('t-capacity').value),
+    showRegistrations: document.getElementById('t-show-regs').checked,
     eventUrl:  document.getElementById('t-url').value.trim(),
     published: document.getElementById('t-publish').checked,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1011,7 +1028,8 @@ async function loadTournamentList() {
             <span class="post-item-author">${kdy}</span>
             <span class="status-badge ${x.published ? 'published' : 'draft'}">${x.published ? 'Zveřejněno' : 'Koncept'}</span>
             ${minuly ? '<span class="status-badge draft">Proběhlý</span>' : ''}
-            <span>${x.capacity ? 'Kapacita ' + x.capacity : 'Bez omezení'}</span>
+            <span>${x.capacity === 0 ? 'Registrace zavřená' : x.capacity ? 'Kapacita ' + x.capacity : 'Bez omezení'}</span>
+            <span>${x.showRegistrations ? 'Seznam veřejný' : 'Seznam skrytý'}</span>
           </div>
         </div>
         <div class="post-item-actions">
@@ -1056,7 +1074,8 @@ async function editTournament(id) {
   document.getElementById('t-title').value = x.title || '';
   noteQuill.root.innerHTML = x.note || '';
   document.getElementById('t-url').value   = x.eventUrl || '';
-  document.getElementById('t-capacity').value = x.capacity || '';
+  document.getElementById('t-capacity').value = x.capacity ?? '';
+  document.getElementById('t-show-regs').checked = x.showRegistrations === true;
   document.getElementById('t-publish').checked = !!x.published;
   document.getElementById('t-status').textContent = '';
   document.getElementById('t-panel-title').textContent = 'Upravit turnaj';
