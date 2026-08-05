@@ -340,7 +340,7 @@
     .tournament-card {
       display: flex; flex-direction: column;
       background: var(--bg-2); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 20px 24px;
+      border-radius: var(--radius-md); padding: 20px 24px; overflow: hidden;
       transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
     }
     .tournament-main { display: flex; align-items: center; gap: 24px; cursor: pointer; }
@@ -348,16 +348,17 @@
     .tournament-title { transition: color 0.2s; }
     .tournament-card:hover { border-color: var(--gold-dim); transform: translateY(-3px); box-shadow: var(--shadow-card); }
     .tournament-date {
-      flex-shrink: 0; width: 74px; text-align: center; padding: 10px 6px;
+      flex-shrink: 0; width: 88px; text-align: center; padding: 12px 6px;
       background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.06));
       border: 1px solid var(--gold-dim); border-radius: var(--radius-sm);
     }
     .tournament-day   { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 700; color: var(--gold-light); line-height: 1; }
     .tournament-month { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-dim); margin-top: 4px; }
+    .tournament-year  { font-size: 0.64rem; color: var(--text-3); margin-top: 3px; }
     .tournament-info  { flex: 1; min-width: 0; }
     .tournament-title { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
-    .tournament-note  { font-size: 0.87rem; color: var(--text-2); line-height: 1.6; }
-    .tournament-when  { font-size: 0.78rem; color: var(--text-3); margin-top: 5px; }
+    .tournament-when  { font-size: 0.8rem; color: var(--text-2); margin-bottom: 6px; }
+    .tournament-note  { font-size: 0.85rem; color: var(--text-3); line-height: 1.6; }
     .tournament-link {
       flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px;
       padding: 9px 16px; border: 1.5px solid var(--gold-dim); border-radius: var(--radius-sm);
@@ -372,35 +373,45 @@
     }
 
     /* ── Předregistrace ── */
-    .tournament-reg { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
-    .reg-toggle {
-      background: none; border: none; cursor: pointer; padding: 0;
-      font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--gold-dim);
-      display: flex; align-items: center; gap: 8px; transition: color 0.2s;
+    .tournament-reg {
+      margin: 18px -24px -20px; padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: rgba(201,168,76,0.04);
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
     }
-    .reg-toggle:hover { color: var(--gold); }
-    .reg-toggle .chev { transition: transform 0.25s; font-size: 0.7rem; }
-    .reg-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
-    .reg-count { color: var(--text-2); }
-    .reg-full { color: var(--gold); font-weight: 600; }
-    .reg-body { margin-top: 16px; }
-    .reg-list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .reg-bar { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .reg-bar-count { font-size: 0.92rem; color: var(--text-2); }
+    .reg-bar-count b { font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--gold-light); }
+    .reg-closed { color: var(--gold); font-weight: 600; font-size: 0.88rem; }
+    .reg-progress { flex: 1; min-width: 120px; height: 6px; background: var(--bg-3); border-radius: 100px; overflow: hidden; }
+    .reg-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); transition: width 0.4s; }
+    .reg-progress-spacer { flex: 1; min-width: 40px; }
+    .reg-state { font-size: 0.82rem; font-weight: 600; color: var(--gold); }
+    .reg-cta {
+      background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f;
+      border: none; border-radius: var(--radius-sm); padding: 11px 24px;
+      font-family: 'Inter', sans-serif; font-size: 0.83rem; font-weight: 600;
+      letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s;
+    }
+    .reg-cta:hover { opacity: 0.9; }
+    .reg-list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
     .reg-list li {
       background: var(--bg-3); border: 1px solid var(--border); border-radius: 100px;
       padding: 5px 14px; font-size: 0.8rem; color: var(--text-1);
     }
     .reg-list .reg-note { color: var(--text-3); }
-    .reg-empty { font-size: 0.82rem; color: var(--text-3); margin-bottom: 16px; }
-    .reg-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+    .reg-hidden-note { font-size: 0.78rem; color: var(--text-3); margin-top: 12px; }
+    .reg-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-top: 16px; }
+    .reg-form[hidden] { display: none; }
     .reg-form input {
       background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 9px 14px; font-family: 'Inter', sans-serif; font-size: 0.85rem;
+      padding: 10px 14px; font-family: 'Inter', sans-serif; font-size: 0.85rem;
       color: var(--text-1); min-width: 0;
     }
     .reg-form input:focus { outline: none; border-color: var(--gold-dim); }
     .reg-form input::placeholder { color: var(--text-3); }
-    .reg-form .reg-name { flex: 1 1 180px; }
-    .reg-form .reg-note-input { flex: 2 1 240px; }
+    .reg-form .reg-name { flex: 1 1 190px; }
+    .reg-form .reg-note-input { flex: 2 1 260px; }
     /* Past na roboty — skutecny navstevnik pole nevidi ani na nej netabuje. */
     .reg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
     .reg-submit {
@@ -411,9 +422,14 @@
     }
     .reg-submit:hover { opacity: 0.9; }
     .reg-submit:disabled { opacity: 0.5; cursor: default; }
-    .reg-status { font-size: 0.8rem; color: var(--text-3); margin-top: 10px; min-height: 18px; }
+    .reg-status { font-size: 0.8rem; color: var(--text-3); margin-top: 10px; }
+    .reg-status:empty { margin-top: 0; }
     .reg-status.ok  { color: #27ae60; }
     .reg-status.err { color: #e74c3c; }
+    @media (max-width: 600px) {
+      .reg-progress, .reg-progress-spacer { display: none; }
+      .reg-cta { width: 100%; }
+    }
 
     /* ── PRŮBĚŽNÉ VÝSLEDKY ── */
     #vysledky { background: var(--bg-0); }
@@ -1108,6 +1124,9 @@ const i18n = {
     "nav.merch": "Merch",
 
     "tournaments.reg.count":    "Přihlášeno",
+    "tournaments.reg.signed":   "přihlášených",
+    "tournaments.reg.signed1":  "přihlášený",
+    "tournaments.reg.signed24": "přihlášení",
     "tournaments.reg.full":     "obsazeno",
     "tournaments.reg.closed":   "Registrace uzavřena",
     "tournaments.reg.hidden":   "Seznam přihlášených není veřejný.",
@@ -1117,7 +1136,7 @@ const i18n = {
     "tournaments.reg.submit":   "Přihlásit se",
     "tournaments.reg.sending":  "Přihlašuji…",
     "tournaments.reg.done":     "Díky, jsi na seznamu.",
-    "tournaments.reg.already":  "Z tohoto prohlížeče už ses přihlásil.",
+    "tournaments.reg.already":  "Už ses přihlásil",
     "tournaments.reg.needName": "Zadej prosím jméno.",
     "tournaments.reg.error":    "Přihlášení se nepodařilo. Zkus to prosím znovu.",
     "results.label":       "Průběžné pořadí",
@@ -1217,6 +1236,9 @@ const i18n = {
     "nav.merch": "Merch",
 
     "tournaments.reg.count":    "Signed up",
+    "tournaments.reg.signed":   "signed up",
+    "tournaments.reg.signed1":  "signed up",
+    "tournaments.reg.signed24": "signed up",
     "tournaments.reg.full":     "full",
     "tournaments.reg.closed":   "Registration closed",
     "tournaments.reg.hidden":   "The list of players isn't public.",
@@ -1226,7 +1248,7 @@ const i18n = {
     "tournaments.reg.submit":   "Sign up",
     "tournaments.reg.sending":  "Signing up…",
     "tournaments.reg.done":     "Thanks, you're on the list.",
-    "tournaments.reg.already":  "You already signed up from this browser.",
+    "tournaments.reg.already":  "You're signed up",
     "tournaments.reg.needName": "Please enter your name.",
     "tournaments.reg.error":    "Sign-up failed. Please try again.",
     "results.label":       "Standings",
@@ -1632,14 +1654,15 @@ function renderTournaments(lang) {
         <div class="tournament-date">
           <div class="tournament-day">${d.getDate()}</div>
           <div class="tournament-month">${d.toLocaleDateString(locale, { month: 'short' })}</div>
+          <div class="tournament-year">${d.getFullYear()}</div>
         </div>
         <div class="tournament-info">
           <div class="tournament-title">${escapeHtml(x.title)}</div>
-          ${noteText ? `<div class="tournament-note">${escapeHtml(noteText)}</div>` : ''}
           <div class="tournament-when">
-            ${d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
+            ${d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             · ${d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}
           </div>
+          ${noteText ? `<div class="tournament-note">${escapeHtml(noteText)}</div>` : ''}
         </div>
         ${safeUrl(x.eventUrl) ? `<a class="tournament-link" href="${escapeHtml(safeUrl(x.eventUrl))}" target="_blank" rel="noopener">${t['tournaments.link']}</a>` : ''}
       </div>
@@ -1709,6 +1732,13 @@ function rememberRegistered(tournamentId) {
   try { localStorage.setItem('ppl-reg-' + tournamentId, '1'); } catch {}
 }
 
+// Cestina meni tvar podle poctu; anglictina ma vsechny tri stejne.
+function signedWord(t, n) {
+  if (n === 1) return t['tournaments.reg.signed1'];
+  if (n >= 2 && n <= 4) return t['tournaments.reg.signed24'];
+  return t['tournaments.reg.signed'];
+}
+
 function buildRegistration(x, t) {
   const wrap = document.createElement('div');
   wrap.className = 'tournament-reg';
@@ -1719,55 +1749,55 @@ function buildRegistration(x, t) {
   const full     = capacity !== null && regs.length >= capacity;
   // Jmena prihlasenych jsou verejna, jen kdyz to admin u turnaje povoli.
   const showNames = x.showRegistrations === true;
-  const showForm  = !closed && !full && !registeredHere(x.id);
+  const done      = registeredHere(x.id);
+  const showForm  = !closed && !full && !done;
+  const pct       = capacity ? Math.min(100, Math.round(regs.length / capacity * 100)) : 0;
 
-  const summary = closed
-    ? t['tournaments.reg.closed']
-    : capacity
-      ? `${t['tournaments.reg.count']} <span class="reg-count">${regs.length} / ${capacity}</span>`
-      : `${t['tournaments.reg.count']} <span class="reg-count">${regs.length}</span>`;
+  const count = closed
+    ? `<span class="reg-closed">${t['tournaments.reg.closed']}</span>`
+    : `<b>${regs.length}</b>${capacity ? ` / ${capacity}` : ''} ${signedWord(t, capacity ? 5 : regs.length)}`;
 
-  let listHtml;
-  if (!showNames) {
-    listHtml = `<p class="reg-empty">${t['tournaments.reg.hidden']}</p>`;
-  } else if (regs.length) {
-    listHtml = `<ul class="reg-list">${regs.map(r =>
+  let action = '';
+  if (closed)      action = '';
+  else if (full)   action = `<span class="reg-state">${t['tournaments.reg.full']}</span>`;
+  else if (done)   action = `<span class="reg-state">${t['tournaments.reg.already']}</span>`;
+  else             action = `<button class="reg-cta" type="button">${t['tournaments.reg.submit']}</button>`;
+
+  let names = '';
+  if (showNames && regs.length) {
+    names = `<ul class="reg-list">${regs.map(r =>
       `<li>${escapeHtml(r.name)}${r.note ? ` <span class="reg-note">· ${escapeHtml(r.note)}</span>` : ''}</li>`
     ).join('')}</ul>`;
-  } else {
-    listHtml = `<p class="reg-empty">${t['tournaments.reg.empty']}</p>`;
+  } else if (!showNames && !closed) {
+    names = `<p class="reg-hidden-note">${t['tournaments.reg.hidden']}</p>`;
   }
 
   wrap.innerHTML = `
-    <button class="reg-toggle" type="button" aria-expanded="false">
-      <span class="chev">▼</span>
-      <span>${summary}</span>
-      ${full && !closed ? `<span class="reg-full">· ${t['tournaments.reg.full']}</span>` : ''}
-    </button>
-    <div class="reg-body" hidden>
-      ${listHtml}
-      ${showForm ? `
-        <form class="reg-form" novalidate>
-          <input class="reg-name" name="name" type="text" maxlength="${REG_NAME_MAX}"
-                 placeholder="${escapeHtml(t['tournaments.reg.name'])}" autocomplete="name" />
-          <input class="reg-note-input" name="note" type="text" maxlength="${REG_NOTE_MAX}"
-                 placeholder="${escapeHtml(t['tournaments.reg.note'])}" />
-          <input class="reg-hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
-          <button class="reg-submit" type="submit">${t['tournaments.reg.submit']}</button>
-        </form>` : ''}
-      <p class="reg-status">${registeredHere(x.id) && !closed ? t['tournaments.reg.already'] : ''}</p>
+    <div class="reg-bar">
+      <div class="reg-bar-count">${count}</div>
+      ${capacity && !closed ? `<div class="reg-progress"><span style="width:${pct}%"></span></div>` : '<div class="reg-progress-spacer"></div>'}
+      ${action}
     </div>
+    ${names}
+    ${showForm ? `
+      <form class="reg-form" novalidate hidden>
+        <input class="reg-name" name="name" type="text" maxlength="${REG_NAME_MAX}"
+               placeholder="${escapeHtml(t['tournaments.reg.name'])}" autocomplete="name" />
+        <input class="reg-note-input" name="note" type="text" maxlength="${REG_NOTE_MAX}"
+               placeholder="${escapeHtml(t['tournaments.reg.note'])}" />
+        <input class="reg-hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <button class="reg-submit" type="submit">${t['tournaments.reg.submit']}</button>
+      </form>` : ''}
+    <p class="reg-status"></p>
   `;
 
-  const toggle = wrap.querySelector('.reg-toggle');
-  const body   = wrap.querySelector('.reg-body');
-  toggle.addEventListener('click', () => {
-    const open = body.hasAttribute('hidden');
-    body.toggleAttribute('hidden', !open);
-    toggle.setAttribute('aria-expanded', String(open));
-  });
-
   const form = wrap.querySelector('.reg-form');
+  const cta  = wrap.querySelector('.reg-cta');
+  if (cta && form) cta.addEventListener('click', () => {
+    form.hidden = false;
+    cta.remove();
+    form.querySelector('.reg-name').focus();
+  });
   if (form) form.addEventListener('submit', e => {
     e.preventDefault();
     submitRegistration(form, x, wrap.querySelector('.reg-status'), t);

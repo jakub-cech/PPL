@@ -229,6 +229,51 @@
     }
     .cleanup-bar.show { display: flex; }
     .cleanup-text { font-size: 0.83rem; color: var(--text-2); flex: 1; min-width: 200px; }
+    /* Seznam turnajů a jeho řádky */
+    .panel-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .btn-back {
+      background: none; border: none; padding: 0; margin-bottom: 18px; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--text-2);
+      display: inline-flex; align-items: center; gap: 8px; transition: color 0.2s;
+    }
+    .btn-back:hover { color: var(--gold); }
+    .t-row {
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 16px 20px; display: flex; align-items: center; gap: 18px; transition: border-color 0.2s;
+    }
+    .t-row:hover { border-color: var(--gold-dim); }
+    .t-row-date {
+      flex-shrink: 0; width: 84px; text-align: center;
+      border-right: 1px solid var(--border); padding-right: 14px;
+    }
+    .t-row-day { font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--gold-light); line-height: 1.1; }
+    .t-row-mon { font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-top: 2px; }
+    .t-row-time { font-size: 0.68rem; color: var(--text-3); margin-top: 3px; }
+    .t-row-info { flex: 1; min-width: 0; }
+    .t-row-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; }
+    .t-badges { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+    .t-row-regs { flex-shrink: 0; text-align: right; min-width: 92px; font-size: 0.72rem; color: var(--text-3); }
+    .t-row-regs b { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold-light); display: block; }
+    .t-row-act { display: flex; gap: 7px; flex-shrink: 0; }
+
+    /* Přihlášení hráči v úpravě turnaje */
+    .reg-panel {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 22px 24px; margin-top: 20px;
+    }
+    .reg-panel-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--gold-dim); margin-bottom: 16px;
+    }
+    .reg-panel-count { color: var(--text-3); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 0.8rem; }
+
+    @media (max-width: 700px) {
+      .t-row { flex-wrap: wrap; }
+      .t-row-date { border-right: none; text-align: left; width: auto; padding-right: 0; }
+      .t-row-regs { text-align: left; }
+    }
+
     .reg-admin { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); width: 100%; }
     .reg-admin-toggle {
       background: none; border: none; padding: 0; cursor: pointer;
@@ -332,54 +377,74 @@
 
     <!-- Tournaments tab -->
     <div class="tab-panel" id="tab-tournaments">
-      <div class="panel-title" id="t-panel-title">Nový turnaj</div>
-      <div class="t-form">
-        <div class="field">
-          <label>Datum a čas</label>
-          <input type="datetime-local" id="t-date" />
+
+      <!-- Pohled 1: seznam -->
+      <div id="t-view-list">
+        <div class="panel-title panel-title-row">
+          Vypsané turnaje
+          <button class="btn-save" onclick="newTournament()">+ Nový turnaj</button>
         </div>
-        <div class="field">
-          <label>Název</label>
-          <input type="text" id="t-title" placeholder="Turnaj o Foil Lotus Petal" />
-        </div>
-        <div class="field">
-          <label>Počet míst</label>
-          <input type="number" id="t-capacity" min="0" max="999" placeholder="Prázdné = neomezeno, 0 = registrace zavřená" />
-        </div>
-        <div class="field full">
-          <label>Poznámka</label>
-          <div id="t-note-editor"></div>
-        </div>
-        <div class="field full">
-          <label>Odkaz na Facebook událost</label>
-          <input type="url" id="t-url" placeholder="https://fb.me/e/…" />
+        <div class="posts-list" id="t-list">
+          <div class="posts-loading">Načítám…</div>
         </div>
       </div>
-      <div class="editor-actions">
-        <button class="btn-save" onclick="saveTournament()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          Uložit
-        </button>
-        <button class="btn-outline" onclick="resetTournamentForm()">Nový</button>
-        <span class="save-status" id="t-status"></span>
-        <div class="publish-toggle">
-          <label for="t-show-regs" title="Když je vypnuté, návštěvníci vidí jen počet přihlášených, ne jména">Zveřejnit seznam hráčů</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="t-show-regs" />
-            <span class="toggle-slider"></span>
-          </label>
+
+      <!-- Pohled 2: zalozeni a uprava -->
+      <div id="t-view-edit" hidden>
+        <button class="btn-back" type="button" onclick="showTournamentList()">← Zpět na seznam turnajů</button>
+        <div class="panel-title" id="t-panel-title">Nový turnaj</div>
+        <div class="t-form">
+          <div class="field">
+            <label>Datum a čas</label>
+            <input type="datetime-local" id="t-date" />
+          </div>
+          <div class="field">
+            <label>Název</label>
+            <input type="text" id="t-title" placeholder="Turnaj o Foil Lotus Petal" />
+          </div>
+          <div class="field">
+            <label>Počet míst</label>
+            <input type="number" id="t-capacity" min="0" max="999" placeholder="Prázdné = neomezeno, 0 = registrace zavřená" />
+          </div>
+          <div class="field">
+            <label>Odkaz na Facebook událost</label>
+            <input type="url" id="t-url" placeholder="https://fb.me/e/…" />
+          </div>
+          <div class="field full">
+            <label>Poznámka</label>
+            <div id="t-note-editor"></div>
+          </div>
         </div>
-        <div class="publish-toggle" style="margin-left:0">
-          <label for="t-publish">Zveřejnit</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="t-publish" />
-            <span class="toggle-slider"></span>
-          </label>
+        <div class="editor-actions">
+          <button class="btn-save" onclick="saveTournament()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Uložit
+          </button>
+          <span class="save-status" id="t-status"></span>
+          <div class="publish-toggle">
+            <label for="t-show-regs" title="Když je vypnuté, návštěvníci vidí jen počet přihlášených, ne jména">Zveřejnit seznam hráčů</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="t-show-regs" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="publish-toggle" style="margin-left:0">
+            <label for="t-publish">Zveřejnit</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="t-publish" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
-      </div>
-      <div class="panel-title" style="margin-top:44px">Vypsané turnaje</div>
-      <div class="posts-list" id="t-list">
-        <div class="posts-loading">Načítám…</div>
+
+        <!-- Prihlaseni hraci — jen u ulozeneho turnaje -->
+        <div class="reg-panel" id="t-reg-panel" hidden>
+          <div class="reg-panel-head">
+            <span>Přihlášení hráči</span>
+            <span class="reg-panel-count" id="t-reg-count"></span>
+          </div>
+          <div id="t-reg-list"></div>
+        </div>
       </div>
     </div>
 
@@ -949,6 +1014,7 @@ function resetTournamentForm() {
   noteQuill.setContents([]);
   document.getElementById('t-publish').checked = false;
   document.getElementById('t-show-regs').checked = false;
+  document.getElementById('t-reg-panel').hidden = true;
   document.getElementById('t-status').textContent = '';
   document.getElementById('t-status').className = 'save-status';
   document.getElementById('t-panel-title').textContent = 'Nový turnaj';
@@ -994,7 +1060,8 @@ async function saveTournament() {
     }
     status.textContent = '✓ Uloženo';
     status.className = 'save-status ok';
-    loadTournamentList();
+    document.getElementById('t-panel-title').textContent = title;
+    showRegPanel(editingTournamentId);
   } catch(e) {
     status.textContent = 'Chyba při ukládání.';
     status.className = 'save-status err';
@@ -1002,56 +1069,77 @@ async function saveTournament() {
   }
 }
 
+// ── Přepínání mezi seznamem a úpravou ─────────────────────────
+function showTournamentList() {
+  document.getElementById('t-view-edit').hidden = true;
+  document.getElementById('t-view-list').hidden = false;
+  loadTournamentList();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showTournamentEditor() {
+  document.getElementById('t-view-list').hidden = true;
+  document.getElementById('t-view-edit').hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function newTournament() {
+  resetTournamentForm();
+  showTournamentEditor();
+}
+
 async function loadTournamentList() {
   const list = document.getElementById('t-list');
   list.innerHTML = '<div class="posts-loading">Načítám…</div>';
   try {
     const snap = await db.collection('tournaments').get();
-    if (snap.empty) { list.innerHTML = '<div class="posts-empty">Žádné turnaje.</div>'; return; }
+    if (snap.empty) { list.innerHTML = '<div class="posts-empty">Žádné turnaje. Založ první tlačítkem nahoře.</div>'; return; }
     const rows = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (a.date?.toMillis?.() ?? 0) - (b.date?.toMillis?.() ?? 0));
+
+    // Pocty prihlasenych stahujeme rovnou, aby byly videt v prehledu.
+    await Promise.all(rows.map(async x => {
+      try { x.regCount = (await db.collection('tournaments').doc(x.id).collection('registrations').get()).docs.length; }
+      catch(e) { x.regCount = null; }
+    }));
+
     list.innerHTML = '';
     rows.forEach(x => {
       const d = x.date?.toDate?.();
-      const kdy = d
-        ? d.toLocaleString('cs-CZ', { day:'numeric', month:'long', year:'numeric', hour:'numeric', minute:'2-digit' })
-        : '—';
       const minuly = d && d.getTime() < Date.now();
+      const kapacita = x.capacity === 0 ? 'Registrace zavřená'
+                     : x.capacity ? 'Kapacita ' + x.capacity
+                     : 'Bez omezení';
       const item = document.createElement('div');
-      item.className = 'post-item';
-      item.style.flexWrap = 'wrap';
+      item.className = 't-row';
       item.innerHTML = `
-        <div class="post-item-info">
-          <div class="post-item-title">${escapeHtml(x.title) || '(bez názvu)'}</div>
-          <div class="post-item-meta">
-            <span class="post-item-author">${kdy}</span>
+        <div class="t-row-date">
+          <div class="t-row-day">${d ? d.getDate() : '—'}</div>
+          <div class="t-row-mon">${d ? d.toLocaleDateString('cs-CZ', { month: 'short' }) + ' ' + d.getFullYear() : ''}</div>
+          <div class="t-row-time">${d ? d.toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' }) : ''}</div>
+        </div>
+        <div class="t-row-info">
+          <div class="t-row-title">${escapeHtml(x.title) || '(bez názvu)'}</div>
+          <div class="t-badges">
             <span class="status-badge ${x.published ? 'published' : 'draft'}">${x.published ? 'Zveřejněno' : 'Koncept'}</span>
+            <span class="status-badge draft">${kapacita}</span>
+            <span class="status-badge draft">${x.showRegistrations ? 'Seznam veřejný' : 'Seznam skrytý'}</span>
             ${minuly ? '<span class="status-badge draft">Proběhlý</span>' : ''}
-            <span>${x.capacity === 0 ? 'Registrace zavřená' : x.capacity ? 'Kapacita ' + x.capacity : 'Bez omezení'}</span>
-            <span>${x.showRegistrations ? 'Seznam veřejný' : 'Seznam skrytý'}</span>
           </div>
         </div>
-        <div class="post-item-actions">
+        <div class="t-row-regs">
+          <b>${x.regCount === null ? '?' : x.regCount}${x.capacity ? ' / ' + x.capacity : ''}</b>
+          přihlášených
+        </div>
+        <div class="t-row-act">
+          <button class="btn-sm" onclick="editTournament('${x.id}')">Upravit</button>
           <button class="btn-sm publish-btn ${x.published ? 'active' : ''}" onclick="toggleTournament('${x.id}', ${!!x.published})">
             ${x.published ? 'Skrýt' : 'Zveřejnit'}
           </button>
-          <button class="btn-sm" onclick="editTournament('${x.id}')">Upravit</button>
           <button class="btn-sm danger" onclick="deleteTournament('${x.id}', this)">Smazat</button>
         </div>
-        <div class="reg-admin">
-          <button class="reg-admin-toggle" type="button">Přihlášení hráči ▾</button>
-          <div class="reg-admin-list" hidden></div>
-        </div>
       `;
-      const regToggle = item.querySelector('.reg-admin-toggle');
-      const regBox    = item.querySelector('.reg-admin-list');
-      regToggle.addEventListener('click', () => {
-        const opening = regBox.hasAttribute('hidden');
-        regBox.toggleAttribute('hidden', !opening);
-        regToggle.textContent = 'Přihlášení hráči ' + (opening ? '▴' : '▾');
-        if (opening) renderRegistrations(x.id, regBox);
-      });
       list.appendChild(item);
     });
   } catch(e) {
@@ -1078,8 +1166,17 @@ async function editTournament(id) {
   document.getElementById('t-show-regs').checked = x.showRegistrations === true;
   document.getElementById('t-publish').checked = !!x.published;
   document.getElementById('t-status').textContent = '';
-  document.getElementById('t-panel-title').textContent = 'Upravit turnaj';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('t-panel-title').textContent = x.title || 'Upravit turnaj';
+  showTournamentEditor();
+  showRegPanel(id);
+}
+
+// Panel s prihlasenymi hraci dava smysl az u ulozeneho turnaje.
+function showRegPanel(tournamentId) {
+  const panel = document.getElementById('t-reg-panel');
+  if (!tournamentId) { panel.hidden = true; return; }
+  panel.hidden = false;
+  renderRegistrations(tournamentId, document.getElementById('t-reg-list'));
 }
 
 async function deleteTournament(id, btn) {
@@ -1094,6 +1191,7 @@ async function deleteTournament(id, btn) {
   await db.collection('tournaments').doc(id).delete();
   if (editingTournamentId === id) resetTournamentForm();
   loadTournamentList();
+  document.getElementById('t-reg-panel').hidden = true;
 }
 
 // ── Přihlášení hráči ──────────────────────────────────────────
@@ -1106,10 +1204,13 @@ async function loadRegistrations(tournamentId) {
 }
 
 async function renderRegistrations(tournamentId, box) {
+  const countEl = document.getElementById('t-reg-count');
   box.innerHTML = '<div class="reg-admin-empty">Načítám…</div>';
   let regs;
   try { regs = await loadRegistrations(tournamentId); }
   catch(e) { box.innerHTML = '<div class="reg-admin-empty">Nepodařilo se načíst.</div>'; console.error(e); return; }
+  const cap = Number(document.getElementById('t-capacity').value);
+  if (countEl) countEl.textContent = regs.length + (Number.isFinite(cap) && cap > 0 ? ' / ' + cap : '');
   if (!regs.length) { box.innerHTML = '<div class="reg-admin-empty">Zatím nikdo.</div>'; return; }
   box.innerHTML = '';
   regs.forEach((r, i) => {
