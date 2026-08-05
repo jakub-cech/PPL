@@ -394,12 +394,25 @@
       letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s;
     }
     .reg-cta:hover { opacity: 0.9; }
-    .reg-list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-    .reg-list li {
-      background: var(--bg-3); border: 1px solid var(--border); border-radius: 100px;
-      padding: 5px 14px; font-size: 0.8rem; color: var(--text-1);
+    .reg-names-toggle {
+      background: none; border: none; padding: 0; margin-top: 14px; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--gold-dim);
+      display: flex; align-items: center; gap: 8px; transition: color 0.2s;
     }
-    .reg-list .reg-note { color: var(--text-3); }
+    .reg-names-toggle:hover { color: var(--gold); }
+    .reg-names-toggle .chev { font-size: 0.7rem; transition: transform 0.25s; }
+    .reg-names-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+    .reg-list { list-style: none; display: flex; flex-direction: column; gap: 2px; margin-top: 12px; }
+    .reg-list[hidden] { display: none; }
+    .reg-list li {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 7px 0; font-size: 0.85rem; color: var(--text-1);
+      border-bottom: 1px solid var(--border);
+    }
+    .reg-list li:last-child { border-bottom: none; }
+    .reg-list .reg-num { color: var(--text-3); font-size: 0.78rem; min-width: 22px; }
+    .reg-list .reg-player { font-weight: 500; }
+    .reg-list .reg-note { color: var(--text-3); font-size: 0.8rem; }
     .reg-hidden-note { font-size: 0.78rem; color: var(--text-3); margin-top: 12px; }
     .reg-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-top: 16px; }
     .reg-form[hidden] { display: none; }
@@ -1149,6 +1162,8 @@ const i18n = {
     "tournaments.reg.full":     "obsazeno",
     "tournaments.reg.closed":   "Registrace uzavřena",
     "tournaments.reg.hidden":   "Seznam přihlášených není veřejný.",
+    "tournaments.reg.show":     "Zobrazit přihlášené",
+    "tournaments.reg.hide":     "Skrýt přihlášené",
     "tournaments.reg.empty":    "Zatím se nikdo nepřihlásil. Buď první.",
     "tournaments.reg.name":     "Tvoje jméno",
     "tournaments.reg.note":     "Poznámka (nepovinné)",
@@ -1265,6 +1280,8 @@ const i18n = {
     "tournaments.reg.full":     "full",
     "tournaments.reg.closed":   "Registration closed",
     "tournaments.reg.hidden":   "The list of players isn't public.",
+    "tournaments.reg.show":     "Show who's coming",
+    "tournaments.reg.hide":     "Hide the list",
     "tournaments.reg.empty":    "Nobody has signed up yet. Be the first.",
     "tournaments.reg.name":     "Your name",
     "tournaments.reg.note":     "Note (optional)",
@@ -1849,11 +1866,17 @@ function buildRegistration(x, t) {
   else if (done)   action = `<span class="reg-state">${t['tournaments.reg.already']}</span>`;
   else             action = `<button class="reg-cta" type="button">${t['tournaments.reg.submit']}</button>`;
 
+  // Jmena se nevypisuji rovnou — schovava je prepinac a rozbaluji se pod sebe.
   let names = '';
   if (showNames && regs.length) {
-    names = `<ul class="reg-list">${regs.map(r =>
-      `<li>${escapeHtml(r.name)}${r.note ? ` <span class="reg-note">· ${escapeHtml(r.note)}</span>` : ''}</li>`
-    ).join('')}</ul>`;
+    names = `
+      <button class="reg-names-toggle" type="button" aria-expanded="false">
+        <span class="chev">▼</span> <span class="label">${t['tournaments.reg.show']}</span>
+      </button>
+      <ol class="reg-list" hidden>${regs.map((r, i) =>
+        `<li><span class="reg-num">${i + 1}.</span><span class="reg-player">${escapeHtml(r.name)}</span>${
+          r.note ? `<span class="reg-note">${escapeHtml(r.note)}</span>` : ''}</li>`
+      ).join('')}</ol>`;
   } else if (!showNames && !closed) {
     names = `<p class="reg-hidden-note">${t['tournaments.reg.hidden']}</p>`;
   }
@@ -1876,6 +1899,16 @@ function buildRegistration(x, t) {
       </form>` : ''}
     <p class="reg-status"></p>
   `;
+
+  const namesToggle = wrap.querySelector('.reg-names-toggle');
+  const namesList   = wrap.querySelector('.reg-list');
+  if (namesToggle && namesList) namesToggle.addEventListener('click', () => {
+    const open = namesList.hasAttribute('hidden');
+    namesList.toggleAttribute('hidden', !open);
+    namesToggle.setAttribute('aria-expanded', String(open));
+    namesToggle.querySelector('.label').textContent =
+      open ? t['tournaments.reg.hide'] : t['tournaments.reg.show'];
+  });
 
   const form = wrap.querySelector('.reg-form');
   const cta  = wrap.querySelector('.reg-cta');
