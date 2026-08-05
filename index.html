@@ -490,7 +490,7 @@
     .results-link:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
 
     /* ── INFO CARDS ── */
-    #info { background: var(--bg-0); }
+    #liga { background: var(--bg-0); }
     .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 52px; }
     .info-card {
       background: var(--bg-2);
@@ -521,7 +521,17 @@
     .info-card strong { color: var(--text-1); font-weight: 500; }
 
     /* ── SYSTEM & PRIZES ── */
-    #system { background: var(--bg-1); }
+    .liga-divider {
+      margin-top: 72px; padding-top: 40px; border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .liga-sub-label {
+      display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--gold-dim); margin-bottom: 10px;
+    }
+    .liga-sub-title { font-size: clamp(1.3rem, 3.4vw, 1.9rem); color: var(--text-1); margin-bottom: 8px; }
+    @media (max-width: 600px) { .liga-divider { margin-top: 52px; } }
+
     .system-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -568,7 +578,7 @@
     .grand-prize .gp-desc  { font-size: 0.85rem; color: var(--text-2); }
 
     /* ── COMMUNITY ── */
-    #komunita { background: var(--bg-1); }
+    #komunita { background: var(--bg-0); }
     .community-inner { display: flex; flex-direction: column; align-items: center; text-align: center; }
     .community-desc { font-size: 1rem; color: var(--text-2); max-width: 480px; margin: 0 auto 40px; line-height: 1.7; }
     .social-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
@@ -716,7 +726,7 @@
     }
 
     /* ── MERCH ── */
-    #merch { background: var(--bg-0); }
+    #merch { background: var(--bg-1); }
     .merch-coming {
       display: flex; flex-direction: column; align-items: center;
       gap: 14px; padding: 56px 24px;
@@ -758,8 +768,7 @@
       <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
       <li><a href="#vysledky"><span data-i18n="nav.results"></span></a></li>
       <li><a href="#blog"><span     data-i18n="nav.blog"></span></a></li>
-      <li><a href="#info"><span     data-i18n="nav.info"></span></a></li>
-      <li><a href="#system"><span   data-i18n="nav.system"></span></a></li>
+      <li><a href="#liga"><span     data-i18n="nav.info"></span></a></li>
       <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
       <li><a href="#komunita"><span data-i18n="nav.community"></span></a></li>
     </ul>
@@ -780,8 +789,7 @@
     <a href="#turnaje"  onclick="closeMenu()"><span data-i18n="nav.tournaments"></span></a>
     <a href="#vysledky" onclick="closeMenu()"><span data-i18n="nav.results"></span></a>
     <a href="#blog"     onclick="closeMenu()"><span data-i18n="nav.blog"></span></a>
-    <a href="#info"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
-    <a href="#system"   onclick="closeMenu()"><span data-i18n="nav.system"></span></a>
+    <a href="#liga"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
     <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
     <a href="#komunita" onclick="closeMenu()"><span data-i18n="nav.community"></span></a>
   </div>
@@ -907,8 +915,8 @@
   <div class="lightbox-counter" id="lightbox-counter"></div>
 </div>
 
-<!-- ── INFO ── -->
-<section id="info">
+<!-- ── LIGA (info + systém) ── -->
+<section id="liga">
   <div class="container">
     <div class="ornament"><div class="ornament-diamond"></div></div>
     <div class="reveal">
@@ -968,18 +976,13 @@
       </div>
 
     </div>
-  </div>
-</section>
 
-<!-- ── SYSTEM & PRIZES ── -->
-<section id="system">
-  <div class="container">
-    <div class="ornament"><div class="ornament-diamond"></div></div>
-    <div class="reveal">
-      <span class="section-label" data-i18n="system.label"></span>
-      <h2 class="section-title" data-i18n="system.title"></h2>
-      <p class="section-desc" data-i18n="system.desc"></p>
+    <!-- Mezinadpis: herni system a ceny -->
+    <div class="liga-divider reveal">
+      <span class="liga-sub-label" data-i18n="system.label"></span>
+      <h3 class="liga-sub-title" data-i18n="system.title"></h3>
     </div>
+
     <div class="system-grid">
       <div class="system-block reveal">
         <div class="system-block-title" data-i18n="system.rules.title"></div>
@@ -1120,8 +1123,8 @@ const i18n = {
     "hero.cta2":  "Přidat se na Discord",
 
     "info.label":       "O Lize",
-    "info.title":       "Informace o Lize",
-    "info.desc":        "Vše, co potřebuješ vědět, než přijdeš hrát.",
+    "info.title":       "Liga",
+    "info.desc":        "Vše o lize na jednom místě — kde a kdy hrajeme, za kolik, i jak funguje herní systém a ceny.",
     "info.card1.title": "Lokace",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Kdy hrajeme",
@@ -1238,8 +1241,8 @@ const i18n = {
     "hero.cta2":  "Join Discord",
 
     "info.label":       "About",
-    "info.title":       "League Info",
-    "info.desc":        "Everything you need to know before you show up to play.",
+    "info.title":       "League",
+    "info.desc":        "Everything about the league in one place — where and when we play, the fee, and how the system and prizes work.",
     "info.card1.title": "Location",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Schedule",
