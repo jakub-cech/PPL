@@ -433,6 +433,25 @@
 
     /* ── PRŮBĚŽNÉ VÝSLEDKY ── */
     #vysledky { background: var(--bg-0); }
+    .results-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      flex-wrap: wrap; margin-top: 52px; padding: 18px 24px; text-decoration: none;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-left: 2px solid var(--gold-dim); border-radius: var(--radius-md);
+      transition: border-color 0.25s, transform 0.25s;
+    }
+    .results-banner:hover { border-color: var(--gold-dim); border-left-color: var(--gold); transform: translateY(-2px); }
+    .results-banner-text { display: flex; flex-direction: column; gap: 4px; }
+    .results-banner-text strong { font-family: 'Cinzel', serif; font-size: 0.98rem; color: var(--text-1); font-weight: 600; }
+    .results-banner-text span { font-size: 0.83rem; color: var(--text-3); }
+    .results-banner-cta {
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--gold); white-space: nowrap;
+    }
+    .results-sub {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold-dim); margin: 44px 0 -34px; padding-top: 8px;
+    }
     .results-wrap { margin-top: 52px; overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
     .results-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 480px; }
     .results-table th, .results-table td { padding: 11px 16px; text-align: left; white-space: nowrap; }
@@ -1146,6 +1165,10 @@ const i18n = {
     "results.unavailable": "Tabulku se teď nedaří načíst.",
     "results.more":        "Zobrazeno prvních 60 řádků.",
     "results.open":        "Otevřít celou tabulku →",
+    "results.top8":        "Top 8",
+    "results.rounds.title": "Kompletní výsledky kol",
+    "results.rounds.desc":  "Zápas po zápasu, tabulka v Google Sheets.",
+    "results.rounds.cta":   "Otevřít →",
     "blog.label":   "Zápisky",
     "blog.title":   "Blog",
     "blog.desc":    "Reporty z turnajů, decklists, novinky z Pauper metagame.",
@@ -1258,6 +1281,10 @@ const i18n = {
     "results.unavailable": "The table can't be loaded right now.",
     "results.more":        "Showing the first 60 rows.",
     "results.open":        "Open the full sheet →",
+    "results.top8":        "Top 8",
+    "results.rounds.title": "Full round-by-round results",
+    "results.rounds.desc":  "Match by match, in Google Sheets.",
+    "results.rounds.cta":   "Open →",
     "blog.label":   "Journal",
     "blog.title":   "Blog",
     "blog.desc":    "Tournament reports, decklists, and Pauper metagame updates.",
@@ -1555,9 +1582,22 @@ async function loadBlogPosts() {
 // zverejneny pres Soubor → Sdilet → Publikovat na webu. Kdyz se stahnout
 // nepodari, sekce misto tabulky nabidne odkaz do tabulky.
 const RESULTS_SHEET_ID = '1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ';
-const RESULTS_CSV_URL  = `https://docs.google.com/spreadsheets/d/${RESULTS_SHEET_ID}/gviz/tq?tqx=out:csv`;
+// Druha zalozka tabulky poradi. Musi presne odpovidat nazvu zalozky
+// v Google tabulce — misto nazvu jde uvest i cislo gid z adresy
+// (napr. { gid: '123456789' }). Kdyz se nenacte, blok se proste neukaze.
+const RESULTS_TOP8     = { sheet: 'Top 8 Hráčů' };
+// Samostatna tabulka s vysledky jednotlivych kol — jen odkaz, netahame ji.
+const ROUNDS_SHEET_ID  = '1KJ6UbtduGuhpnFrIywQ63RxzdvaDD5OqQaqQeExSuTA';
+const ROUNDS_LINK      = `https://docs.google.com/spreadsheets/d/${ROUNDS_SHEET_ID}/edit?usp=sharing`;
 const RESULTS_LINK     = `https://docs.google.com/spreadsheets/d/${RESULTS_SHEET_ID}/edit?usp=sharing`;
 const RESULTS_MAX_ROWS = 60;
+
+function sheetCsvUrl(id, part) {
+  const base = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
+  if (part?.gid)   return `${base}&gid=${encodeURIComponent(part.gid)}`;
+  if (part?.sheet) return `${base}&sheet=${encodeURIComponent(part.sheet)}`;
+  return base;
+}
 
 // CSV z Google tabulek ma uvozovkami obalena pole, ktera mohou obsahovat
 // carky i konce radku — proto vlastni pruchod misto split(',').
@@ -1585,44 +1625,74 @@ function parseCsv(text) {
   return rows;
 }
 
-function renderResults(lang) {
-  const box = document.getElementById('results-body');
-  const t = i18n[lang];
-  const link = `<a class="results-link" href="${RESULTS_LINK}" target="_blank" rel="noopener">${t['results.open']}</a>`;
-
-  if (cachedResults === null) { box.innerHTML = `<p class="results-msg">${t['results.loading']}</p>`; return; }
-  if (cachedResults === false || cachedResults.length < 2) {
-    box.innerHTML = `<div class="results-note"><span class="results-msg">${t['results.unavailable']}</span>${link}</div>`;
-    return;
-  }
-  const [head, ...body] = cachedResults;
+function resultsTable(rows) {
+  const [head, ...body] = rows;
   const shown = body.slice(0, RESULTS_MAX_ROWS);
-  box.innerHTML = `
+  return `
     <div class="results-wrap">
       <table class="results-table">
         <thead><tr>${head.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
         <tbody>${shown.map(r => `<tr>${head.map((_, i) => `<td>${escapeHtml(r[i] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody>
       </table>
-    </div>
-    <div class="results-note">
-      <span class="results-msg">${body.length > shown.length ? t['results.more'] : ''}</span>
-      ${link}
-    </div>
-  `;
+    </div>`;
 }
 
-let cachedResults = null;
+function renderResults(lang) {
+  const box = document.getElementById('results-body');
+  const t = i18n[lang];
+  const link = `<a class="results-link" href="${RESULTS_LINK}" target="_blank" rel="noopener">${t['results.open']}</a>`;
+
+  // Odkaz na kompletni vysledky kol stoji na zacatku sekce.
+  const rounds = `
+    <a class="results-banner" href="${ROUNDS_LINK}" target="_blank" rel="noopener">
+      <span class="results-banner-text">
+        <strong>${t['results.rounds.title']}</strong>
+        <span>${t['results.rounds.desc']}</span>
+      </span>
+      <span class="results-banner-cta">${t['results.rounds.cta']}</span>
+    </a>`;
+
+  if (cachedResults === null) {
+    box.innerHTML = rounds + `<p class="results-msg">${t['results.loading']}</p>`;
+    return;
+  }
+
+  const standings = (cachedResults === false || cachedResults.length < 2)
+    ? `<div class="results-note"><span class="results-msg">${t['results.unavailable']}</span>${link}</div>`
+    : resultsTable(cachedResults) + `
+        <div class="results-note">
+          <span class="results-msg">${cachedResults.length - 1 > RESULTS_MAX_ROWS ? t['results.more'] : ''}</span>
+          ${link}
+        </div>`;
+
+  const top8 = (Array.isArray(cachedTop8) && cachedTop8.length >= 2)
+    ? `<div class="results-sub">${t['results.top8']}</div>` + resultsTable(cachedTop8)
+    : '';
+
+  box.innerHTML = rounds + standings + top8;
+}
+
+let cachedResults = null;   // null = nacita se, false = nepodarilo se
+let cachedTop8    = null;
+
+async function fetchSheet(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const rows = parseCsv(await res.text());
+  return rows.length >= 2 ? rows : false;
+}
 
 async function loadResults() {
-  try {
-    const res = await fetch(RESULTS_CSV_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const rows = parseCsv(await res.text());
-    cachedResults = rows.length >= 2 ? rows : false;
-  } catch(e) {
-    console.warn('Results load error:', e);
-    cachedResults = false;
-  }
+  // Poradi a Top 8 tahame zvlast — kdyz druha zalozka chybi nebo ma jiny
+  // nazev, hlavni tabulka se tim nesmi rozbit.
+  const [poradi, top8] = await Promise.allSettled([
+    fetchSheet(sheetCsvUrl(RESULTS_SHEET_ID)),
+    fetchSheet(sheetCsvUrl(RESULTS_SHEET_ID, RESULTS_TOP8))
+  ]);
+  if (poradi.status === 'fulfilled') cachedResults = poradi.value;
+  else { console.warn('Results load error:', poradi.reason); cachedResults = false; }
+  if (top8.status === 'fulfilled') cachedTop8 = top8.value;
+  else { console.warn('Top 8 load error:', top8.reason); cachedTop8 = false; }
   renderResults(document.documentElement.lang || 'cs');
 }
 
