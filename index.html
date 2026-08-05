@@ -1625,8 +1625,18 @@ function parseCsv(text) {
   return rows;
 }
 
-function resultsTable(rows) {
+// V tabulce byvaji i radky, ktere nepatri hraci — prazdne radky, souhrny,
+// poznamky pod tabulkou. Bereme jen ty, ktere zacinaji poradovym cislem
+// ("1", "12" i "3.-4.").
+function playerRows(rows) {
   const [head, ...body] = rows;
+  const players = body.filter(r => /^\s*\d/.test(r[0] ?? ''));
+  // Kdyby prvni sloupec cisla neobsahoval vubec, radeji ukazeme vsechno
+  // nez prazdnou tabulku.
+  return { head, body: players.length ? players : body };
+}
+
+function resultsTable(head, body) {
   const shown = body.slice(0, RESULTS_MAX_ROWS);
   return `
     <div class="results-wrap">
@@ -1657,17 +1667,23 @@ function renderResults(lang) {
     return;
   }
 
-  const standings = (cachedResults === false || cachedResults.length < 2)
-    ? `<div class="results-note"><span class="results-msg">${t['results.unavailable']}</span>${link}</div>`
-    : resultsTable(cachedResults) + `
-        <div class="results-note">
-          <span class="results-msg">${cachedResults.length - 1 > RESULTS_MAX_ROWS ? t['results.more'] : ''}</span>
-          ${link}
-        </div>`;
+  let standings;
+  if (cachedResults === false || cachedResults.length < 2) {
+    standings = `<div class="results-note"><span class="results-msg">${t['results.unavailable']}</span>${link}</div>`;
+  } else {
+    const { head, body } = playerRows(cachedResults);
+    standings = resultsTable(head, body) + `
+      <div class="results-note">
+        <span class="results-msg">${body.length > RESULTS_MAX_ROWS ? t['results.more'] : ''}</span>
+        ${link}
+      </div>`;
+  }
 
-  const top8 = (Array.isArray(cachedTop8) && cachedTop8.length >= 2)
-    ? `<div class="results-sub">${t['results.top8']}</div>` + resultsTable(cachedTop8)
-    : '';
+  let top8 = '';
+  if (Array.isArray(cachedTop8) && cachedTop8.length >= 2) {
+    const { head, body } = playerRows(cachedTop8);
+    top8 = `<div class="results-sub">${t['results.top8']}</div>` + resultsTable(head, body);
+  }
 
   box.innerHTML = rounds + standings + top8;
 }
