@@ -491,61 +491,36 @@
 
     /* ── INFO CARDS ── */
     #liga { background: var(--bg-0); }
-    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 52px; }
-    .info-card {
-      background: var(--bg-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 28px 24px;
-      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
-      position: relative;
-      overflow: hidden;
+    /* Dva rovnocenne panely — prakticke info vlevo, herni system vpravo. */
+    .liga-panels {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      margin-top: 52px; align-items: start;
     }
-    .info-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
-      opacity: 0; transition: opacity 0.3s;
+    .liga-panel {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 30px 28px;
     }
-    .info-card:hover { border-color: var(--gold-dim); transform: translateY(-4px); box-shadow: var(--shadow-card), var(--shadow-glow); }
-    .info-card:hover::before { opacity: 1; }
-    .info-icon {
-      width: 48px; height: 48px;
-      background: rgba(201,168,76,0.08);
-      border: 1px solid var(--gold-dim);
-      border-radius: var(--radius-sm);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 18px;
+    .liga-panel-head {
+      font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 600;
+      color: var(--gold-light); letter-spacing: 0.04em;
+      margin-bottom: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
     }
-    .info-card h3 { font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 600; color: var(--gold); letter-spacing: 0.08em; margin-bottom: 10px; text-transform: uppercase; }
-    .info-card p { font-size: 0.9rem; color: var(--text-2); line-height: 1.65; }
-    .info-card strong { color: var(--text-1); font-weight: 500; }
+    /* Radek s praktickym udajem */
+    .liga-row { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid rgba(46,46,64,0.5); }
+    .liga-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .liga-row-icon {
+      flex-shrink: 0; width: 42px; height: 42px;
+      background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim);
+      border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    }
+    .liga-row-text { min-width: 0; }
+    .liga-row-k { font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 600; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+    .liga-row-v { font-size: 0.88rem; color: var(--text-2); line-height: 1.6; }
+    .liga-row-v strong { color: var(--text-1); font-weight: 500; }
+    /* Podnadpis uvnitr praveho panelu */
+    .liga-sub { font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 600; color: var(--gold-dim); letter-spacing: 0.12em; text-transform: uppercase; margin: 26px 0 14px; }
+    .liga-panel .liga-sub:first-of-type { margin-top: 22px; }
 
-    /* ── SYSTEM & PRIZES ── */
-    .liga-divider {
-      margin-top: 72px; padding-top: 40px; border-top: 1px solid var(--border);
-      text-align: center;
-    }
-    .liga-sub-label {
-      display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em;
-      text-transform: uppercase; color: var(--gold-dim); margin-bottom: 10px;
-    }
-    .liga-sub-title { font-size: clamp(1.3rem, 3.4vw, 1.9rem); color: var(--text-1); margin-bottom: 8px; }
-    @media (max-width: 600px) { .liga-divider { margin-top: 52px; } }
-
-    .system-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-top: 52px;
-      align-items: start;
-    }
-    .system-block {
-      background: var(--bg-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 28px;
-    }
-    .system-block-title { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
     .rule-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
     .rule-list li {
       position: relative;
@@ -563,16 +538,10 @@
       top: 6px;
     }
     .rule-list li strong { color: var(--text-1); font-weight: 600; }
-    @media (max-width: 860px) {
-      .system-grid { grid-template-columns: 1fr; }
+    @media (max-width: 780px) {
+      .liga-panels { grid-template-columns: 1fr; }
     }
-    .prize-tier { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; transition: border-color 0.2s; }
-    .prize-tier:hover { border-color: var(--gold-dim); }
-    .tier-badge { min-width: 52px; height: 52px; background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.06)); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: 0.7rem; color: var(--gold); font-weight: 600; letter-spacing: 0.05em; line-height: 1.2; }
-    .tier-badge .score { font-size: 1rem; }
-    .tier-info h4 { font-size: 0.88rem; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
-    .tier-info p  { font-size: 0.8rem; color: var(--text-2); }
-    .grand-prize { margin-top: 20px; background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04)); border: 1px solid var(--gold-dim); border-radius: var(--radius-md); padding: 24px; text-align: center; }
+    .grand-prize { margin-top: 26px; background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04)); border: 1px solid var(--gold-dim); border-radius: var(--radius-md); padding: 20px 22px; }
     .grand-prize .gp-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 8px; }
     .grand-prize .gp-title { font-family: 'Cinzel', serif; font-size: 1.05rem; color: var(--gold-light); font-weight: 700; margin-bottom: 6px; }
     .grand-prize .gp-desc  { font-size: 0.85rem; color: var(--text-2); }
@@ -610,7 +579,6 @@
       .hero-corner { display: none; }
       .nav-links { display: none; }
       .hamburger { display: flex; }
-      .info-grid { grid-template-columns: 1fr; }
       .hero-logo { width: min(300px, 85vw); }
     }
     @media (max-width: 480px) {
@@ -924,73 +892,76 @@
       <h2 class="section-title" data-i18n="info.title"></h2>
       <p class="section-desc" data-i18n="info.desc"></p>
     </div>
-    <div class="info-grid">
 
-      <!-- Location card -->
-      <div class="info-card reveal">
-        <div class="info-icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
+    <div class="liga-panels">
+
+      <!-- Panel 1: prakticke info -->
+      <div class="liga-panel reveal">
+        <div class="liga-panel-head" data-i18n="liga.panel1"></div>
+
+        <div class="liga-row">
+          <div class="liga-row-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div class="liga-row-text">
+            <div class="liga-row-k" data-i18n="info.card1.title"></div>
+            <div class="liga-row-v" data-i18n="info.card1.body"></div>
+          </div>
         </div>
-        <h3 data-i18n="info.card1.title"></h3>
-        <p data-i18n="info.card1.body"></p>
+
+        <div class="liga-row">
+          <div class="liga-row-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              <circle cx="12" cy="16" r="2" fill="rgba(201,168,76,0.5)" stroke="none"/>
+            </svg>
+          </div>
+          <div class="liga-row-text">
+            <div class="liga-row-k" data-i18n="info.card2.title"></div>
+            <div class="liga-row-v" data-i18n="info.card2.body"></div>
+          </div>
+        </div>
+
+        <div class="liga-row">
+          <div class="liga-row-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+              <path d="M9 9h6M9 15h6" stroke-width="1.2"/>
+            </svg>
+          </div>
+          <div class="liga-row-text">
+            <div class="liga-row-k" data-i18n="info.card3.title"></div>
+            <div class="liga-row-v" data-i18n="info.card3.body"></div>
+          </div>
+        </div>
+
+        <div class="liga-row">
+          <div class="liga-row-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="2" width="16" height="20" rx="2"/>
+              <rect x="6" y="4" width="12" height="16" rx="1" stroke-width="0.9" stroke-dasharray="2 1"/>
+              <path d="M 12 8 L 14.4 11 L 12 14 L 9.6 11 Z" stroke-width="1" fill="rgba(201,168,76,0.2)"/>
+            </svg>
+          </div>
+          <div class="liga-row-text">
+            <div class="liga-row-k" data-i18n="info.card4.title"></div>
+            <div class="liga-row-v" data-i18n="info.card4.body"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- Schedule card -->
-      <div class="info-card reveal">
-        <div class="info-icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-            <circle cx="12" cy="16" r="2" fill="rgba(201,168,76,0.5)" stroke="none"/>
-          </svg>
-        </div>
-        <h3 data-i18n="info.card2.title"></h3>
-        <p data-i18n="info.card2.body"></p>
-      </div>
+      <!-- Panel 2: herni system a ceny -->
+      <div class="liga-panel reveal">
+        <div class="liga-panel-head" data-i18n="liga.panel2"></div>
 
-      <!-- Entry fee card -->
-      <div class="info-card reveal">
-        <div class="info-icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-            <path d="M9 9h6M9 15h6" stroke-width="1.2"/>
-          </svg>
-        </div>
-        <h3 data-i18n="info.card3.title"></h3>
-        <p data-i18n="info.card3.body"></p>
-      </div>
-
-      <!-- Proxy card -->
-      <div class="info-card reveal">
-        <div class="info-icon">
-          <!-- MTG card back style icon -->
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="2" width="16" height="20" rx="2"/>
-            <rect x="6" y="4" width="12" height="16" rx="1" stroke-width="0.9" stroke-dasharray="2 1"/>
-            <path d="M 12 8 L 14.4 11 L 12 14 L 9.6 11 Z" stroke-width="1" fill="rgba(201,168,76,0.2)"/>
-          </svg>
-        </div>
-        <h3 data-i18n="info.card4.title"></h3>
-        <p data-i18n="info.card4.body"></p>
-      </div>
-
-    </div>
-
-    <!-- Mezinadpis: herni system a ceny -->
-    <div class="liga-divider reveal">
-      <span class="liga-sub-label" data-i18n="system.label"></span>
-      <h3 class="liga-sub-title" data-i18n="system.title"></h3>
-    </div>
-
-    <div class="system-grid">
-      <div class="system-block reveal">
-        <div class="system-block-title" data-i18n="system.rules.title"></div>
+        <div class="liga-sub" data-i18n="system.rules.title"></div>
         <ul class="rule-list" id="rule-list"></ul>
-      </div>
-      <div class="system-block reveal">
-        <div class="system-block-title" data-i18n="system.prizes.title"></div>
+
+        <div class="liga-sub" data-i18n="system.prizes.title"></div>
         <ul class="rule-list" id="prize-list"></ul>
+
         <div class="grand-prize">
           <div class="gp-label" data-i18n="system.grand.label"></div>
           <div class="gp-title">
@@ -1003,6 +974,7 @@
           <div class="gp-desc" data-i18n="system.grand.desc"></div>
         </div>
       </div>
+
     </div>
   </div>
 </section>
@@ -1123,6 +1095,8 @@ const i18n = {
     "hero.cta2":  "Přidat se na Discord",
 
     "info.label":       "O Lize",
+    "liga.panel1":      "Než přijdeš hrát",
+    "liga.panel2":      "Jak liga funguje",
     "info.title":       "Liga",
     "info.desc":        "Vše o lize na jednom místě — kde a kdy hrajeme, za kolik, i jak funguje herní systém a ceny.",
     "info.card1.title": "Lokace",
@@ -1241,6 +1215,8 @@ const i18n = {
     "hero.cta2":  "Join Discord",
 
     "info.label":       "About",
+    "liga.panel1":      "Before you play",
+    "liga.panel2":      "How the league works",
     "info.title":       "League",
     "info.desc":        "Everything about the league in one place — where and when we play, the fee, and how the system and prizes work.",
     "info.card1.title": "Location",
