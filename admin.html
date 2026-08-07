@@ -251,6 +251,38 @@
     .btn-sm:hover { border-color: var(--gold-dim); color: var(--text-1); }
     .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
     .btn-sm.publish-btn.active { border-color: var(--green); color: var(--green); }
+    /* Blog: filtr sekci a mrizka prispevku */
+    .blog-filter { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 22px; }
+    .blog-chip {
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: 100px;
+      padding: 7px 16px; font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 500;
+      color: var(--text-2); cursor: pointer; transition: all 0.2s;
+    }
+    .blog-chip:hover { border-color: var(--gold-dim); color: var(--text-1); }
+    .blog-chip.active { background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f; border-color: transparent; font-weight: 600; }
+    .blog-admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    .blog-admin-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.2s; }
+    .blog-admin-card:hover { border-color: var(--gold-dim); }
+    .bac-cover { aspect-ratio: 16 / 9; background: var(--bg-3); position: relative; overflow: hidden; }
+    .bac-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .bac-nocover { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-3); font-size: 0.72rem; }
+    .bac-badge {
+      position: absolute; top: 10px; left: 10px;
+      font-size: 0.64rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 2px 9px; border-radius: 100px; border: 1px solid var(--border);
+      color: var(--text-3); background: rgba(13,13,15,0.7);
+    }
+    .bac-badge.pub { color: var(--green); border-color: var(--green); background: rgba(39,174,96,0.15); }
+    .bac-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+    .bac-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .bac-tag { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-dim); border: 1px solid var(--border); border-radius: 100px; padding: 2px 9px; }
+    .bac-title { font-family: 'Cinzel', serif; font-size: 0.98rem; color: var(--text-1); font-weight: 600; line-height: 1.4; }
+    .bac-meta { font-size: 0.74rem; color: var(--text-3); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .bac-meta .bac-author { color: var(--gold-dim); }
+    .bac-actions { display: flex; gap: 7px; border-top: 1px solid var(--border); padding: 12px 18px; }
+    .bac-actions .btn-sm.danger { margin-left: auto; }
+    .blog-admin-empty { grid-column: 1 / -1; color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
+
     .cleanup-bar {
       display: none; align-items: center; gap: 14px; flex-wrap: wrap;
       background: var(--bg-2); border: 1px solid var(--border); border-left: 2px solid var(--gold-dim);
@@ -361,13 +393,32 @@
 
   <div class="admin-body">
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('editor', this)">✏️ Editor</button>
-      <button class="tab-btn"       onclick="switchTab('posts',  this)">📋 Všechny příspěvky</button>
+      <button class="tab-btn active" onclick="switchTab('blog', this)">📝 Blog</button>
       <button class="tab-btn"       onclick="switchTab('tournaments', this)">🗓️ Turnaje</button>
     </div>
 
-    <!-- Editor tab -->
-    <div class="tab-panel active" id="tab-editor">
+    <!-- Blog tab -->
+    <div class="tab-panel active" id="tab-blog">
+
+      <!-- Pohled 1: seznam prispevku (jako web + admin akce) -->
+      <div id="blog-view-list">
+        <div class="panel-title panel-title-row">
+          Blog
+          <button class="btn-save" onclick="newPost()">+ Nový příspěvek</button>
+        </div>
+        <div class="cleanup-bar" id="cleanup-bar">
+          <span class="cleanup-text" id="cleanup-text"></span>
+          <button class="btn-sm" id="cleanup-btn" onclick="cleanupOrphans()">Uklidit</button>
+        </div>
+        <div class="blog-filter" id="blog-filter"></div>
+        <div class="blog-admin-grid" id="posts-list">
+          <div class="posts-loading">Načítám…</div>
+        </div>
+      </div>
+
+      <!-- Pohled 2: editor prispevku -->
+      <div id="blog-view-edit" hidden>
+        <button class="btn-back" type="button" onclick="showBlogList()">← Zpět na příspěvky</button>
       <div class="panel-title" id="editor-panel-title">Nový příspěvek</div>
       <input class="post-title-input" id="post-title" type="text" placeholder="Název příspěvku…" />
 
@@ -417,9 +468,11 @@
           </label>
         </div>
       </div>
+    
+      </div>
     </div>
 
-    <!-- Tournaments tab -->
+<!-- Tournaments tab -->
     <div class="tab-panel" id="tab-tournaments">
 
       <!-- Pohled 1: seznam -->
@@ -492,18 +545,7 @@
       </div>
     </div>
 
-    <!-- Posts list tab -->
-    <div class="tab-panel" id="tab-posts">
-      <div class="panel-title">Všechny příspěvky</div>
-      <div class="cleanup-bar" id="cleanup-bar">
-        <span class="cleanup-text" id="cleanup-text"></span>
-        <button class="btn-sm" id="cleanup-btn" onclick="cleanupOrphans()">Uklidit</button>
       </div>
-      <div class="posts-list" id="posts-list">
-        <div class="posts-loading">Načítám…</div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Firebase SDK -->
@@ -534,8 +576,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById('login-wrap').style.display = 'none';
     document.getElementById('admin').style.display = 'block';
     document.getElementById('admin-user-name').textContent = authorLabel(user);
-    loadAllPosts();
-    loadSections();
+    loadSections().then(loadAllPosts);
   } else {
     document.getElementById('login-wrap').style.display = '';
     document.getElementById('admin').style.display = 'none';
@@ -784,6 +825,7 @@ async function loadSections() {
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(String(b.name)));
   } catch(e) { console.warn('Sekce se nepodařilo načíst:', e); allSections = []; }
   renderSectionChips();
+  if (cachedAdminPosts) renderBlogList();
 }
 
 function renderSectionChips() {
@@ -1035,49 +1077,107 @@ async function cleanupOrphans() {
 }
 
 // ── Posts list ────────────────────────────────────────────────
+let cachedAdminPosts = null;
+let activeBlogFilter = 'all';   // 'all' | 'drafts' | id sekce
+
+function showBlogList() {
+  document.getElementById('blog-view-edit').hidden = true;
+  document.getElementById('blog-view-list').hidden = false;
+  loadAllPosts();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showBlogEditor() {
+  document.getElementById('blog-view-list').hidden = true;
+  document.getElementById('blog-view-edit').hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function newPost() {
+  resetEditor();
+  showBlogEditor();
+}
+
 async function loadAllPosts() {
   const list = document.getElementById('posts-list');
   list.innerHTML = '<div class="posts-loading">Načítám…</div>';
   try {
     const snap = await db.collection('posts').orderBy('createdAt', 'desc').get();
-    const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    scanOrphans(posts);
-    if (snap.empty) { list.innerHTML = '<div class="posts-empty">Žádné příspěvky.</div>'; return; }
-    list.innerHTML = '';
-    posts.forEach(p => {
-      const id = p.id;
-      const date = p.createdAt?.toDate?.()?.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '—';
-      const item = document.createElement('div');
-      item.className = 'post-item';
-      item.innerHTML = `
-        <div class="post-item-info">
-          <div class="post-item-title">${escapeHtml(p.title) || '(bez názvu)'}</div>
-          <div class="post-item-meta">
-            <span class="post-item-author">${escapeHtml(p.authorName)}</span>
-            <span>${date}</span>
-            <span class="status-badge ${p.published ? 'published' : 'draft'}">${p.published ? 'Zveřejněno' : 'Koncept'}</span>
-          </div>
-        </div>
-        <div class="post-item-actions">
-          <button class="btn-sm publish-btn ${p.published ? 'active' : ''}" onclick="togglePublish('${id}', ${p.published})">
-            ${p.published ? 'Skrýt' : 'Zveřejnit'}
-          </button>
-          <button class="btn-sm" onclick="editPost('${id}')">Upravit</button>
-          <button class="btn-sm danger" onclick="deletePost('${id}', this)">Smazat</button>
-        </div>
-      `;
-      list.appendChild(item);
-    });
+    cachedAdminPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    scanOrphans(cachedAdminPosts);
+    renderBlogList();
   } catch(e) {
-    list.innerHTML = '<div class="posts-empty">Chyba při načítání.</div>';
+    list.innerHTML = '<div class="blog-admin-empty">Chyba při načítání.</div>';
     console.error(e);
   }
+}
+
+function postSectionIdsOf(p) { return Array.isArray(p.sections) ? p.sections : []; }
+
+function renderBlogFilter() {
+  const bar = document.getElementById('blog-filter');
+  if (!cachedAdminPosts) { bar.innerHTML = ''; return; }
+  const used = new Set();
+  cachedAdminPosts.forEach(p => postSectionIdsOf(p).forEach(id => used.add(id)));
+  const hasDrafts = cachedAdminPosts.some(p => !p.published);
+  const chips = [{ id: 'all', name: 'Vše' },
+                 ...allSections.filter(s => used.has(s.id)).map(s => ({ id: s.id, name: s.name }))];
+  if (hasDrafts) chips.push({ id: 'drafts', name: 'Koncepty' });
+  // Kdyz aktivni filtr zmizel (smazana sekce / posledni koncept), spadne na Vše.
+  if (!chips.some(c => c.id === activeBlogFilter)) activeBlogFilter = 'all';
+  bar.innerHTML = chips.map(c =>
+    `<button class="blog-chip ${c.id === activeBlogFilter ? 'active' : ''}" data-id="${escapeHtml(c.id)}">${escapeHtml(c.name)}</button>`
+  ).join('');
+  bar.querySelectorAll('.blog-chip').forEach(btn =>
+    btn.addEventListener('click', () => { activeBlogFilter = btn.dataset.id; renderBlogList(); }));
+}
+
+function renderBlogList() {
+  renderBlogFilter();
+  const list = document.getElementById('posts-list');
+  if (!cachedAdminPosts) return;
+  const nameById = Object.fromEntries(allSections.map(s => [s.id, s.name]));
+  let posts = cachedAdminPosts;
+  if (activeBlogFilter === 'drafts')      posts = posts.filter(p => !p.published);
+  else if (activeBlogFilter !== 'all')    posts = posts.filter(p => postSectionIdsOf(p).includes(activeBlogFilter));
+
+  if (!posts.length) {
+    list.innerHTML = `<div class="blog-admin-empty">${cachedAdminPosts.length ? 'V tomto filtru nic není.' : 'Zatím žádné příspěvky. Založ první tlačítkem nahoře.'}</div>`;
+    return;
+  }
+  list.innerHTML = '';
+  posts.forEach(p => {
+    const id = p.id;
+    const date = p.createdAt?.toDate?.()?.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '—';
+    const thumb = Array.isArray(p.gallery) && p.gallery[0]?.thumb ? p.gallery[0].thumb : '';
+    const tags = postSectionIdsOf(p).map(sid => nameById[sid]).filter(Boolean)
+      .map(n => `<span class="bac-tag">${escapeHtml(n)}</span>`).join('');
+    const card = document.createElement('div');
+    card.className = 'blog-admin-card';
+    card.innerHTML = `
+      <div class="bac-cover">
+        ${thumb ? `<img src="${escapeHtml(thumb)}" alt="" loading="lazy" />` : '<div class="bac-nocover">bez fotky</div>'}
+        <span class="bac-badge ${p.published ? 'pub' : ''}">${p.published ? 'Zveřejněno' : 'Koncept'}</span>
+      </div>
+      <div class="bac-body">
+        ${tags ? `<div class="bac-tags">${tags}</div>` : ''}
+        <div class="bac-title">${escapeHtml(p.title) || '(bez názvu)'}</div>
+        <div class="bac-meta"><span class="bac-author">${escapeHtml(p.authorName)}</span><span>${date}</span></div>
+      </div>
+      <div class="bac-actions">
+        <button class="btn-sm" onclick="editPost('${id}')">Upravit</button>
+        <button class="btn-sm publish-btn ${p.published ? 'active' : ''}" onclick="togglePublish('${id}', ${p.published})">${p.published ? 'Skrýt' : 'Zveřejnit'}</button>
+        <button class="btn-sm danger" onclick="deletePost('${id}', this)">Smazat</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
 }
 
 async function togglePublish(id, current) {
   await db.collection('posts').doc(id).update({ published: !current });
   await syncImageVisibility(id, !current);
-  loadAllPosts();
+  loadAllPosts();   // zustavame v seznamu
 }
 
 async function editPost(id) {
@@ -1096,8 +1196,7 @@ async function editPost(id) {
   document.getElementById('publish-toggle-input').checked = !!p.published;
   document.getElementById('save-status').textContent = '';
   document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
-  switchTab('editor', document.querySelector('.tab-btn'));
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showBlogEditor();
 }
 
 async function deletePost(id, btn) {
@@ -1360,7 +1459,7 @@ function switchTab(name, clickedBtn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   clickedBtn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
-  if (name === 'posts') loadAllPosts();
+  if (name === 'blog') showBlogList();
   if (name === 'tournaments') loadTournamentList();
 }
 </script>
