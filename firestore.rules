@@ -38,6 +38,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Sekce blogu — nazvy stitku, podle kterych se na webu filtruje.
+    // Cist je muze kdokoli (potrebuje je verejna podstranka blogu),
+    // menit jen admin.
+    match /blogSections/{sectionId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     // Turnaje — stejny princip jako prispevky.
     match /tournaments/{tournamentId} {
       allow read:  if resource.data.published == true || isAdmin();

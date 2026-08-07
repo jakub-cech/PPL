@@ -1,0 +1,1202 @@
+﻿<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com; base-uri 'self'; object-src 'none'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog · Plzeňská Pauper Liga 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-0:        #0d0d0f;
+      --bg-1:        #13131a;
+      --bg-2:        #1a1a24;
+      --bg-3:        #22222f;
+      --border:      #2e2e40;
+      --gold:        #c9a84c;
+      --gold-light:  #e0c070;
+      --gold-dim:    #8a6e30;
+      --text-1:      #e8e4d9;
+      --text-2:      #a09880;
+      --text-3:      #5a5445;
+      --radius-sm:   6px;
+      --radius-md:   12px;
+      --shadow-glow: 0 0 30px rgba(201,168,76,0.12);
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.6);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-0);
+      color: var(--text-1);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    section { padding: 96px 0; }
+    h1, h2, h3 { font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,13,15,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+      gap: 16px;
+    }
+    .nav-logo {
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Desktop nav links */
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+    .nav-links a:hover { color: var(--gold-light); }
+
+    /* Mobile overlay menu */
+    .mobile-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: rgba(13,13,15,0.98);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 99;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      transition: color 0.2s;
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu a:hover { color: var(--gold-light); }
+
+    /* Hamburger button */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--gold);
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Language switcher */
+    .nav-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .lang-switcher {
+      display: flex;
+      align-items: center;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .lang-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--text-3);
+      padding: 5px 12px;
+      border-radius: 100px;
+      transition: all 0.2s;
+    }
+    .lang-btn.active { background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f; }
+    .lang-btn:not(.active):hover { color: var(--text-2); }
+
+    /* ── Ornament divider ── */
+    .ornament {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .ornament::before { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-dim)); }
+    .ornament::after  { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold-dim), transparent); }
+    .ornament-diamond { width: 10px; height: 10px; background: var(--gold); transform: rotate(45deg); flex-shrink: 0; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 92vh;
+      display: flex;
+      align-items: center;
+      padding: 80px 0;
+      overflow: hidden;
+      position: relative;
+    }
+    /* Hero two-column layout */
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 2;
+    }
+    .hero-text { text-align: left; }
+
+    .hero-corner {
+      position: absolute;
+      width: 100px; height: 100px;
+      border-color: var(--gold-dim);
+      border-style: solid;
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .hero-corner.tl { top:30px; left:30px;  border-width:2px 0 0 2px; border-radius:4px 0 0 0; }
+    .hero-corner.tr { top:30px; right:30px; border-width:2px 2px 0 0; border-radius:0 4px 0 0; }
+    .hero-corner.bl { bottom:30px; left:30px;  border-width:0 0 2px 2px; border-radius:0 0 0 4px; }
+    .hero-corner.br { bottom:30px; right:30px; border-width:0 2px 2px 0; border-radius:0 0 4px 0; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(201,168,76,0.1);
+      border: 1px solid var(--gold-dim);
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 28px;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--gold);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.4; transform:scale(.7); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--text-1);
+      margin-bottom: 20px;
+      text-shadow: 0 2px 20px rgba(201,168,76,0.2);
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero-sub {
+      font-size: clamp(0.9rem, 2vw, 1.05rem);
+      color: var(--text-2);
+      font-weight: 300;
+      margin: 0 0 40px;
+      letter-spacing: 0.02em;
+    }
+    .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    /* Hero art */
+    .hero-art {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    /* keeps .hero-logo the flex item so its sizing rules still apply */
+    .hero-art picture { display: contents; }
+    .hero-logo {
+      width: min(420px, 100%);
+      height: auto;
+      filter: drop-shadow(0 0 48px rgba(201,168,76,0.22));
+      animation: floatMedallion 6s ease-in-out infinite;
+    }
+    @keyframes floatMedallion {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.25s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary { background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f; }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #e0c070, #c9a84c);
+      box-shadow: 0 0 20px rgba(201,168,76,0.35), 0 4px 16px rgba(0,0,0,0.4);
+      transform: translateY(-2px);
+    }
+    .btn-secondary { background: transparent; color: var(--gold); border: 1.5px solid var(--gold-dim); }
+    .btn-secondary:hover { background: rgba(201,168,76,0.08); border-color: var(--gold); transform: translateY(-2px); }
+
+    /* ── Section headings ── */
+    .section-label { display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 10px; }
+    .section-title { font-size: clamp(1.5rem, 4vw, 2.2rem); color: var(--text-1); margin-bottom: 8px; }
+    .section-desc  { color: var(--text-2); font-size: 0.95rem; max-width: 540px; }
+
+    /* ── UPCOMING TOURNAMENTS ── */
+    #turnaje { background: var(--bg-1); }
+    .tournament-list { display: flex; flex-direction: column; gap: 16px; margin-top: 52px; }
+    .tournament-card {
+      display: flex; flex-direction: column;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 20px 24px; overflow: hidden;
+      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+    }
+    .tournament-main { display: flex; align-items: center; gap: 24px; cursor: pointer; }
+    .tournament-card:hover .tournament-title { color: var(--gold-light); }
+    .tournament-title { transition: color 0.2s; }
+    .tournament-card:hover { border-color: var(--gold-dim); transform: translateY(-3px); box-shadow: var(--shadow-card); }
+    .tournament-date {
+      flex-shrink: 0; width: 88px; text-align: center; padding: 12px 6px;
+      background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.06));
+      border: 1px solid var(--gold-dim); border-radius: var(--radius-sm);
+    }
+    .tournament-day   { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 700; color: var(--gold-light); line-height: 1; }
+    .tournament-month { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-dim); margin-top: 4px; }
+    .tournament-year  { font-size: 0.64rem; color: var(--text-3); margin-top: 3px; }
+    .tournament-info  { flex: 1; min-width: 0; }
+    .tournament-title { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+    .tournament-when  { font-size: 0.8rem; color: var(--text-2); margin-bottom: 6px; }
+    .tournament-note  { font-size: 0.85rem; color: var(--text-3); line-height: 1.6; }
+    .tournament-link {
+      flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 16px; border: 1.5px solid var(--gold-dim); border-radius: var(--radius-sm);
+      color: var(--gold); text-decoration: none; font-size: 0.76rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.2s; white-space: nowrap;
+    }
+    .tournament-link:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+    .tournament-empty { color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
+    @media (max-width: 640px) {
+      .tournament-main { flex-direction: column; align-items: flex-start; gap: 14px; }
+      .tournament-link { width: 100%; justify-content: center; }
+    }
+
+    /* ── Předregistrace ── */
+    .tournament-reg {
+      margin: 18px -24px -20px; padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: rgba(201,168,76,0.04);
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+    }
+    .reg-bar { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .reg-bar-count { font-size: 0.92rem; color: var(--text-2); }
+    .reg-bar-count b { font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--gold-light); }
+    .reg-closed { color: var(--gold); font-weight: 600; font-size: 0.88rem; }
+    .reg-progress { flex: 1; min-width: 120px; height: 6px; background: var(--bg-3); border-radius: 100px; overflow: hidden; }
+    .reg-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); transition: width 0.4s; }
+    .reg-progress-spacer { flex: 1; min-width: 40px; }
+    .reg-state { font-size: 0.82rem; font-weight: 600; color: var(--gold); }
+    .reg-cta {
+      background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f;
+      border: none; border-radius: var(--radius-sm); padding: 11px 24px;
+      font-family: 'Inter', sans-serif; font-size: 0.83rem; font-weight: 600;
+      letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s;
+    }
+    .reg-cta:hover { opacity: 0.9; }
+    .reg-names-toggle {
+      background: none; border: none; padding: 0; margin-top: 14px; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--gold-dim);
+      display: flex; align-items: center; gap: 8px; transition: color 0.2s;
+    }
+    .reg-names-toggle:hover { color: var(--gold); }
+    .reg-names-toggle .chev { font-size: 0.7rem; transition: transform 0.25s; }
+    .reg-names-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+    .reg-list { list-style: none; display: flex; flex-direction: column; gap: 2px; margin-top: 12px; }
+    .reg-list[hidden] { display: none; }
+    .reg-list li {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 7px 0; font-size: 0.85rem; color: var(--text-1);
+      border-bottom: 1px solid var(--border);
+    }
+    .reg-list li:last-child { border-bottom: none; }
+    .reg-list .reg-num { color: var(--text-3); font-size: 0.78rem; min-width: 22px; }
+    .reg-list .reg-player { font-weight: 500; }
+    .reg-list .reg-note { color: var(--text-3); font-size: 0.8rem; }
+    .reg-hidden-note { font-size: 0.78rem; color: var(--text-3); margin-top: 12px; }
+    .reg-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-top: 16px; }
+    .reg-form[hidden] { display: none; }
+    .reg-form input {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-family: 'Inter', sans-serif; font-size: 0.85rem;
+      color: var(--text-1); min-width: 0;
+    }
+    .reg-form input:focus { outline: none; border-color: var(--gold-dim); }
+    .reg-form input::placeholder { color: var(--text-3); }
+    .reg-form .reg-name { flex: 1 1 190px; }
+    .reg-form .reg-note-input { flex: 2 1 260px; }
+    /* Past na roboty — skutecny navstevnik pole nevidi ani na nej netabuje. */
+    .reg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .reg-submit {
+      background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f;
+      border: none; border-radius: var(--radius-sm); padding: 10px 22px;
+      font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s;
+    }
+    .reg-submit:hover { opacity: 0.9; }
+    .reg-submit:disabled { opacity: 0.5; cursor: default; }
+    .reg-status { font-size: 0.8rem; color: var(--text-3); margin-top: 10px; }
+    .reg-status:empty { margin-top: 0; }
+    .reg-status.ok  { color: #27ae60; }
+    .reg-status.err { color: #e74c3c; }
+    @media (max-width: 600px) {
+      .reg-progress, .reg-progress-spacer { display: none; }
+      .reg-cta { width: 100%; }
+    }
+
+    /* ── PRŮBĚŽNÉ VÝSLEDKY ── */
+    #vysledky { background: var(--bg-0); }
+    .results-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      flex-wrap: wrap; margin-top: 52px; padding: 18px 24px; text-decoration: none;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-left: 2px solid var(--gold-dim); border-radius: var(--radius-md);
+      transition: border-color 0.25s, transform 0.25s;
+    }
+    .results-banner:hover { border-color: var(--gold-dim); border-left-color: var(--gold); transform: translateY(-2px); }
+    .results-banner-text { display: flex; flex-direction: column; gap: 4px; }
+    .results-banner-text strong { font-family: 'Cinzel', serif; font-size: 0.98rem; color: var(--text-1); font-weight: 600; }
+    .results-banner-text span { font-size: 0.83rem; color: var(--text-3); }
+    .results-banner-cta {
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--gold); white-space: nowrap;
+    }
+    .results-sub {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold-dim); margin: 44px 0 -34px; padding-top: 8px;
+    }
+    .results-wrap { margin-top: 52px; overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 480px; }
+    .results-table th, .results-table td { padding: 11px 16px; text-align: left; white-space: nowrap; }
+    .results-table thead th {
+      background: var(--bg-2); color: var(--gold-dim); font-size: 0.7rem;
+      font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .results-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.2s; }
+    .results-table tbody tr:last-child { border-bottom: none; }
+    .results-table tbody tr:hover { background: var(--bg-2); }
+    .results-table tbody td { color: var(--text-2); }
+    .results-table tbody td:first-child { color: var(--gold-light); font-family: 'Cinzel', serif; font-weight: 600; width: 1%; }
+    .results-table tbody td:nth-child(2) { color: var(--text-1); }
+    .results-note { margin-top: 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .results-msg { color: var(--text-3); font-size: 0.9rem; }
+    .results-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 9px 18px; font-size: 0.8rem; font-weight: 600; color: var(--gold);
+      text-decoration: none; transition: all 0.2s;
+    }
+    .results-link:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+
+    /* ── INFO CARDS ── */
+    #liga { background: var(--bg-0); }
+    /* Dva rovnocenne panely — prakticke info vlevo, herni system vpravo. */
+    .liga-panels {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      margin-top: 52px; align-items: start;
+    }
+    .liga-panel {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 30px 28px;
+    }
+    .liga-panel-head {
+      font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 600;
+      color: var(--gold-light); letter-spacing: 0.04em;
+      margin-bottom: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    /* Radek s praktickym udajem */
+    .liga-row { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid rgba(46,46,64,0.5); }
+    .liga-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .liga-row-icon {
+      flex-shrink: 0; width: 42px; height: 42px;
+      background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim);
+      border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    }
+    .liga-row-text { min-width: 0; }
+    .liga-row-k { font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 600; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+    .liga-row-v { font-size: 0.88rem; color: var(--text-2); line-height: 1.6; }
+    .liga-row-v strong { color: var(--text-1); font-weight: 500; }
+    /* Podnadpis uvnitr praveho panelu */
+    .liga-sub { font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 600; color: var(--gold-dim); letter-spacing: 0.12em; text-transform: uppercase; margin: 26px 0 14px; }
+    .liga-panel .liga-sub:first-of-type { margin-top: 22px; }
+
+    .rule-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .rule-list li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 0.9rem;
+      color: var(--text-2);
+      line-height: 1.65;
+    }
+    .rule-list li::before {
+      content: '◆';
+      color: var(--gold-dim);
+      font-size: 0.5rem;
+      position: absolute;
+      left: 0;
+      top: 6px;
+    }
+    .rule-list li strong { color: var(--text-1); font-weight: 600; }
+    @media (max-width: 780px) {
+      .liga-panels { grid-template-columns: 1fr; }
+    }
+    .grand-prize { margin-top: 26px; background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04)); border: 1px solid var(--gold-dim); border-radius: var(--radius-md); padding: 20px 22px; }
+    .grand-prize .gp-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 8px; }
+    .grand-prize .gp-title { font-family: 'Cinzel', serif; font-size: 1.05rem; color: var(--gold-light); font-weight: 700; margin-bottom: 6px; }
+    .grand-prize .gp-desc  { font-size: 0.85rem; color: var(--text-2); }
+
+    /* ── COMMUNITY ── */
+    #komunita { background: var(--bg-0); }
+    .community-inner { display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .community-desc { font-size: 1rem; color: var(--text-2); max-width: 480px; margin: 0 auto 40px; line-height: 1.7; }
+    .social-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .social-btn { display: inline-flex; align-items: center; gap: 12px; padding: 16px 28px; border-radius: var(--radius-sm); text-decoration: none; font-size: 0.88rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.25s; border: 1.5px solid var(--border); background: var(--bg-2); color: var(--text-1); }
+    .social-btn:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
+    .social-btn.dc { border-color: #3a3a7c; }
+    .social-btn.dc:hover { background: rgba(88,101,242,0.15); border-color: #5865f2; }
+    .social-icon { width: 28px; height: 28px; flex-shrink: 0; }
+
+    /* ── FOOTER ── */
+    footer { background: var(--bg-0); border-top: 1px solid var(--border); padding: 36px 24px; text-align: center; }
+    .footer-logo { font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 700; color: var(--gold-dim); letter-spacing: 0.1em; margin-bottom: 10px; }
+    .footer-copy { font-size: 0.78rem; color: var(--text-3); }
+
+    /* ── Reveal ── */
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.55s ease, transform 0.55s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .hero-layout { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+      .hero-text { order: 2; text-align: center; }
+      .hero-art  { order: 1; }
+      .hero-ctas { justify-content: center; }
+      .hero-badge { display: inline-flex; }
+    }
+    @media (max-width: 768px) {
+      section { padding: 64px 0; }
+      .hero-corner { display: none; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .hero-logo { width: min(300px, 85vw); }
+    }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: clamp(1.7rem, 8vw, 2.6rem); }
+      .hero-ctas { flex-direction: column; align-items: center; }
+      .btn { width: 100%; justify-content: center; }
+      .social-buttons { flex-direction: column; align-items: center; }
+      .social-btn { width: 100%; justify-content: center; }
+    }
+
+    /* ── BLOG ── */
+    #blog { background: var(--bg-1); }
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-top: 52px; }
+    .blog-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 28px 24px;
+      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+      cursor: pointer; display: flex; flex-direction: column; gap: 12px;
+      position: relative; overflow: hidden;
+    }
+    .blog-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .blog-card:hover { border-color: var(--gold-dim); transform: translateY(-4px); box-shadow: var(--shadow-card), var(--shadow-glow); }
+    .blog-card:hover::before { opacity: 1; }
+    .blog-card-cover { margin: -28px -24px 4px; aspect-ratio: 16 / 9; background: var(--bg-3); overflow: hidden; }
+    .blog-card-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s; }
+    .blog-card:hover .blog-card-cover img { transform: scale(1.04); }
+    .blog-card-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--text-1); font-weight: 600; line-height: 1.4; }
+    .blog-card-meta { font-size: 0.75rem; color: var(--text-3); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .blog-card-author { color: var(--gold-dim); }
+    .blog-card-excerpt { font-size: 0.87rem; color: var(--text-2); line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .blog-card-read { font-size: 0.75rem; font-weight: 600; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-top: auto; }
+    .blog-loading { color: var(--text-3); font-size: 0.9rem; margin-top: 40px; text-align: center; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.78); backdrop-filter: blur(4px);
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 40px 24px; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s; overflow-y: auto;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal-box {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); max-width: 720px; width: 100%;
+      padding: 40px; position: relative; margin: auto;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 18px;
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3); font-size: 1.5rem; line-height: 1;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text-1); }
+    .modal-title-text { font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--text-1); margin-bottom: 12px; padding-right: 32px; }
+    .modal-meta { font-size: 0.78rem; color: var(--text-3); margin-bottom: 28px; display: flex; gap: 16px; }
+    .modal-author-text { color: var(--gold-dim); }
+    .modal-content-box { font-size: 0.93rem; color: var(--text-2); line-height: 1.8; }
+    .modal-content-box h1,.modal-content-box h2,.modal-content-box h3 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 24px 0 12px; }
+    .modal-content-box p { margin-bottom: 14px; }
+    .modal-content-box img { max-width: 100%; border-radius: var(--radius-sm); margin: 16px 0; }
+    .modal-content-box a { color: var(--gold); }
+    .modal-content-box strong { color: var(--text-1); }
+    .modal-content-box ul,.modal-content-box ol { padding-left: 20px; margin-bottom: 14px; }
+    .modal-content-box blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
+
+    /* ── Fotogalerie u příspěvku ── */
+    .blog-gallery-label {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold-dim); margin: 32px 0 14px; padding-top: 24px; border-top: 1px solid var(--border);
+    }
+    .blog-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .blog-gallery-item {
+      aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden;
+      border: 1px solid var(--border); cursor: zoom-in; background: var(--bg-3);
+      padding: 0; transition: border-color 0.25s;
+    }
+    .blog-gallery-item:hover { border-color: var(--gold-dim); }
+    .blog-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s; }
+    .blog-gallery-item:hover img { transform: scale(1.06); }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.94);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; padding: 56px 20px 32px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .lightbox.open { opacity: 1; pointer-events: auto; }
+    .lightbox-figure { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; }
+    .lightbox-figure img { max-width: min(1100px, 92vw); max-height: 78vh; object-fit: contain; border-radius: var(--radius-sm); display: block; transition: filter 0.2s; }
+    /* Nez dorazi plna verze, drzi misto rozmazany nahled. */
+    .lightbox-figure img.loading { filter: blur(6px); }
+    .lightbox-caption { color: var(--text-2); font-size: 0.88rem; text-align: center; max-width: 640px; }
+    .lightbox-counter { color: var(--text-3); font-size: 0.75rem; letter-spacing: 0.1em; }
+    .lightbox-close, .lightbox-nav {
+      position: absolute; background: rgba(26,26,36,0.85); border: 1px solid var(--border);
+      color: var(--text-1); cursor: pointer; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .lightbox-close { top: 18px; right: 20px; width: 40px; height: 40px; font-size: 1.3rem; line-height: 1; }
+    .lightbox-nav { top: 50%; transform: translateY(-50%); width: 46px; height: 46px; font-size: 1.2rem; }
+    .lightbox-nav.prev { left: 20px; }
+    .lightbox-nav.next { right: 20px; }
+    .lightbox-close:hover, .lightbox-nav:hover { border-color: var(--gold); color: var(--gold); }
+    @media (max-width: 600px) {
+      .lightbox-nav { width: 38px; height: 38px; }
+      .lightbox-nav.prev { left: 8px; }
+      .lightbox-nav.next { right: 8px; }
+      .lightbox-figure img { max-height: 66vh; }
+    }
+
+    /* ── MERCH ── */
+    #merch { background: var(--bg-1); }
+    .merch-coming {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px; padding: 56px 24px;
+      background: var(--bg-2); border: 1px dashed var(--border);
+      border-radius: var(--radius-md); margin-top: 40px; text-align: center;
+    }
+    .merch-coming-icon { font-size: 2.5rem; opacity: 0.45; }
+    .merch-coming-text { font-size: 0.9rem; color: var(--text-3); }
+    .merch-form-wrap { margin-top: 48px; max-width: 640px; }
+    .merch-form-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .merch-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+    .form-input, .form-select, .form-textarea {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 14px;
+      font-family: 'Inter', sans-serif; font-size: 0.88rem;
+      color: var(--text-1); transition: border-color 0.2s; width: 100%;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--gold-dim); }
+    .form-select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5445' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--text-3); }
+    .form-note { font-size: 0.78rem; color: var(--text-3); margin-top: 12px; }
+    .form-success { display: none; padding: 16px 20px; background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--gold); margin-top: 16px; }
+    .form-success.visible { display: block; }
+    @media (max-width: 600px) { .merch-form { grid-template-columns: 1fr; } }
+
+    /* ── Blog podstranka ── */
+    body { background: var(--bg-1); }
+    .blog-page-nav {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(13,13,15,0.95); border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+    .blog-page-nav .nav-inner {
+      max-width: 1140px; margin: 0 auto; padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .blog-page-head { padding: 56px 0 8px; }
+    .section-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 36px; }
+    .section-chip {
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: 100px;
+      padding: 8px 18px; font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
+      color: var(--text-2); cursor: pointer; transition: all 0.2s;
+    }
+    .section-chip:hover { border-color: var(--gold-dim); color: var(--text-1); }
+    .section-chip.active {
+      background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f;
+      border-color: transparent; font-weight: 600;
+    }
+    .blog-grid { margin-top: 28px; }
+    .blog-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 2px; }
+    .blog-card-tag {
+      font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--gold-dim); border: 1px solid var(--border); border-radius: 100px; padding: 2px 9px;
+    }
+    .blog-back { margin-top: 48px; }
+  </style>
+</head>
+<body>
+
+<nav class="blog-page-nav">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html">PPL 2026</a>
+    <div class="nav-right">
+      <div class="lang-switcher">
+        <button class="lang-btn active" id="btn-cs" onclick="setLang('cs')">CZ</button>
+        <button class="lang-btn"        id="btn-en" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<section id="blog">
+  <div class="container">
+    <div class="blog-page-head reveal">
+      <span class="section-label" data-i18n="blog.label">Zápisky</span>
+      <h2 class="section-title" data-i18n="blog.title">Blog</h2>
+      <p class="section-desc" data-i18n="blog.desc"></p>
+    </div>
+    <div class="section-bar" id="section-bar"></div>
+    <div id="blog-grid" class="blog-grid">
+      <p class="blog-loading" data-i18n="blog.loading"></p>
+    </div>
+    <div class="blog-back">
+      <a class="results-link" href="index.html" data-i18n="blog.back">← Zpět na hlavní stránku</a>
+    </div>
+  </div>
+</section>
+
+<!-- Blog post modal -->
+<div class="modal-overlay" id="blog-overlay" onclick="closeBlogModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeBlogModal(null)" aria-label="Zavřít">×</button>
+    <h2 class="modal-title-text" id="blog-modal-title"></h2>
+    <div class="modal-meta">
+      <span class="modal-author-text" id="blog-modal-author"></span>
+      <span id="blog-modal-date"></span>
+    </div>
+    <div class="modal-content-box" id="blog-modal-content"></div>
+    <div id="blog-modal-gallery"></div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox(null)" aria-label="Zavřít">×</button>
+  <button class="lightbox-nav prev" onclick="stepLightbox(event, -1)" aria-label="Předchozí">‹</button>
+  <button class="lightbox-nav next" onclick="stepLightbox(event,  1)" aria-label="Další">›</button>
+  <figure class="lightbox-figure">
+    <img id="lightbox-img" src="" alt="" />
+    <figcaption class="lightbox-caption" id="lightbox-caption"></figcaption>
+  </figure>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
+<footer>
+  <div class="footer-logo">Plzeňská Pauper Liga 2026</div>
+  <p class="footer-copy" data-i18n="footer.copy"></p>
+</footer>
+
+<script src="vendor/firebase-12.16.0-app-compat.js"></script>
+<script src="vendor/firebase-12.16.0-firestore-compat.js"></script>
+<script>
+// Vse, co prijde z Firestore, se pred vlozenim do HTML escapuje. Jedina
+// vyjimka je obsah prispevku, ktery je HTML zamerne.
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Do href pustime jen http(s) — jinak by sel do odkazu propasovat
+// javascript: a spustit skript kliknutim.
+function safeUrl(u) {
+  try {
+    const parsed = new URL(String(u), location.href);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+  } catch { return ''; }
+}
+
+// Fotky z galerie jsou vzdy data: URL vyrobene v adminu. Cokoli jineho
+// (treba odkaz na cizi server) do stranky nepustime.
+function safeImage(s) {
+  return /^data:image\//.test(String(s ?? '')) ? String(s) : '';
+}
+
+// Z HTML obsahu vytahne cisty text pro ukazku na karte. DOMParser
+// na rozdil od innerHTML nic nespousti ani nenacita, takze je i na
+// neduveryhodny obsah bezpecny — a zaroven prelozi entity, takze se
+// "&amp;" neukaze doslova.
+function htmlToText(html) {
+  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+  // Za blokove znacky doplnime mezeru, jinak by se sousedni odstavce
+  // a odrazky v ukazce slily do jednoho slova.
+  doc.body.querySelectorAll('p, div, li, br, h1, h2, h3, h4, h5, h6, blockquote, pre, tr')
+    .forEach(el => el.after(doc.createTextNode(' ')));
+  return doc.body.textContent || '';
+}
+
+// Obsah prispevku je HTML z editoru a vykresluje se jako HTML. Nez ho
+// vlozime do stranky, projdeme strom a nechame jen znacky a atributy,
+// ktere editor umi vyrobit. Kdyby nekdo ziskal admin ucet, dokaze tak
+// nanejvys pokazit formatovani, ne propasovat na web skript.
+const ALLOWED_TAGS = new Set([
+  'P','BR','HR','STRONG','B','EM','I','U','S','SUB','SUP',
+  'H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG'
+]);
+// Znacky, u kterych by rozbaleni obsahu vypsalo na stranku kod misto textu.
+const DROP_TAGS  = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META','SVG','MATH','TEMPLATE','FORM','INPUT','BUTTON','SELECT','TEXTAREA','NOSCRIPT']);
+const ALLOWED_ATTRS = { A: ['href'], IMG: ['src','alt'] };
+
+function cleanElement(el) {
+  // Nejdriv deti — pracujeme nad kopii seznamu, protoze se meni za pochodu.
+  for (const node of [...el.childNodes]) {
+    if (node.nodeType === Node.ELEMENT_NODE) cleanElement(node);
+    else if (node.nodeType !== Node.TEXT_NODE) node.remove();
+  }
+  const tag = el.tagName;
+  if (DROP_TAGS.has(tag)) { el.remove(); return; }
+  if (!ALLOWED_TAGS.has(tag)) { el.replaceWith(...el.childNodes); return; }
+
+  const allowed = ALLOWED_ATTRS[tag] || [];
+  for (const attr of [...el.attributes]) {
+    if (!allowed.includes(attr.name.toLowerCase())) el.removeAttribute(attr.name);
+  }
+  if (tag === 'A') {
+    const href = safeUrl(el.getAttribute('href'));
+    if (href) {
+      el.setAttribute('href', href);
+      el.setAttribute('target', '_blank');
+      el.setAttribute('rel', 'noopener noreferrer');
+    } else {
+      el.removeAttribute('href');
+    }
+  }
+  if (tag === 'IMG') {
+    const src = el.getAttribute('src') || '';
+    // Obrazek bud z galerie (data:), nebo odkaz vlozeny v editoru (https).
+    if (!/^data:image\//i.test(src) && !/^https:\/\//i.test(src)) el.remove();
+  }
+}
+
+function sanitizeHtml(html) {
+  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+  // Prochazime az deti body — samotne body by se jinak rozbalilo.
+  for (const node of [...doc.body.childNodes]) {
+    if (node.nodeType === Node.ELEMENT_NODE) cleanElement(node);
+    else if (node.nodeType !== Node.TEXT_NODE) node.remove();
+  }
+  return doc.body.innerHTML;
+}
+
+function toMillis(ts) {
+  if (!ts) return 0;
+  return ts.toMillis ? ts.toMillis() : new Date(ts).getTime();
+}
+
+function excerptFromHtml(html, limit) {
+  const text = htmlToText(html).replace(/\s+/g, ' ').trim();
+  return text.length > limit ? text.slice(0, limit).trim() + '…' : text;
+}
+
+function renderGallery(post, lang) {
+  const wrap = document.getElementById('blog-modal-gallery');
+  currentGallery = Array.isArray(post.gallery) ? post.gallery : [];
+  if (!currentGallery.length) { wrap.innerHTML = ''; return; }
+  const items = currentGallery.map((img, i) => `
+    <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeHtml(img.caption) || 'Fotka ' + (i + 1)}">
+      <img src="${escapeHtml(safeImage(img.thumb))}" alt="${escapeHtml(img.caption)}" loading="lazy" />
+    </button>
+  `).join('');
+  wrap.innerHTML = `
+    <div class="blog-gallery-label">${i18n[lang]['blog.gallery']}</div>
+    <div class="blog-gallery">${items}</div>
+  `;
+}
+
+function openBlogModal(post) {
+  const lang = document.documentElement.lang || 'cs';
+  document.getElementById('blog-modal-title').textContent   = post.title || '';
+  document.getElementById('blog-modal-author').textContent  = post.authorName || '';
+  document.getElementById('blog-modal-date').textContent    = formatDate(post.createdAt);
+  document.getElementById('blog-modal-content').innerHTML   = sanitizeHtml(post.content);
+  renderGallery(post, lang);
+  const overlay = document.getElementById('blog-overlay');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBlogModal(e) {
+  if (e && e.target !== document.getElementById('blog-overlay')) return;
+  document.getElementById('blog-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Lightbox ──────────────────────────────────────────────────
+let currentGallery = [];
+let lightboxIndex  = 0;
+
+// Plne verze fotek lezi ve Firestore zvlast, aby nezdrzovaly nacteni blogu.
+// Nactou se az pri prvnim otevreni a pak uz se drzi v pameti.
+const fullImageCache = new Map();
+
+async function loadFullImage(imageId) {
+  if (fullImageCache.has(imageId)) return fullImageCache.get(imageId);
+  if (!db) return null;
+  try {
+    const doc = await db.collection('postImages').doc(imageId)
+      .collection('data').doc('full').get();
+    const data = doc.exists ? doc.data().data : null;
+    fullImageCache.set(imageId, data);
+    return data;
+  } catch(e) {
+    console.error('Image load error:', e);
+    return null;
+  }
+}
+
+async function showLightboxImage() {
+  const img = currentGallery[lightboxIndex];
+  if (!img) return;
+  const el = document.getElementById('lightbox-img');
+  // Nahled se ukaze hned, plna verze ho vymeni, jakmile dorazi.
+  el.src = safeImage(img.thumb);
+  el.alt = img.caption || '';
+  document.getElementById('lightbox-caption').textContent = img.caption || '';
+  document.getElementById('lightbox-counter').textContent =
+    currentGallery.length > 1 ? `${lightboxIndex + 1} / ${currentGallery.length}` : '';
+  const multiple = currentGallery.length > 1;
+  document.querySelector('.lightbox-nav.prev').style.display = multiple ? '' : 'none';
+  document.querySelector('.lightbox-nav.next').style.display = multiple ? '' : 'none';
+
+  if (!img.imageId) return;
+  el.classList.add('loading');
+  const shownIndex = lightboxIndex;
+  const full = await loadFullImage(img.imageId);
+  // Mezitim uzivatel mohl prelistovat jinam — pak uz vysledek nepatri sem.
+  if (safeImage(full) && shownIndex === lightboxIndex) el.src = full;
+  if (shownIndex === lightboxIndex) el.classList.remove('loading');
+}
+
+function openLightbox(i) {
+  lightboxIndex = i;
+  showLightboxImage();
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function stepLightbox(e, dir) {
+  if (e) e.stopPropagation();
+  if (!currentGallery.length) return;
+  lightboxIndex = (lightboxIndex + dir + currentGallery.length) % currentGallery.length;
+  showLightboxImage();
+}
+
+function closeLightbox(e) {
+  // Klik na samotny obrazek nebo na sipky lightbox nezavira.
+  if (e && e.target !== document.getElementById('lightbox')) return;
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+function lightboxOpen() {
+  return document.getElementById('lightbox').classList.contains('open');
+}
+
+// Lightbox / modal zavreni klavesnici
+document.addEventListener('keydown', e => {
+  if (document.getElementById('lightbox').classList.contains('open')) {
+    if (e.key === 'Escape')     closeLightbox(null);
+    if (e.key === 'ArrowLeft')  stepLightbox(null, -1);
+    if (e.key === 'ArrowRight') stepLightbox(null,  1);
+    return;
+  }
+  if (e.key === 'Escape') closeBlogModal(null);
+});
+
+
+// ── Firebase ──────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyB6dEHtPEk6Ml9p09IQPW-BU3nFcmID88A",
+  authDomain:        "pilsenpauperleague.firebaseapp.com",
+  projectId:         "pilsenpauperleague",
+  storageBucket:     "pilsenpauperleague.firebasestorage.app",
+  messagingSenderId: "786427947147",
+  appId:             "1:786427947147:web:e77ea63364ef432e044c8e"
+};
+let db = null;
+try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); }
+catch(e) { console.warn('Firebase not configured yet.'); }
+
+const observer = new IntersectionObserver(
+  entries => entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+  }),
+  { threshold: 0.1, rootMargin: '0px 0px -30px 0px' }
+);
+
+// ── i18n (jen co blog potrebuje) ──────────────────────────────
+const i18n = {
+  cs: {
+    'blog.title':   'Blog',
+    'blog.desc':    'Reporty z turnajů, decklists, novinky z Pauper metagame.',
+    'blog.loading': 'Načítám příspěvky…',
+    'blog.empty':   'Zatím žádné příspěvky.',
+    'blog.read':    'Číst dál →',
+    'blog.gallery': 'Fotogalerie',
+    'blog.all':     'Vše',
+    'blog.back':    '← Zpět na hlavní stránku',
+    'blog.none':    'V této sekci zatím nic není.',
+    'footer.copy':  '© 2026 Plzeňská Pauper Liga · Vault 0, Plzeň'
+  },
+  en: {
+    'blog.title':   'Blog',
+    'blog.desc':    'Tournament reports, decklists, and Pauper metagame updates.',
+    'blog.loading': 'Loading posts…',
+    'blog.empty':   'No posts yet.',
+    'blog.read':    'Read more →',
+    'blog.gallery': 'Photo gallery',
+    'blog.all':     'All',
+    'blog.back':    '← Back to the main page',
+    'blog.none':    'Nothing in this section yet.',
+    'footer.copy':  '© 2026 Pilsen Pauper League · Vault 0, Pilsen'
+  }
+};
+
+function formatDate(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const locale = (document.documentElement.lang || 'cs') === 'cs' ? 'cs-CZ' : 'en-GB';
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const BLOG_EXCERPT_LENGTH = 180;
+
+// ── Data ──────────────────────────────────────────────────────
+let cachedPosts    = null;   // vsechny zverejnene prispevky
+let cachedSections = [];      // [{ id, name }]
+let activeSection  = 'all';   // 'all' nebo id sekce
+
+async function loadSections() {
+  if (!db) return;
+  try {
+    const snap = await db.collection('blogSections').get();
+    cachedSections = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(String(b.name)));
+  } catch(e) { console.warn('Sections load error:', e); cachedSections = []; }
+}
+
+async function loadPosts() {
+  if (!db) { cachedPosts = []; render(); return; }
+  try {
+    const snap = await db.collection('posts').where('published', '==', true).get();
+    cachedPosts = snap.docs.map(d => d.data())
+      .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+  } catch(e) { console.error('Blog load error:', e); cachedPosts = []; }
+  render();
+}
+
+function postSections(p) { return Array.isArray(p.sections) ? p.sections : []; }
+
+function render() {
+  renderChips();
+  renderGrid();
+}
+
+function renderChips() {
+  const bar = document.getElementById('section-bar');
+  const t = i18n[document.documentElement.lang || 'cs'];
+  if (!cachedPosts) { bar.innerHTML = ''; return; }
+  // Ukazeme jen sekce, ktere maji aspon jeden zverejneny clanek.
+  const used = new Set();
+  cachedPosts.forEach(p => postSections(p).forEach(id => used.add(id)));
+  const visible = cachedSections.filter(s => used.has(s.id));
+  if (activeSection !== 'all' && !used.has(activeSection)) activeSection = 'all';
+  const chips = [{ id: 'all', name: t['blog.all'] }, ...visible];
+  bar.innerHTML = chips.map(s =>
+    `<button class="section-chip ${s.id === activeSection ? 'active' : ''}" data-id="${escapeHtml(s.id)}">${escapeHtml(s.name)}</button>`
+  ).join('');
+  bar.querySelectorAll('.section-chip').forEach(btn =>
+    btn.addEventListener('click', () => { activeSection = btn.dataset.id; render(); }));
+  bar.style.display = visible.length ? '' : 'none';
+}
+
+function renderGrid() {
+  const grid = document.getElementById('blog-grid');
+  const t = i18n[document.documentElement.lang || 'cs'];
+  if (!cachedPosts) { grid.innerHTML = `<p class="blog-loading">${t['blog.loading']}</p>`; return; }
+  const list = activeSection === 'all'
+    ? cachedPosts
+    : cachedPosts.filter(p => postSections(p).includes(activeSection));
+  if (!list.length) {
+    grid.innerHTML = `<p class="blog-loading">${cachedPosts.length ? t['blog.none'] : t['blog.empty']}</p>`;
+    return;
+  }
+  const nameById = Object.fromEntries(cachedSections.map(s => [s.id, s.name]));
+  grid.innerHTML = '';
+  list.forEach((p, idx) => {
+    const date = formatDate(p.createdAt);
+    const excerpt = excerptFromHtml(p.content, BLOG_EXCERPT_LENGTH);
+    const cover = Array.isArray(p.gallery) && p.gallery.length && safeImage(p.gallery[0].thumb)
+      ? `<div class="blog-card-cover"><img src="${escapeHtml(safeImage(p.gallery[0].thumb))}" alt="" loading="lazy" /></div>`
+      : '';
+    const tags = postSections(p).map(id => nameById[id]).filter(Boolean)
+      .map(n => `<span class="blog-card-tag">${escapeHtml(n)}</span>`).join('');
+    const card = document.createElement('div');
+    card.className = 'blog-card reveal';
+    card.style.transitionDelay = `${(idx % 3) * 0.07}s`;
+    card.innerHTML = `
+      ${cover}
+      ${tags ? `<div class="blog-card-tags">${tags}</div>` : ''}
+      <div class="blog-card-title">${escapeHtml(p.title)}</div>
+      <div class="blog-card-meta">
+        <span class="blog-card-author">${escapeHtml(p.authorName)}</span>
+        <span>${date}</span>
+      </div>
+      <div class="blog-card-excerpt">${escapeHtml(excerpt)}</div>
+      <div class="blog-card-read">${t['blog.read']}</div>
+    `;
+    card.addEventListener('click', () => openBlogModal(p));
+    grid.appendChild(card);
+    observer.observe(card);
+  });
+}
+
+// ── Jazyk ─────────────────────────────────────────────────────
+function setLang(lang) {
+  document.documentElement.lang = lang === 'cs' ? 'cs' : 'en';
+  document.getElementById('btn-cs').classList.toggle('active', lang === 'cs');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  const t = i18n[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    if (t[el.getAttribute('data-i18n')] !== undefined) el.textContent = t[el.getAttribute('data-i18n')];
+  });
+  render();
+}
+
+// ── Start ─────────────────────────────────────────────────────
+setLang('cs');
+// Odhalit staticke .reveal prvky (hlavicka) — karty se pozoruji az pri vykresleni.
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+(async () => { await loadSections(); await loadPosts(); })();
+
+</script>
+</body>
+</html>

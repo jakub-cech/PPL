@@ -117,6 +117,35 @@
     .t-form .ql-container.ql-snow { min-height: 160px; }
     .t-form .ql-editor { min-height: 130px; }
 
+    /* Sekce příspěvku */
+    .sections-block { margin: 20px 0 8px; }
+    .sections-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .sections-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+    .sections-hint { font-size: 0.76rem; color: var(--text-3); }
+    .sections-chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 20px; }
+    .sec-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: 100px;
+      padding: 6px 14px; font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--text-2);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .sec-chip:hover { border-color: var(--gold-dim); color: var(--text-1); }
+    .sec-chip.on { background: rgba(201,168,76,0.16); border-color: var(--gold-dim); color: var(--gold-light); }
+    .sec-chip .sec-del {
+      border: none; background: none; color: var(--red); cursor: pointer;
+      font-size: 0.9rem; line-height: 1; padding: 0; display: none;
+    }
+    .sections-block.manage .sec-chip { cursor: default; }
+    .sections-block.manage .sec-del { display: inline; }
+    .sections-empty { font-size: 0.8rem; color: var(--text-3); }
+    .sections-add { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .sections-add input {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 8px 12px; font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--text-1); flex: 1 1 200px; min-width: 0;
+    }
+    .sections-add input:focus { outline: none; border-color: var(--gold-dim); }
+    .sections-add input::placeholder { color: var(--text-3); }
+
     /* Galerie */
     .gallery-block { margin-top: 28px; }
     .gallery-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -341,6 +370,21 @@
     <div class="tab-panel active" id="tab-editor">
       <div class="panel-title" id="editor-panel-title">Nový příspěvek</div>
       <input class="post-title-input" id="post-title" type="text" placeholder="Název příspěvku…" />
+
+      <!-- Sekce příspěvku -->
+      <div class="sections-block">
+        <div class="sections-head">
+          <span class="sections-label">Sekce</span>
+          <span class="sections-hint">Klikni pro zařazení příspěvku. Článek může patřit do víc sekcí.</span>
+        </div>
+        <div class="sections-chips" id="post-sections"></div>
+        <div class="sections-add">
+          <input type="text" id="new-section-name" maxlength="30" placeholder="Nová sekce (např. Reporty)" />
+          <button class="btn-sm" type="button" onclick="addSection()">+ Přidat</button>
+          <button class="btn-sm" type="button" id="sections-manage-btn" onclick="toggleSectionManage()">Spravovat</button>
+        </div>
+      </div>
+
       <div id="quill-editor"></div>
 
       <!-- Galerie -->
@@ -491,6 +535,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById('admin').style.display = 'block';
     document.getElementById('admin-user-name').textContent = authorLabel(user);
     loadAllPosts();
+    loadSections();
   } else {
     document.getElementById('login-wrap').style.display = '';
     document.getElementById('admin').style.display = 'none';
@@ -710,6 +755,8 @@ let editingPostId = null;
 // posts/{id}/ jeste pred prvnim ulozenim prispevku.
 let draftId = db.collection('posts').doc().id;
 let gallery = [];
+let allSections = [];        // [{ id, name, order }] — spravovane v adminu
+let postSectionIds = [];     // sekce prave editovaneho prispevku
 
 function resetEditor() {
   editingPostId = null;
@@ -717,6 +764,8 @@ function resetEditor() {
   gallery = [];
   renderGallery();
   setGalleryStatus('');
+  postSectionIds = [];
+  renderSectionChips();
   document.getElementById('post-title').value = '';
   quill.setContents([]);
   document.getElementById('publish-toggle-input').checked = false;
@@ -725,6 +774,70 @@ function resetEditor() {
   document.getElementById('editor-panel-title').textContent = 'Nový příspěvek';
   // Zalozku zamerne neprepiname: tlacitko "Nový" je uz v editoru a pri
   // mazani prispevku ze seznamu by skok do editoru jen prekvapil.
+}
+
+// ── Sekce ─────────────────────────────────────────────────────
+async function loadSections() {
+  try {
+    const snap = await db.collection('blogSections').get();
+    allSections = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(String(b.name)));
+  } catch(e) { console.warn('Sekce se nepodařilo načíst:', e); allSections = []; }
+  renderSectionChips();
+}
+
+function renderSectionChips() {
+  const box = document.getElementById('post-sections');
+  if (!allSections.length) { box.innerHTML = '<span class="sections-empty">Zatím žádné sekce. Přidej první níže.</span>'; return; }
+  box.innerHTML = '';
+  allSections.forEach(sec => {
+    const on = postSectionIds.includes(sec.id);
+    const chip = document.createElement('span');
+    chip.className = 'sec-chip' + (on ? ' on' : '');
+    chip.innerHTML = `<span class="sec-name">${escapeHtml(sec.name)}</span><button type="button" class="sec-del" title="Smazat sekci">×</button>`;
+    chip.querySelector('.sec-name').addEventListener('click', () => {
+      if (document.querySelector('.sections-block').classList.contains('manage')) return;
+      const i = postSectionIds.indexOf(sec.id);
+      if (i >= 0) postSectionIds.splice(i, 1); else postSectionIds.push(sec.id);
+      renderSectionChips();
+    });
+    chip.querySelector('.sec-del').addEventListener('click', () => deleteSection(sec));
+    box.appendChild(chip);
+  });
+}
+
+async function addSection() {
+  const input = document.getElementById('new-section-name');
+  const name = input.value.trim();
+  if (!name) return;
+  if (allSections.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+    input.value = ''; return;   // uz existuje
+  }
+  const id = db.collection('blogSections').doc().id;
+  const order = allSections.length ? Math.max(...allSections.map(s => s.order ?? 0)) + 1 : 0;
+  try {
+    await db.collection('blogSections').doc(id).set({ name, order });
+    allSections.push({ id, name, order });
+    postSectionIds.push(id);   // rovnou zaradit editovany prispevek
+    input.value = '';
+    renderSectionChips();
+  } catch(e) { console.error(e); alert('Sekci se nepodařilo uložit.'); }
+}
+
+function toggleSectionManage() {
+  const block = document.querySelector('.sections-block');
+  const on = block.classList.toggle('manage');
+  document.getElementById('sections-manage-btn').textContent = on ? 'Hotovo' : 'Spravovat';
+}
+
+async function deleteSection(sec) {
+  if (!confirm(`Smazat sekci „${sec.name}"? Z příspěvků, které ji mají, se odebere.`)) return;
+  try {
+    await db.collection('blogSections').doc(sec.id).delete();
+  } catch(e) { console.error(e); alert('Smazání se nepodařilo.'); return; }
+  allSections = allSections.filter(s => s.id !== sec.id);
+  postSectionIds = postSectionIds.filter(id => id !== sec.id);
+  renderSectionChips();
 }
 
 // ── Galerie ───────────────────────────────────────────────────
@@ -839,6 +952,7 @@ async function savePost() {
       content,
       published,
       gallery:    gallery.map(({ imageId, thumb, caption }) => ({ imageId, thumb, caption: caption || '' })),
+      sections:   postSectionIds.slice(),
       authorId:   user.uid,
       authorName: authorLabel(user),
       updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
@@ -972,6 +1086,9 @@ async function editPost(id) {
   editingPostId = id;
   draftId = id;
   gallery = Array.isArray(p.gallery) ? p.gallery.map(g => ({ ...g })) : [];
+  // Sekce, ktere uz neexistuji (byly smazane), tise vypustime.
+  postSectionIds = (Array.isArray(p.sections) ? p.sections : []).filter(id => allSections.some(s => s.id === id));
+  renderSectionChips();
   renderGallery();
   setGalleryStatus('');
   document.getElementById('post-title').value = p.title || '';
