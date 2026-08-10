@@ -615,6 +615,7 @@
     .blog-card-excerpt { font-size: 0.87rem; color: var(--text-2); line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .blog-card-read { font-size: 0.75rem; font-weight: 600; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-top: auto; }
     .blog-loading { color: var(--text-3); font-size: 0.9rem; margin-top: 40px; text-align: center; }
+    .blog-all-wrap { margin-top: 32px; text-align: center; }
 
     .modal-overlay {
       position: fixed; inset: 0; z-index: 200;
@@ -839,6 +840,9 @@
     </div>
     <div id="blog-grid" class="blog-grid">
       <p class="blog-loading" data-i18n="blog.loading"></p>
+    </div>
+    <div class="blog-all-wrap">
+      <a class="results-link" href="blog.html" data-i18n="blog.all"></a>
     </div>
   </div>
 </section>
@@ -1167,6 +1171,7 @@ const i18n = {
     "blog.loading": "Načítám příspěvky…",
     "blog.empty":   "Zatím žádné příspěvky.",
     "blog.read":    "Číst dál →",
+    "blog.all":     "Všechny články →",
     "blog.gallery": "Fotogalerie",
 
     "merch.label":        "Merch",
@@ -1287,6 +1292,7 @@ const i18n = {
     "blog.loading": "Loading posts…",
     "blog.empty":   "No posts yet.",
     "blog.read":    "Read more →",
+    "blog.all":     "All articles →",
     "blog.gallery": "Photo gallery",
 
     "merch.label":        "Merch",
@@ -1511,10 +1517,14 @@ function sanitizeHtml(html) {
 }
 
 const BLOG_EXCERPT_LENGTH = 180;
+// Uvod ukazuje jen ochutnavku — cely archiv je na blog.html.
+const BLOG_TEASER_COUNT = 3;
 
 function renderBlogCards(lang) {
   const grid = document.getElementById('blog-grid');
   const t = i18n[lang];
+  const allWrap = document.querySelector('.blog-all-wrap');
+  if (allWrap) allWrap.style.display = (cachedPosts && cachedPosts.length) ? '' : 'none';
   if (!cachedPosts) {
     grid.innerHTML = `<p class="blog-loading">${t['blog.loading']}</p>`;
     return;
@@ -1524,7 +1534,7 @@ function renderBlogCards(lang) {
     return;
   }
   grid.innerHTML = '';
-  cachedPosts.forEach((p, idx) => {
+  cachedPosts.slice(0, BLOG_TEASER_COUNT).forEach((p, idx) => {
     const date = formatDate(p.createdAt);
     const excerpt = excerptFromHtml(p.content, BLOG_EXCERPT_LENGTH);
     const cover = Array.isArray(p.gallery) && p.gallery.length && safeImage(p.gallery[0].thumb)
