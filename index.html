@@ -648,6 +648,19 @@
     .modal-content-box strong { color: var(--text-1); }
     .modal-content-box ul,.modal-content-box ol { padding-left: 20px; margin-bottom: 14px; }
     .modal-content-box blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
+    /* Tabulky v prispevku */
+    .modal-content-box table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.9rem; }
+    .modal-content-box th, .modal-content-box td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+    .modal-content-box thead th { background: var(--bg-3); color: var(--gold-dim); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    .modal-content-box caption { color: var(--text-3); font-size: 0.8rem; margin-bottom: 8px; text-align: left; }
+    .modal-content-box h4 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 20px 0 10px; font-size: 1rem; }
+    .modal-content-box h5, .modal-content-box h6 { color: var(--gold-dim); margin: 16px 0 8px; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    /* Decklist */
+    .decklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 28px; margin: 20px 0; }
+    .decklist-col { min-width: 0; }
+    .decklist-h { font-family: 'Cinzel', serif; font-size: 0.82rem; color: var(--gold-light); font-weight: 600; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .decklist-row { display: flex; gap: 10px; font-size: 0.88rem; color: var(--text-2); padding: 3px 0; }
+    .decklist-row .dl-n { color: var(--gold-dim); min-width: 22px; text-align: right; font-variant-numeric: tabular-nums; }
 
     /* ── Fotogalerie u příspěvku ── */
     .blog-gallery-label {
@@ -1469,11 +1482,18 @@ function htmlToText(html) {
 // nanejvys pokazit formatovani, ne propasovat na web skript.
 const ALLOWED_TAGS = new Set([
   'P','BR','HR','STRONG','B','EM','I','U','S','SUB','SUP',
-  'H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG'
+  'H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG',
+  // Struktura: tabulky, decklisty, jednoduche rozlozeni
+  'TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','CAPTION','COLGROUP','COL',
+  'FIGURE','FIGCAPTION','DIV','SPAN'
 ]);
 // Znacky, u kterych by rozbaleni obsahu vypsalo na stranku kod misto textu.
 const DROP_TAGS  = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META','SVG','MATH','TEMPLATE','FORM','INPUT','BUTTON','SELECT','TEXTAREA','NOSCRIPT']);
-const ALLOWED_ATTRS = { A: ['href'], IMG: ['src','alt'] };
+// class povolujeme obecne (kvuli stylovani decklistu/tabulek); je to jen
+// kosmetika, skript ani onXxated atributy filtrem stejne neprojdou.
+const GLOBAL_ATTRS = ['class'];
+const ALLOWED_ATTRS = { A: ['href'], IMG: ['src','alt'],
+  TD: ['colspan','rowspan'], TH: ['colspan','rowspan','scope'], COL: ['span'] };
 
 function cleanElement(el) {
   // Nejdriv deti — pracujeme nad kopii seznamu, protoze se meni za pochodu.
@@ -1485,7 +1505,7 @@ function cleanElement(el) {
   if (DROP_TAGS.has(tag)) { el.remove(); return; }
   if (!ALLOWED_TAGS.has(tag)) { el.replaceWith(...el.childNodes); return; }
 
-  const allowed = ALLOWED_ATTRS[tag] || [];
+  const allowed = [...GLOBAL_ATTRS, ...(ALLOWED_ATTRS[tag] || [])];
   for (const attr of [...el.attributes]) {
     if (!allowed.includes(attr.name.toLowerCase())) el.removeAttribute(attr.name);
   }
