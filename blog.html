@@ -645,6 +645,33 @@
     .modal-content-box strong { color: var(--text-1); }
     .modal-content-box ul,.modal-content-box ol { padding-left: 20px; margin-bottom: 14px; }
     .modal-content-box blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
+    /* Tabulky v prispevku */
+    .modal-content-box table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.9rem; }
+    .modal-content-box th, .modal-content-box td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+    .modal-content-box thead th { background: var(--bg-3); color: var(--gold-dim); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    .modal-content-box caption { color: var(--text-3); font-size: 0.8rem; margin-bottom: 8px; text-align: left; }
+    .modal-content-box h4 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 20px 0 10px; font-size: 1rem; }
+    .modal-content-box h5, .modal-content-box h6 { color: var(--gold-dim); margin: 16px 0 8px; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    /* Decklist */
+    .decklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 28px; margin: 20px 0; }
+    .decklist-col { min-width: 0; }
+    .decklist-h { font-family: 'Cinzel', serif; font-size: 0.82rem; color: var(--gold-light); font-weight: 600; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .decklist-row { display: flex; gap: 10px; font-size: 0.88rem; color: var(--text-2); padding: 3px 0; }
+    .decklist-row .dl-n { color: var(--gold-dim); min-width: 22px; text-align: right; font-variant-numeric: tabular-nums; }
+    /* Náhled karty ze Scryfallu */
+    .mtg-card { color: var(--gold); border-bottom: 1px dotted var(--gold-dim); cursor: help; }
+    .mtg-card:hover { color: var(--gold-light); }
+    .decklist-row.mtg-card { border-bottom: none; cursor: help; transition: color 0.15s; }
+    .decklist-row.mtg-card:hover { color: var(--text-1); }
+    .card-preview {
+      position: fixed; z-index: 400; width: 244px; pointer-events: none;
+      opacity: 0; transition: opacity 0.12s;
+    }
+    .card-preview.show { opacity: 1; }
+    .card-preview img {
+      width: 100%; display: block; border-radius: 12px; background: var(--bg-2);
+      box-shadow: 0 10px 34px rgba(0,0,0,0.6);
+    }
 
     /* ── Fotogalerie u příspěvku ── */
     .blog-gallery-label {
@@ -860,11 +887,18 @@ function htmlToText(html) {
 // nanejvys pokazit formatovani, ne propasovat na web skript.
 const ALLOWED_TAGS = new Set([
   'P','BR','HR','STRONG','B','EM','I','U','S','SUB','SUP',
-  'H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG'
+  'H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG',
+  // Struktura: tabulky, decklisty, jednoduche rozlozeni
+  'TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','CAPTION','COLGROUP','COL',
+  'FIGURE','FIGCAPTION','DIV','SPAN'
 ]);
 // Znacky, u kterych by rozbaleni obsahu vypsalo na stranku kod misto textu.
 const DROP_TAGS  = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META','SVG','MATH','TEMPLATE','FORM','INPUT','BUTTON','SELECT','TEXTAREA','NOSCRIPT']);
-const ALLOWED_ATTRS = { A: ['href'], IMG: ['src','alt'] };
+// class povolujeme obecne (kvuli stylovani decklistu/tabulek); je to jen
+// kosmetika, skript ani onXxated atributy filtrem stejne neprojdou.
+const GLOBAL_ATTRS = ['class'];
+const ALLOWED_ATTRS = { A: ['href'], IMG: ['src','alt'],
+  TD: ['colspan','rowspan'], TH: ['colspan','rowspan','scope'], COL: ['span'] };
 
 function cleanElement(el) {
   // Nejdriv deti — pracujeme nad kopii seznamu, protoze se meni za pochodu.
@@ -876,7 +910,7 @@ function cleanElement(el) {
   if (DROP_TAGS.has(tag)) { el.remove(); return; }
   if (!ALLOWED_TAGS.has(tag)) { el.replaceWith(...el.childNodes); return; }
 
-  const allowed = ALLOWED_ATTRS[tag] || [];
+  const allowed = [...GLOBAL_ATTRS, ...(ALLOWED_ATTRS[tag] || [])];
   for (const attr of [...el.attributes]) {
     if (!allowed.includes(attr.name.toLowerCase())) el.removeAttribute(attr.name);
   }
@@ -937,7 +971,10 @@ function openBlogModal(post) {
   document.getElementById('blog-modal-title').textContent   = post.title || '';
   document.getElementById('blog-modal-author').textContent  = post.authorName || '';
   document.getElementById('blog-modal-date').textContent    = formatDate(post.createdAt);
-  document.getElementById('blog-modal-content').innerHTML   = sanitizeHtml(post.content);
+  const contentEl = document.getElementById('blog-modal-content');
+  contentEl.innerHTML = sanitizeHtml(post.content);
+  enhanceCards(contentEl);
+  bindCardHandlers(contentEl);
   renderGallery(post, lang);
   const overlay = document.getElementById('blog-overlay');
   overlay.classList.add('open');
@@ -948,6 +985,7 @@ function closeBlogModal(e) {
   if (e && e.target !== document.getElementById('blog-overlay')) return;
   document.getElementById('blog-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  hideCardPreview();
 }
 
 // ── Lightbox ──────────────────────────────────────────────────
@@ -1017,6 +1055,110 @@ function closeLightbox(e) {
 
 function lightboxOpen() {
   return document.getElementById('lightbox').classList.contains('open');
+}
+
+
+// ── Náhled karty ze Scryfallu ─────────────────────────────────
+// V decklistech a u [[Karta]] v textu se pri najeti/kliknuti ukaze
+// obrazek karty. Pouziva se obrazkovy endpoint Scryfallu primo jako
+// <img src>, takze zadny fetch ani zmena CSP — img-src https: staci.
+const CARD_IMG = name =>
+  `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}&format=image&version=normal`;
+
+let cardPreviewEl = null;
+function cardPreview() {
+  if (!cardPreviewEl) {
+    cardPreviewEl = document.createElement('div');
+    cardPreviewEl.className = 'card-preview';
+    cardPreviewEl.innerHTML = '<img alt="" />';
+    document.body.appendChild(cardPreviewEl);
+  }
+  return cardPreviewEl;
+}
+function positionCardPreview(x, y) {
+  const p = cardPreview();
+  const w = 244, h = 340, pad = 14;
+  let left = x + 22, top = y + 20;
+  if (left + w + pad > window.innerWidth) left = x - w - 22;
+  if (left < pad) left = pad;
+  if (top + h + pad > window.innerHeight) top = window.innerHeight - h - pad;
+  if (top < pad) top = pad;
+  p.style.left = left + 'px';
+  p.style.top = top + 'px';
+}
+function showCardPreview(name, x, y) {
+  const p = cardPreview();
+  const img = p.querySelector('img');
+  const src = CARD_IMG(name);
+  if (img.getAttribute('src') !== src) { img.removeAttribute('src'); img.src = src; }
+  p.dataset.for = name;
+  p.classList.add('show');
+  positionCardPreview(x, y);
+}
+function hideCardPreview() { if (cardPreviewEl) cardPreviewEl.classList.remove('show'); }
+
+// Z vykresleneho obsahu udela nazvy karet interaktivni.
+function enhanceCards(root) {
+  // Decklist radky — cely radek je nahled.
+  root.querySelectorAll('.decklist-row').forEach(row => {
+    const name = row.textContent.replace(/^\s*\d+\s*/, '').trim();
+    if (name && !row.dataset.card) { row.classList.add('mtg-card'); row.dataset.card = name; }
+  });
+  // [[Karta]] v textu.
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue.includes('[[')) return NodeFilter.FILTER_REJECT;
+      if (node.parentElement && node.parentElement.closest('a, code, pre, .mtg-card')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = []; let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(node => {
+    const parts = node.nodeValue.split(/(\[\[[^\]]+\]\])/);
+    if (parts.length === 1) return;
+    const frag = document.createDocumentFragment();
+    parts.forEach(part => {
+      const m = part.match(/^\[\[([^\]]+)\]\]$/);
+      if (m) {
+        const span = document.createElement('span');
+        span.className = 'mtg-card';
+        span.dataset.card = m[1].trim();
+        span.textContent = m[1].trim();
+        frag.appendChild(span);
+      } else if (part) {
+        frag.appendChild(document.createTextNode(part));
+      }
+    });
+    node.replaceWith(frag);
+  });
+}
+
+// Handlery navesime jednou na obsah modalu (delegaci).
+function bindCardHandlers(root) {
+  if (!root || root.dataset.cardsBound) return;
+  root.dataset.cardsBound = '1';
+  const touch = !window.matchMedia('(hover: hover)').matches;
+  root.addEventListener('mouseover', e => {
+    const el = e.target.closest('.mtg-card');
+    if (el && !touch) showCardPreview(el.dataset.card, e.clientX, e.clientY);
+  });
+  root.addEventListener('mousemove', e => {
+    if (touch || !cardPreviewEl || !cardPreviewEl.classList.contains('show')) return;
+    if (e.target.closest('.mtg-card')) positionCardPreview(e.clientX, e.clientY);
+  });
+  root.addEventListener('mouseout', e => {
+    const el = e.target.closest('.mtg-card');
+    if (el && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.mtg-card'))) hideCardPreview();
+  });
+  root.addEventListener('click', e => {
+    const el = e.target.closest('.mtg-card');
+    if (!el || !touch) return;
+    e.preventDefault();
+    const shown = cardPreviewEl && cardPreviewEl.classList.contains('show') && cardPreviewEl.dataset.for === el.dataset.card;
+    if (shown) hideCardPreview();
+    else { const r = el.getBoundingClientRect(); showCardPreview(el.dataset.card, r.left, r.bottom); }
+  });
 }
 
 // Lightbox / modal zavreni klavesnici

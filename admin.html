@@ -146,6 +146,24 @@
     .sections-add input:focus { outline: none; border-color: var(--gold-dim); }
     .sections-add input::placeholder { color: var(--text-3); }
 
+    /* Přepínač vizuální / HTML */
+    .editor-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .mode-tabs { display: flex; gap: 3px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px; }
+    .mode-tab { background: none; border: none; cursor: pointer; padding: 6px 16px; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); transition: all 0.2s; }
+    .mode-tab.active { background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f; }
+    .mode-tools { display: flex; gap: 8px; }
+    .html-source {
+      width: 100%; min-height: 320px; background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 16px; color: var(--text-1);
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 0.85rem; line-height: 1.6;
+      resize: vertical; tab-size: 2;
+    }
+    .html-source:focus { outline: none; border-color: var(--gold-dim); }
+    .decklist-panel { margin-top: 12px; background: var(--bg-2); border: 1px solid var(--gold-dim); border-radius: var(--radius-md); padding: 18px; }
+    .decklist-panel-hint { font-size: 0.8rem; color: var(--text-2); margin-bottom: 12px; line-height: 1.5; }
+    .decklist-panel #decklist-input { min-height: 180px; margin-bottom: 12px; }
+    .decklist-panel-actions { display: flex; gap: 8px; }
+
     /* Galerie */
     .gallery-block { margin-top: 28px; }
     .gallery-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -436,7 +454,30 @@
         </div>
       </div>
 
-      <div id="quill-editor"></div>
+      <!-- Přepínač vizuální / HTML režim -->
+      <div class="editor-mode-bar">
+        <div class="mode-tabs">
+          <button type="button" id="mode-visual" class="mode-tab active" onclick="setEditorMode('visual')">Vizuálně</button>
+          <button type="button" id="mode-html" class="mode-tab" onclick="setEditorMode('html')">HTML</button>
+        </div>
+        <div class="mode-tools" id="html-tools" hidden>
+          <button class="btn-sm" type="button" onclick="insertTableSkeleton()">+ Tabulka</button>
+          <button class="btn-sm" type="button" onclick="toggleDecklistPanel()">+ Decklist</button>
+        </div>
+      </div>
+
+      <div id="visual-editor"><div id="quill-editor"></div></div>
+      <textarea id="html-source" class="html-source" spellcheck="false" hidden placeholder="&lt;p&gt;Struktura příspěvku v HTML…&lt;/p&gt;"></textarea>
+
+      <!-- Panel pro vlozeni decklistu -->
+      <div class="decklist-panel" id="decklist-panel" hidden>
+        <div class="decklist-panel-hint">Vlož seznam, každou kartu na řádek ve tvaru „4 Lightning Bolt". Sideboard odděl řádkem, na kterém je jen „Sideboard".</div>
+        <textarea id="decklist-input" class="html-source" spellcheck="false" placeholder="4 Lightning Bolt&#10;4 Monastery Swiftspear&#10;20 Mountain&#10;&#10;Sideboard&#10;2 Pyroblast"></textarea>
+        <div class="decklist-panel-actions">
+          <button class="btn-sm" type="button" onclick="applyDecklist()">Vložit do článku</button>
+          <button class="btn-sm" type="button" onclick="toggleDecklistPanel()">Zrušit</button>
+        </div>
+      </div>
 
       <!-- Galerie -->
       <div class="gallery-block">
@@ -655,6 +696,107 @@ function imageUploadHandler() {
   quill.insertEmbed(range.index, 'image', url);
 }
 
+// ── Vizuální / HTML režim ─────────────────────────────────────
+let htmlMode = false;
+
+// Quill 1.x neumi tabulky ani decklisty — takovy obsah drzime jen v HTML
+// rezimu, aby ho prepnuti do vizualniho editoru nezahodilo.
+function quillCanRender(html) {
+  const h = String(html || '');
+  return !/<(table|thead|tbody|tfoot|tr|th|td|figure|figcaption|col|colgroup|div|h[4-6])[\s>]/i.test(h)
+      && !/class\s*=\s*["']?decklist/i.test(h);
+}
+
+function getEditorContent() {
+  return htmlMode ? document.getElementById('html-source').value : quill.root.innerHTML;
+}
+
+function applyEditorMode(mode) {
+  htmlMode = mode === 'html';
+  document.getElementById('visual-editor').hidden = htmlMode;
+  document.getElementById('html-source').hidden = !htmlMode;
+  document.getElementById('html-tools').hidden = !htmlMode;
+  document.getElementById('mode-visual').classList.toggle('active', !htmlMode);
+  document.getElementById('mode-html').classList.toggle('active', htmlMode);
+  if (!htmlMode) document.getElementById('decklist-panel').hidden = true;
+}
+
+// Nastavi obsah a vybere rezim podle toho, jestli ho Quill zvladne zobrazit.
+function setEditorContent(html) {
+  document.getElementById('html-source').value = html || '';
+  if (quillCanRender(html)) { quill.root.innerHTML = html || ''; applyEditorMode('visual'); }
+  else applyEditorMode('html');
+}
+
+function setEditorMode(mode) {
+  if (mode === 'html' && !htmlMode) {
+    document.getElementById('html-source').value = quill.root.innerHTML;
+    applyEditorMode('html');
+  } else if (mode === 'visual' && htmlMode) {
+    const html = document.getElementById('html-source').value;
+    if (!quillCanRender(html)) {
+      alert('Vizuální editor neumí tabulky ani decklisty — zůstaň prosím v HTML režimu, jinak by se ztratily.');
+      return;
+    }
+    quill.root.innerHTML = html;
+    applyEditorMode('visual');
+  }
+}
+
+// Vlozi HTML do zdroje na misto kurzoru; nejdriv prepne do HTML rezimu.
+function insertIntoSource(html) {
+  if (!htmlMode) setEditorMode('html');
+  const ta = document.getElementById('html-source');
+  const start = ta.selectionStart ?? ta.value.length;
+  const end   = ta.selectionEnd ?? ta.value.length;
+  ta.value = ta.value.slice(0, start) + html + ta.value.slice(end);
+  const pos = start + html.length;
+  ta.focus(); ta.setSelectionRange(pos, pos);
+}
+
+function insertTableSkeleton() {
+  insertIntoSource('\n<table>\n  <thead>\n    <tr><th>Sloupec</th><th>Sloupec</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>&nbsp;</td><td>&nbsp;</td></tr>\n    <tr><td>&nbsp;</td><td>&nbsp;</td></tr>\n  </tbody>\n</table>\n');
+}
+
+function toggleDecklistPanel() {
+  if (!htmlMode) setEditorMode('html');
+  const panel = document.getElementById('decklist-panel');
+  panel.hidden = !panel.hidden;
+  if (!panel.hidden) document.getElementById('decklist-input').focus();
+}
+
+function applyDecklist() {
+  const html = decklistToHtml(document.getElementById('decklist-input').value);
+  if (!html) { alert('Zadej aspoň jednu kartu ve tvaru „4 Lightning Bolt".'); return; }
+  insertIntoSource('\n' + html + '\n');
+  document.getElementById('decklist-input').value = '';
+  document.getElementById('decklist-panel').hidden = true;
+}
+
+// Text "4 Lightning Bolt" na radek → HTML. Radek "Sideboard" oddeluje
+// hlavni deck od sideboardu, prazdne radky se ignoruji.
+function decklistToHtml(raw) {
+  const main = [], side = [];
+  let target = main;
+  String(raw).split(/\r?\n/).forEach(line => {
+    const t = line.trim();
+    if (!t) return;
+    if (/^side\s*board:?$/i.test(t)) { target = side; return; }
+    const m = t.match(/^(\d+)\s*[xX]?\s+(.+)$/);
+    if (m) target.push({ n: parseInt(m[1], 10), name: m[2].trim() });
+    else   target.push({ n: null, name: t });
+  });
+  if (!main.length && !side.length) return '';
+  const esc = str => String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const col = (title, cards) => {
+    if (!cards.length) return '';
+    const total = cards.reduce((sum, c) => sum + (c.n || 0), 0);
+    const rows = cards.map(c => `      <div class="decklist-row"><span class="dl-n">${c.n ?? ''}</span> ${esc(c.name)}</div>`).join('\n');
+    return `  <div class="decklist-col">\n    <div class="decklist-h">${esc(title)}${total ? ' (' + total + ')' : ''}</div>\n${rows}\n  </div>`;
+  };
+  return `<div class="decklist">\n${[col('Hlavní deck', main), col('Sideboard', side)].filter(Boolean).join('\n')}\n</div>`;
+}
+
 // ── Nahrávání obrázků ─────────────────────────────────────────
 // Fotky se ukladaji jako base64 primo do Firestore — projekt tak zustava
 // cely na bezplatnem tarifu. Dokument ma limit 1 MiB, proto se kazda
@@ -759,7 +901,7 @@ function uploadErrorText(e) {
 // Odhad velikosti prispevku, aby se dalo varovat driv, nez Firestore
 // zapis odmitne kvuli limitu dokumentu.
 function postSizeBytes() {
-  const content = quill.root.innerHTML.length;
+  const content = getEditorContent().length;
   const thumbs  = gallery.reduce((sum, g) => sum + (g.thumb?.length || 0), 0);
   return content + thumbs;
 }
@@ -808,7 +950,7 @@ function resetEditor() {
   postSectionIds = [];
   renderSectionChips();
   document.getElementById('post-title').value = '';
-  quill.setContents([]);
+  setEditorContent('');
   document.getElementById('publish-toggle-input').checked = false;
   document.getElementById('save-status').textContent = '';
   document.getElementById('save-status').className = 'save-status';
@@ -971,7 +1113,7 @@ dropzone.addEventListener('drop', e => {
 
 async function savePost() {
   const title   = document.getElementById('post-title').value.trim();
-  const content = quill.root.innerHTML;
+  const content = getEditorContent();
   const published = document.getElementById('publish-toggle-input').checked;
   const btn = document.getElementById('save-btn');
   const statusEl = document.getElementById('save-status');
@@ -1192,7 +1334,7 @@ async function editPost(id) {
   renderGallery();
   setGalleryStatus('');
   document.getElementById('post-title').value = p.title || '';
-  quill.root.innerHTML = p.content || '';
+  setEditorContent(p.content || '');
   document.getElementById('publish-toggle-input').checked = !!p.published;
   document.getElementById('save-status').textContent = '';
   document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
