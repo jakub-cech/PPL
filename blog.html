@@ -672,6 +672,36 @@
       width: 100%; display: block; border-radius: 12px; background: var(--bg-2);
       box-shadow: 0 10px 34px rgba(0,0,0,0.6);
     }
+    /* Komentáře */
+    #blog-modal-comments { margin-top: 34px; padding-top: 26px; border-top: 1px solid var(--border); }
+    .comment-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 18px; }
+    .comment-list { list-style: none; display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+    .comment { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+    .comment-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+    .comment-nick { font-weight: 600; color: var(--gold-light); font-size: 0.88rem; }
+    .comment-date { font-size: 0.72rem; color: var(--text-3); }
+    .comment-text { font-size: 0.9rem; color: var(--text-2); line-height: 1.6; word-break: break-word; }
+    .comment-empty, .comment-off, .comment-loading { font-size: 0.86rem; color: var(--text-3); margin-bottom: 20px; }
+    .comment-form { display: flex; flex-direction: column; gap: 10px; }
+    .comment-form input, .comment-form textarea {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-family: 'Inter', sans-serif; font-size: 0.88rem; color: var(--text-1); width: 100%;
+    }
+    .comment-form input:focus, .comment-form textarea:focus { outline: none; border-color: var(--gold-dim); }
+    .comment-form input::placeholder, .comment-form textarea::placeholder { color: var(--text-3); }
+    .comment-nick-input { max-width: 260px; }
+    .comment-text-input { resize: vertical; line-height: 1.6; }
+    .comment-form-actions { display: flex; align-items: center; gap: 14px; }
+    .comment-submit {
+      background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f; border: none;
+      border-radius: var(--radius-sm); padding: 10px 24px; font-family: 'Inter', sans-serif;
+      font-size: 0.82rem; font-weight: 600; letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s;
+    }
+    .comment-submit:hover { opacity: 0.9; }
+    .comment-submit:disabled { opacity: 0.5; cursor: default; }
+    .comment-status { font-size: 0.8rem; color: var(--text-3); }
+    .comment-status.ok { color: #27ae60; }
+    .comment-status.err { color: #e74c3c; }
 
     /* ── Fotogalerie u příspěvku ── */
     .blog-gallery-label {
@@ -823,6 +853,7 @@
     </div>
     <div class="modal-content-box" id="blog-modal-content"></div>
     <div id="blog-modal-gallery"></div>
+    <div id="blog-modal-comments"></div>
   </div>
 </div>
 
@@ -976,6 +1007,7 @@ function openBlogModal(post) {
   enhanceCards(contentEl);
   bindCardHandlers(contentEl);
   renderGallery(post, lang);
+  renderComments(post);
   const overlay = document.getElementById('blog-overlay');
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1057,6 +1089,74 @@ function lightboxOpen() {
   return document.getElementById('lightbox').classList.contains('open');
 }
 
+
+
+// ── Komentáře ─────────────────────────────────────────────────
+const COMMENT_NICK_MAX = 40, COMMENT_TEXT_MAX = 1000;
+
+async function loadComments(postId) {
+  if (!db || !postId) return [];
+  try {
+    const snap = await db.collection('posts').doc(postId).collection('comments').get();
+    return snap.docs.map(d => d.data()).sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
+  } catch(e) { console.warn('Comments load error:', e); return []; }
+}
+
+async function renderComments(post) {
+  const box = document.getElementById('blog-modal-comments');
+  const t = i18n[document.documentElement.lang || 'cs'];
+  const enabled = post.commentsEnabled !== false;
+  box.innerHTML = `<div class="comment-loading">${t['comments.loading']}</div>`;
+  const comments = await loadComments(post.id);
+
+  const list = comments.length
+    ? `<ul class="comment-list">${comments.map(c => `
+        <li class="comment">
+          <div class="comment-head">
+            <span class="comment-nick">${escapeHtml(c.nick && c.nick.trim() ? c.nick : t['comments.anon'])}</span>
+            <span class="comment-date">${formatDate(c.createdAt)}</span>
+          </div>
+          <div class="comment-text">${escapeHtml(c.text).replace(/\n/g, '<br>')}</div>
+        </li>`).join('')}</ul>`
+    : `<p class="comment-empty">${t['comments.empty']}</p>`;
+
+  const form = enabled ? `
+    <form class="comment-form" novalidate>
+      <input class="comment-nick-input" name="nick" type="text" maxlength="${COMMENT_NICK_MAX}"
+             placeholder="${escapeHtml(t['comments.nick'])}" autocomplete="nickname" />
+      <textarea class="comment-text-input" name="text" rows="3" maxlength="${COMMENT_TEXT_MAX}"
+                placeholder="${escapeHtml(t['comments.text'])}"></textarea>
+      <input class="reg-hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <div class="comment-form-actions">
+        <button class="comment-submit" type="submit">${t['comments.submit']}</button>
+        <span class="comment-status"></span>
+      </div>
+    </form>` : `<p class="comment-off">${t['comments.off']}</p>`;
+
+  box.innerHTML = `<div class="comment-label">${t['comments.title']}${comments.length ? ' (' + comments.length + ')' : ''}</div>${list}${form}`;
+  const f = box.querySelector('.comment-form');
+  if (f) f.addEventListener('submit', e => { e.preventDefault(); submitComment(f, post, box.querySelector('.comment-status'), t); });
+}
+
+async function submitComment(form, post, statusEl, t) {
+  if (form.website.value) { statusEl.textContent = t['comments.done']; statusEl.className = 'comment-status ok'; return; }
+  const nick = form.nick.value.trim().slice(0, COMMENT_NICK_MAX);
+  const text = form.text.value.trim().slice(0, COMMENT_TEXT_MAX);
+  if (text.length < 1) { statusEl.textContent = t['comments.needText']; statusEl.className = 'comment-status err'; return; }
+  const btn = form.querySelector('.comment-submit');
+  btn.disabled = true;
+  statusEl.textContent = t['comments.sending']; statusEl.className = 'comment-status';
+  try {
+    const data = { text, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (nick) data.nick = nick;
+    await db.collection('posts').doc(post.id).collection('comments').add(data);
+    await renderComments(post);
+  } catch(e) {
+    console.error('Comment error:', e);
+    statusEl.textContent = t['comments.error']; statusEl.className = 'comment-status err';
+    btn.disabled = false;
+  }
+}
 
 // ── Náhled karty ze Scryfallu ─────────────────────────────────
 // V decklistech a u [[Karta]] v textu se pri najeti/kliknuti ukaze
@@ -1202,6 +1302,18 @@ const i18n = {
     'blog.empty':   'Zatím žádné příspěvky.',
     'blog.read':    'Číst dál →',
     'blog.gallery': 'Fotogalerie',
+    'comments.title':   'Komentáře',
+    'comments.loading': 'Načítám komentáře…',
+    'comments.empty':   'Zatím žádné komentáře. Buď první.',
+    'comments.anon':    'Anonymous',
+    'comments.nick':    'Přezdívka (nepovinné)',
+    'comments.text':    'Napiš komentář…',
+    'comments.submit':  'Odeslat',
+    'comments.sending': 'Odesílám…',
+    'comments.done':    'Díky za komentář.',
+    'comments.needText':'Napiš prosím text komentáře.',
+    'comments.error':   'Komentář se nepodařilo odeslat. Zkus to prosím znovu.',
+    'comments.off':     'Komentáře jsou u tohoto příspěvku vypnuté.',
     'blog.all':     'Vše',
     'blog.back':    '← Zpět na hlavní stránku',
     'blog.none':    'V této sekci zatím nic není.',
@@ -1214,6 +1326,18 @@ const i18n = {
     'blog.empty':   'No posts yet.',
     'blog.read':    'Read more →',
     'blog.gallery': 'Photo gallery',
+    'comments.title':   'Comments',
+    'comments.loading': 'Loading comments…',
+    'comments.empty':   'No comments yet. Be the first.',
+    'comments.anon':    'Anonymous',
+    'comments.nick':    'Nickname (optional)',
+    'comments.text':    'Write a comment…',
+    'comments.submit':  'Post',
+    'comments.sending': 'Posting…',
+    'comments.done':    'Thanks for your comment.',
+    'comments.needText':'Please write a comment.',
+    'comments.error':   'Couldn\'t post the comment. Please try again.',
+    'comments.off':     'Comments are turned off for this post.',
     'blog.all':     'All',
     'blog.back':    '← Back to the main page',
     'blog.none':    'Nothing in this section yet.',
@@ -1249,7 +1373,7 @@ async function loadPosts() {
   if (!db) { cachedPosts = []; render(); return; }
   try {
     const snap = await db.collection('posts').where('published', '==', true).get();
-    cachedPosts = snap.docs.map(d => d.data())
+    cachedPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
   } catch(e) { console.error('Blog load error:', e); cachedPosts = []; }
   render();

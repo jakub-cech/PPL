@@ -36,6 +36,34 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read:  if resource.data.published == true || isAdmin();
       allow write: if isAdmin();
+
+      // Komentare. Druhe misto (vedle registraci), kam smi zapsat
+      // i neprihlaseny navstevnik, proto tesna pravidla:
+      //   - jen tri ocekavana pole, nic navic
+      //   - text 1–1000 znaku, nick nejvys 40 (prazdny se zobrazi jako Anonymous)
+      //   - createdAt musi byt cas serveru
+      //   - prispevek musi byt zverejneny a mit povolene komentare
+      //     (commentsEnabled chybi = bereme jako povolene)
+      // Menit komentar nesmi nikdo, mazat jen admin.
+      function post() {
+        return get(/databases/$(database)/documents/posts/$(postId)).data;
+      }
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasOnly(['nick', 'text', 'createdAt'])
+                      && request.resource.data.keys().hasAll(['text', 'createdAt'])
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() >= 1
+                      && request.resource.data.text.size() <= 1000
+                      && (!('nick' in request.resource.data)
+                          || (request.resource.data.nick is string
+                              && request.resource.data.nick.size() <= 40))
+                      && request.resource.data.createdAt == request.time
+                      && post().published == true
+                      && post().get('commentsEnabled', true) == true;
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
     }
 
     // Sekce blogu — nazvy stitku, podle kterych se na webu filtruje.

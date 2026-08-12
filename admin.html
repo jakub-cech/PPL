@@ -501,7 +501,14 @@
         </button>
         <button class="btn-outline" onclick="resetEditor()">Nový</button>
         <span class="save-status" id="save-status"></span>
-        <div class="publish-toggle">
+        <div class="publish-toggle" style="margin-left:0">
+          <label for="comments-toggle" title="Když je vypnuté, návštěvníci nemohou k příspěvku psát komentáře">Povolit komentáře</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="comments-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="publish-toggle" style="margin-left:0">
           <label for="publish-toggle-input">Zveřejnit</label>
           <label class="toggle-switch">
             <input type="checkbox" id="publish-toggle-input" />
@@ -509,7 +516,16 @@
           </label>
         </div>
       </div>
-    
+
+      <!-- Moderace komentaru — jen u ulozeneho prispevku -->
+      <div class="reg-panel" id="comments-panel" hidden>
+        <div class="reg-panel-head">
+          <span>Komentáře</span>
+          <span class="reg-panel-count" id="comments-count"></span>
+        </div>
+        <div id="comments-mod-list"></div>
+      </div>
+
       </div>
     </div>
 
@@ -952,6 +968,8 @@ function resetEditor() {
   document.getElementById('post-title').value = '';
   setEditorContent('');
   document.getElementById('publish-toggle-input').checked = false;
+  document.getElementById('comments-toggle').checked = true;
+  document.getElementById('comments-panel').hidden = true;
   document.getElementById('save-status').textContent = '';
   document.getElementById('save-status').className = 'save-status';
   document.getElementById('editor-panel-title').textContent = 'Nový příspěvek';
@@ -1137,6 +1155,7 @@ async function savePost() {
       published,
       gallery:    gallery.map(({ imageId, thumb, caption }) => ({ imageId, thumb, caption: caption || '' })),
       sections:   postSectionIds.slice(),
+      commentsEnabled: document.getElementById('comments-toggle').checked,
       authorId:   user.uid,
       authorName: authorLabel(user),
       updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
@@ -1336,9 +1355,54 @@ async function editPost(id) {
   document.getElementById('post-title').value = p.title || '';
   setEditorContent(p.content || '');
   document.getElementById('publish-toggle-input').checked = !!p.published;
+  document.getElementById('comments-toggle').checked = p.commentsEnabled !== false;
   document.getElementById('save-status').textContent = '';
   document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
   showBlogEditor();
+  showCommentsPanel(id);
+}
+
+// ── Moderace komentaru ────────────────────────────────────────
+function showCommentsPanel(postId) {
+  const panel = document.getElementById('comments-panel');
+  if (!postId) { panel.hidden = true; return; }
+  panel.hidden = false;
+  renderPostComments(postId);
+}
+
+async function renderPostComments(postId) {
+  const box = document.getElementById('comments-mod-list');
+  const countEl = document.getElementById('comments-count');
+  box.innerHTML = '<div class="reg-admin-empty">Načítám…</div>';
+  let rows;
+  try {
+    const snap = await db.collection('posts').doc(postId).collection('comments').get();
+    rows = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0));
+  } catch(e) { box.innerHTML = '<div class="reg-admin-empty">Nepodařilo se načíst.</div>'; console.error(e); return; }
+  if (countEl) countEl.textContent = rows.length || '';
+  if (!rows.length) { box.innerHTML = '<div class="reg-admin-empty">Zatím žádné komentáře.</div>'; return; }
+  box.innerHTML = '';
+  rows.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'reg-admin-row';
+    const date = c.createdAt?.toDate?.()?.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' }) ?? '';
+    row.innerHTML = `
+      <span class="reg-admin-name">${escapeHtml(c.nick && c.nick.trim() ? c.nick : 'Anonymous')}</span>
+      <span class="reg-admin-note">${escapeHtml(c.text)}</span>
+      <span style="color:var(--text-3);font-size:0.72rem;white-space:nowrap">${date}</span>
+      <button class="btn-sm danger" type="button">Smazat</button>
+    `;
+    row.querySelector('button').addEventListener('click', async ev => {
+      if (!confirm('Smazat tento komentář?')) return;
+      ev.target.disabled = true;
+      try {
+        await db.collection('posts').doc(postId).collection('comments').doc(c.id).delete();
+        renderPostComments(postId);
+      } catch(e) { ev.target.disabled = false; console.error(e); }
+    });
+    box.appendChild(row);
+  });
 }
 
 async function deletePost(id, btn) {
@@ -1351,6 +1415,12 @@ async function deletePost(id, btn) {
     for (const d of imgs.docs) await deleteImage(d.id);
   } catch(e) {
     console.warn('Mazání fotek selhalo:', e);
+  }
+  try {
+    const cs = await db.collection('posts').doc(id).collection('comments').get();
+    for (const d of cs.docs) await d.ref.delete();
+  } catch(e) {
+    console.warn('Mazání komentářů selhalo:', e);
   }
   await db.collection('posts').doc(id).delete();
   if (editingPostId === id) resetEditor();
