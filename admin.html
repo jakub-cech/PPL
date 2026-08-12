@@ -291,6 +291,9 @@
       color: var(--text-3); background: rgba(13,13,15,0.7);
     }
     .bac-badge.pub { color: var(--green); border-color: var(--green); background: rgba(39,174,96,0.15); }
+    .bac-open { cursor: pointer; display: flex; flex-direction: column; flex: 1; }
+    .blog-admin-card:hover .bac-title { color: var(--gold-light); }
+    .bac-title { transition: color 0.2s; }
     .bac-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
     .bac-tags { display: flex; flex-wrap: wrap; gap: 6px; }
     .bac-tag { font-size: 0.64rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-dim); border: 1px solid var(--border); border-radius: 100px; padding: 2px 9px; }
@@ -1316,21 +1319,23 @@ function renderBlogList() {
     const card = document.createElement('div');
     card.className = 'blog-admin-card';
     card.innerHTML = `
-      <div class="bac-cover">
-        ${thumb ? `<img src="${escapeHtml(thumb)}" alt="" loading="lazy" />` : '<div class="bac-nocover">bez fotky</div>'}
-        <span class="bac-badge ${p.published ? 'pub' : ''}">${p.published ? 'Zveřejněno' : 'Koncept'}</span>
-      </div>
-      <div class="bac-body">
-        ${tags ? `<div class="bac-tags">${tags}</div>` : ''}
-        <div class="bac-title">${escapeHtml(p.title) || '(bez názvu)'}</div>
-        <div class="bac-meta"><span class="bac-author">${escapeHtml(p.authorName)}</span><span>${date}</span></div>
+      <div class="bac-open" title="Upravit příspěvek">
+        <div class="bac-cover">
+          ${thumb ? `<img src="${escapeHtml(thumb)}" alt="" loading="lazy" />` : '<div class="bac-nocover">bez fotky</div>'}
+          <span class="bac-badge ${p.published ? 'pub' : ''}">${p.published ? 'Zveřejněno' : 'Koncept'}</span>
+        </div>
+        <div class="bac-body">
+          ${tags ? `<div class="bac-tags">${tags}</div>` : ''}
+          <div class="bac-title">${escapeHtml(p.title) || '(bez názvu)'}</div>
+          <div class="bac-meta"><span class="bac-author">${escapeHtml(p.authorName)}</span><span>${date}</span></div>
+        </div>
       </div>
       <div class="bac-actions">
-        <button class="btn-sm" onclick="editPost('${id}')">Upravit</button>
         <button class="btn-sm publish-btn ${p.published ? 'active' : ''}" onclick="togglePublish('${id}', ${p.published})">${p.published ? 'Skrýt' : 'Zveřejnit'}</button>
         <button class="btn-sm danger" onclick="deletePost('${id}', this)">Smazat</button>
       </div>
     `;
+    card.querySelector('.bac-open').addEventListener('click', () => editPost(id));
     list.appendChild(card);
   });
 }
