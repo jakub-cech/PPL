@@ -400,6 +400,11 @@
       transition: color 0.2s;
     }
     .modal-close:hover { color: var(--text-1); }
+    .leave-box { max-width: 440px; padding: 32px; }
+    .leave-title { font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--text-1); margin-bottom: 12px; }
+    .leave-text { font-size: 0.9rem; color: var(--text-2); line-height: 1.6; margin-bottom: 24px; }
+    .leave-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .leave-discard:hover { border-color: var(--red); color: var(--red); }
     .modal-title-text { font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--text-1); margin-bottom: 12px; padding-right: 32px; }
     .modal-meta { font-size: 0.78rem; color: var(--text-3); margin-bottom: 28px; display: flex; gap: 16px; }
     .modal-author-text { color: var(--gold-dim); }
@@ -543,7 +548,7 @@
 
       <!-- Pohled 2: editor prispevku -->
       <div id="blog-view-edit" hidden>
-        <button class="btn-back" type="button" onclick="showBlogList()">← Zpět na příspěvky</button>
+        <button class="btn-back" type="button" onclick="leaveEditor(showBlogList)">← Zpět na příspěvky</button>
       <div class="panel-title" id="editor-panel-title">Nový příspěvek</div>
       <input class="post-title-input" id="post-title" type="text" placeholder="Název příspěvku…" />
 
@@ -607,7 +612,7 @@
           Uložit
         </button>
         <button class="btn-outline" type="button" onclick="openPreview()">Náhled</button>
-        <button class="btn-outline" onclick="resetEditor()">Nový</button>
+        <button class="btn-outline" onclick="leaveEditor(resetEditor)">Nový</button>
         <span class="save-status" id="save-status"></span>
         <div class="publish-toggle" style="margin-left:0">
           <label for="comments-toggle" title="Když je vypnuté, návštěvníci nemohou k příspěvku psát komentáře">Povolit komentáře</label>
@@ -725,6 +730,19 @@
     </div>
     <div class="modal-content-box" id="preview-content"></div>
     <div id="preview-gallery"></div>
+  </div>
+</div>
+
+<!-- Neuložené změny při odchodu z editoru -->
+<div class="modal-overlay" id="leave-overlay">
+  <div class="modal-box leave-box">
+    <div class="leave-title">Neuložené změny</div>
+    <p class="leave-text">V příspěvku máš neuložené změny. Chceš je uložit, nebo zahodit?</p>
+    <div class="leave-actions">
+      <button class="btn-save" id="leave-save">Uložit a odejít</button>
+      <button class="btn-outline leave-discard" id="leave-discard">Zahodit změny</button>
+      <button class="btn-outline" id="leave-cancel">Zůstat</button>
+    </div>
   </div>
 </div>
 
@@ -1108,6 +1126,7 @@ function resetEditor() {
   document.getElementById('save-status').textContent = '';
   document.getElementById('save-status').className = 'save-status';
   document.getElementById('editor-panel-title').textContent = 'Nový příspěvek';
+  captureEditorSnapshot();
   // Zalozku zamerne neprepiname: tlacitko "Nový" je uz v editoru a pri
   // mazani prispevku ze seznamu by skok do editoru jen prekvapil.
 }
@@ -1271,11 +1290,11 @@ async function savePost() {
   const btn = document.getElementById('save-btn');
   const statusEl = document.getElementById('save-status');
 
-  if (!title) { statusEl.textContent = 'Zadej název příspěvku.'; statusEl.className = 'save-status err'; return; }
+  if (!title) { statusEl.textContent = 'Zadej název příspěvku.'; statusEl.className = 'save-status err'; return false; }
   if (postSizeBytes() > POST_MAX_BYTES) {
     statusEl.textContent = 'Příspěvek je i s náhledy moc velký — uber pár fotek z galerie.';
     statusEl.className = 'save-status err';
-    return;
+    return false;
   }
 
   btn.disabled = true;
@@ -1307,13 +1326,18 @@ async function savePost() {
     await syncImageVisibility(editingPostId, published);
     statusEl.textContent = '✓ Uloženo';
     statusEl.className = 'save-status ok';
+    // Ulozeny stav je nova referencni podoba — editor uz neni "rozdelany".
+    captureEditorSnapshot();
     loadAllPosts();
+    btn.disabled = false;
+    return true;
   } catch(e) {
     statusEl.textContent = 'Chyba při ukládání.';
     statusEl.className = 'save-status err';
     console.error(e);
   }
   btn.disabled = false;
+  return false;
 }
 
 // Nazvy z Firestore koncí v innerHTML, proto se escapuji i tady.
@@ -1495,6 +1519,7 @@ async function editPost(id) {
   document.getElementById('comments-toggle').checked = p.commentsEnabled !== false;
   document.getElementById('save-status').textContent = '';
   document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
+  captureEditorSnapshot();
   showBlogEditor();
   showCommentsPanel(id);
 }
@@ -1804,6 +1829,15 @@ async function renderRegistrations(tournamentId, box) {
 
 // ── Tabs ──────────────────────────────────────────────────────
 function switchTab(name, clickedBtn) {
+  // Odchod z rozdelane upravy prispevku (i preskok na jinou zalozku)
+  // nejdriv nabidne ulozeni nebo zahozeni zmen.
+  const inEditor = document.getElementById('tab-blog').classList.contains('active')
+                   && !document.getElementById('blog-view-edit').hidden;
+  if (inEditor) { leaveEditor(() => doSwitchTab(name, clickedBtn)); return; }
+  doSwitchTab(name, clickedBtn);
+}
+
+function doSwitchTab(name, clickedBtn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   clickedBtn.classList.add('active');
@@ -1811,6 +1845,73 @@ function switchTab(name, clickedBtn) {
   if (name === 'blog') showBlogList();
   if (name === 'tournaments') loadTournamentList();
 }
+
+// ── Hlídání neuložených změn ──────────────────────────────────
+// Pri otevreni prispevku si zapamatujeme jeho podobu; kdyz se od te
+// doby cokoli zmeni (nazev, obsah, galerie, sekce, prepinace) a chce
+// se odejit, nabidneme ulozit / zahodit / zustat.
+let editorSnapshot = null;
+
+function editorSignature() {
+  return JSON.stringify({
+    title:     document.getElementById('post-title').value,
+    content:   getEditorContent(),
+    gallery:   (gallery || []).map(g => [g.imageId ?? null, g.caption || '']),
+    sections:  postSectionIds.slice().sort(),
+    published: document.getElementById('publish-toggle-input').checked,
+    comments:  document.getElementById('comments-toggle').checked
+  });
+}
+function captureEditorSnapshot() {
+  // Quill po nastaveni obsahu jeste dorovna DOM (prazdny editor treba na
+  // <p><br></p>), proto referencni podobu bereme az po teto normalizaci,
+  // jinak by se cerstve otevreny prispevek tvaril jako rozdelany.
+  setTimeout(() => { editorSnapshot = editorSignature(); }, 0);
+}
+function isEditorDirty() { return editorSnapshot !== null && editorSignature() !== editorSnapshot; }
+
+let pendingLeave = null;
+function leaveEditor(proceed) {
+  if (!isEditorDirty()) { proceed(); return; }
+  pendingLeave = proceed;
+  document.getElementById('leave-overlay').classList.add('open');
+}
+function hideLeaveModal() {
+  document.getElementById('leave-overlay').classList.remove('open');
+}
+
+document.getElementById('leave-cancel').addEventListener('click', () => {
+  pendingLeave = null;
+  hideLeaveModal();
+});
+document.getElementById('leave-discard').addEventListener('click', () => {
+  const go = pendingLeave;
+  pendingLeave = null;
+  hideLeaveModal();
+  if (go) go();
+});
+document.getElementById('leave-save').addEventListener('click', async () => {
+  const go = pendingLeave;
+  const btn = document.getElementById('leave-save');
+  btn.disabled = true;
+  const ok = await savePost();
+  btn.disabled = false;
+  hideLeaveModal();
+  // Kdyz ulozeni selze (treba chybi nazev), zustaneme v editoru,
+  // aby uzivatel videl hlasku a mohl to opravit.
+  if (ok) { pendingLeave = null; if (go) go(); }
+});
+// Klik mimo box i klavesa Escape = zustat (nic se nezahodi).
+document.getElementById('leave-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('leave-overlay')) { pendingLeave = null; hideLeaveModal(); }
+});
+
+// Zavreni/obnoveni karty prohlizece — nativni varovani, kdyz je rozdelano.
+window.addEventListener('beforeunload', e => {
+  const inEditor = document.getElementById('tab-blog').classList.contains('active')
+                   && !document.getElementById('blog-view-edit').hidden;
+  if (inEditor && isEditorDirty()) { e.preventDefault(); e.returnValue = ''; }
+});
 
 // ── Náhled příspěvku ──────────────────────────────────────────
 // Vykresli aktuální rozdělaný příspěvek přesně tak, jak ho uvidí
@@ -2074,7 +2175,13 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') stepLightbox(null,  1);
     return;
   }
-  if (e.key === 'Escape') closePreview();
+  if (e.key === 'Escape') {
+    // Otevrene okno "neuložené změny" ma prednost — Escape = zustat.
+    if (document.getElementById('leave-overlay').classList.contains('open')) {
+      pendingLeave = null; hideLeaveModal(); return;
+    }
+    closePreview();
+  }
 });
 </script>
 </body>
