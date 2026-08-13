@@ -1156,6 +1156,7 @@ function renderSectionChips() {
       const i = postSectionIds.indexOf(sec.id);
       if (i >= 0) postSectionIds.splice(i, 1); else postSectionIds.push(sec.id);
       renderSectionChips();
+      editorChanged();
     });
     chip.querySelector('.sec-del').addEventListener('click', () => deleteSection(sec));
     box.appendChild(chip);
@@ -1228,6 +1229,7 @@ function moveImage(i, dir) {
   if (j < 0 || j >= gallery.length) return;
   [gallery[i], gallery[j]] = [gallery[j], gallery[i]];
   renderGallery();
+  editorChanged();
 }
 
 async function removeImage(i) {
@@ -1235,6 +1237,7 @@ async function removeImage(i) {
   if (!confirm('Odebrat tuhle fotku z galerie?')) return;
   gallery.splice(i, 1);
   renderGallery();
+  editorChanged();
   // Plnou verzi mazeme az po odebrani z pole — kdyz se to nepovede,
   // z galerie uz je pryc a zbyde jen osirely dokument.
   if (img.imageId) {
@@ -1259,6 +1262,7 @@ async function handleFiles(files) {
       const { imageId, thumb } = await uploadImage(file);
       gallery.push({ imageId, thumb, caption: '' });
       renderGallery();
+      editorChanged();
       done++;
     } catch(e) {
       setGalleryStatus(uploadErrorText(e), true);
@@ -1869,6 +1873,21 @@ function captureEditorSnapshot() {
   setTimeout(() => { editorSnapshot = editorSignature(); }, 0);
 }
 function isEditorDirty() { return editorSnapshot !== null && editorSignature() !== editorSnapshot; }
+
+// Hlaska "✓ Uloženo" plati jen do prvni dalsi upravy — jakmile se
+// prispevek zase lisi od ulozene podoby, potvrzeni schovame, at
+// neni matouci.
+function clearSavedStatus() {
+  const el = document.getElementById('save-status');
+  if (el.classList.contains('ok')) { el.textContent = ''; el.className = 'save-status'; }
+}
+function editorChanged() { if (isEditorDirty()) clearSavedStatus(); }
+
+// Vetsina uprav (nazev, psani v editoru, popisky fotek, prepinace)
+// probublava jako input/change az sem; klikaci zmeny (sekce, razeni
+// a mazani fotek) volaji editorChanged() primo.
+['input', 'change'].forEach(evt =>
+  document.getElementById('blog-view-edit').addEventListener(evt, editorChanged));
 
 let pendingLeave = null;
 function leaveEditor(proceed) {
