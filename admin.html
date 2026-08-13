@@ -378,6 +378,110 @@
       .editor-actions { flex-direction: column; align-items: flex-start; }
       .publish-toggle { margin-left: 0; }
     }
+
+    /* ── Náhled příspěvku (stejný vzhled jako na webu) ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.78); backdrop-filter: blur(4px);
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 40px 24px; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s; overflow-y: auto;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal-box {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); max-width: 720px; width: 100%;
+      padding: 40px; position: relative; margin: auto;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 18px;
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3); font-size: 1.5rem; line-height: 1;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text-1); }
+    .modal-title-text { font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--text-1); margin-bottom: 12px; padding-right: 32px; }
+    .modal-meta { font-size: 0.78rem; color: var(--text-3); margin-bottom: 28px; display: flex; gap: 16px; }
+    .modal-author-text { color: var(--gold-dim); }
+    .preview-badge { display: inline-block; margin-bottom: 18px; padding: 4px 12px; border-radius: var(--radius-sm);
+      background: rgba(201,168,76,0.16); border: 1px solid var(--gold-dim); color: var(--gold-light);
+      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+    .modal-content-box { font-size: 0.93rem; color: var(--text-2); line-height: 1.8; }
+    .modal-content-box h1,.modal-content-box h2,.modal-content-box h3 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 24px 0 12px; }
+    .modal-content-box p { margin-bottom: 14px; }
+    .modal-content-box img { max-width: 100%; border-radius: var(--radius-sm); margin: 16px 0; }
+    .modal-content-box a { color: var(--gold); }
+    .modal-content-box strong { color: var(--text-1); }
+    .modal-content-box ul,.modal-content-box ol { padding-left: 20px; margin-bottom: 14px; }
+    .modal-content-box blockquote { border-left: 3px solid var(--gold-dim); padding-left: 16px; color: var(--text-3); font-style: italic; margin: 16px 0; }
+    .modal-content-box table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.9rem; }
+    .modal-content-box th, .modal-content-box td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+    .modal-content-box thead th { background: var(--bg-3); color: var(--gold-dim); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    .modal-content-box caption { color: var(--text-3); font-size: 0.8rem; margin-bottom: 8px; text-align: left; }
+    .modal-content-box h4 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 20px 0 10px; font-size: 1rem; }
+    .modal-content-box h5, .modal-content-box h6 { color: var(--gold-dim); margin: 16px 0 8px; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    /* Decklist */
+    .decklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 28px; margin: 20px 0; }
+    .decklist-col { min-width: 0; }
+    .decklist-h { font-family: 'Cinzel', serif; font-size: 0.82rem; color: var(--gold-light); font-weight: 600; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .decklist-row { display: flex; gap: 10px; font-size: 0.88rem; color: var(--text-2); padding: 3px 0; }
+    .decklist-row .dl-n { color: var(--gold-dim); min-width: 22px; text-align: right; font-variant-numeric: tabular-nums; }
+    /* Náhled karty ze Scryfallu */
+    .mtg-card { color: var(--gold); border-bottom: 1px dotted var(--gold-dim); cursor: help; }
+    .mtg-card:hover { color: var(--gold-light); }
+    .decklist-row.mtg-card { border-bottom: none; cursor: help; transition: color 0.15s; }
+    .decklist-row.mtg-card:hover { color: var(--text-1); }
+    .card-preview {
+      position: fixed; z-index: 400; width: 244px; pointer-events: none;
+      opacity: 0; transition: opacity 0.12s;
+    }
+    .card-preview.show { opacity: 1; }
+    .card-preview img {
+      width: 100%; display: block; border-radius: 12px; background: var(--bg-2);
+      box-shadow: 0 10px 34px rgba(0,0,0,0.6);
+    }
+    /* Fotogalerie u příspěvku */
+    .blog-gallery-label {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold-dim); margin: 32px 0 14px; padding-top: 24px; border-top: 1px solid var(--border);
+    }
+    .blog-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .blog-gallery-item {
+      aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden;
+      border: 1px solid var(--border); cursor: zoom-in; background: var(--bg-3);
+      padding: 0; transition: border-color 0.25s;
+    }
+    .blog-gallery-item:hover { border-color: var(--gold-dim); }
+    .blog-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s; }
+    .blog-gallery-item:hover img { transform: scale(1.06); }
+    /* Lightbox */
+    .lightbox {
+      position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.94);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; padding: 56px 20px 32px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .lightbox.open { opacity: 1; pointer-events: auto; }
+    .lightbox-figure { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 100%; }
+    .lightbox-figure img { max-width: min(1100px, 92vw); max-height: 78vh; object-fit: contain; border-radius: var(--radius-sm); display: block; transition: filter 0.2s; }
+    .lightbox-figure img.loading { filter: blur(6px); }
+    .lightbox-caption { color: var(--text-2); font-size: 0.88rem; text-align: center; max-width: 640px; }
+    .lightbox-counter { color: var(--text-3); font-size: 0.75rem; letter-spacing: 0.1em; }
+    .lightbox-close, .lightbox-nav {
+      position: absolute; background: rgba(26,26,36,0.85); border: 1px solid var(--border);
+      color: var(--text-1); cursor: pointer; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .lightbox-close { top: 18px; right: 20px; width: 40px; height: 40px; font-size: 1.3rem; line-height: 1; }
+    .lightbox-nav { top: 50%; transform: translateY(-50%); width: 46px; height: 46px; font-size: 1.2rem; }
+    .lightbox-nav.prev { left: 20px; }
+    .lightbox-nav.next { right: 20px; }
+    .lightbox-close:hover, .lightbox-nav:hover { border-color: var(--gold); color: var(--gold); }
+    @media (max-width: 600px) {
+      .lightbox-nav { width: 38px; height: 38px; }
+      .lightbox-nav.prev { left: 8px; }
+      .lightbox-nav.next { right: 8px; }
+      .lightbox-figure img { max-height: 66vh; }
+    }
   </style>
 </head>
 <body>
@@ -502,6 +606,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           Uložit
         </button>
+        <button class="btn-outline" type="button" onclick="openPreview()">Náhled</button>
         <button class="btn-outline" onclick="resetEditor()">Nový</button>
         <span class="save-status" id="save-status"></span>
         <div class="publish-toggle" style="margin-left:0">
@@ -606,6 +711,33 @@
     </div>
 
       </div>
+</div>
+
+<!-- Náhled příspěvku -->
+<div class="modal-overlay" id="preview-overlay" onclick="closePreview(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closePreview()" aria-label="Zavřít">×</button>
+    <div class="preview-badge">Náhled — příspěvek zatím není zveřejněný</div>
+    <h2 class="modal-title-text" id="preview-title"></h2>
+    <div class="modal-meta">
+      <span class="modal-author-text" id="preview-author"></span>
+      <span id="preview-date"></span>
+    </div>
+    <div class="modal-content-box" id="preview-content"></div>
+    <div id="preview-gallery"></div>
+  </div>
+</div>
+
+<!-- Lightbox pro fotky v náhledu -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox(null)" aria-label="Zavřít">×</button>
+  <button class="lightbox-nav prev" onclick="stepLightbox(event, -1)" aria-label="Předchozí">‹</button>
+  <button class="lightbox-nav next" onclick="stepLightbox(event, 1)" aria-label="Další">›</button>
+  <figure class="lightbox-figure">
+    <img id="lightbox-img" src="" alt="" />
+    <figcaption class="lightbox-caption" id="lightbox-caption"></figcaption>
+  </figure>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
 </div>
 
 <!-- Firebase SDK -->
@@ -1679,6 +1811,271 @@ function switchTab(name, clickedBtn) {
   if (name === 'blog') showBlogList();
   if (name === 'tournaments') loadTournamentList();
 }
+
+// ── Náhled příspěvku ──────────────────────────────────────────
+// Vykresli aktuální rozdělaný příspěvek přesně tak, jak ho uvidí
+// návštěvník na webu — stejný sanitizér, galerie i náhledy karet.
+
+function formatDate(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// Do href pustime jen http(s) — jinak by sel do odkazu propasovat javascript:.
+function safeUrl(u) {
+  try {
+    const parsed = new URL(String(u), location.href);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+  } catch { return ''; }
+}
+// Fotky z galerie jsou vzdy data: URL. Cokoli jineho do stranky nepustime.
+function safeImage(s) {
+  return /^data:image\//.test(String(s ?? '')) ? String(s) : '';
+}
+
+// Stejny allowlist sanitizer jako na webu — obsah prispevku je HTML,
+// ale nechame jen znacky a atributy, ktere editor umi vyrobit.
+const ALLOWED_TAGS = new Set([
+  'P','BR','HR','STRONG','B','EM','I','U','S','SUB','SUP',
+  'H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG',
+  'TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','CAPTION','COLGROUP','COL',
+  'FIGURE','FIGCAPTION','DIV','SPAN'
+]);
+const DROP_TAGS  = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META','SVG','MATH','TEMPLATE','FORM','INPUT','BUTTON','SELECT','TEXTAREA','NOSCRIPT']);
+const GLOBAL_ATTRS = ['class'];
+const ALLOWED_ATTRS = { A: ['href'], IMG: ['src','alt'],
+  TD: ['colspan','rowspan'], TH: ['colspan','rowspan','scope'], COL: ['span'] };
+
+function cleanElement(el) {
+  for (const node of [...el.childNodes]) {
+    if (node.nodeType === Node.ELEMENT_NODE) cleanElement(node);
+    else if (node.nodeType !== Node.TEXT_NODE) node.remove();
+  }
+  const tag = el.tagName;
+  if (DROP_TAGS.has(tag)) { el.remove(); return; }
+  if (!ALLOWED_TAGS.has(tag)) { el.replaceWith(...el.childNodes); return; }
+  const allowed = [...GLOBAL_ATTRS, ...(ALLOWED_ATTRS[tag] || [])];
+  for (const attr of [...el.attributes]) {
+    if (!allowed.includes(attr.name.toLowerCase())) el.removeAttribute(attr.name);
+  }
+  if (tag === 'A') {
+    const href = safeUrl(el.getAttribute('href'));
+    if (href) {
+      el.setAttribute('href', href);
+      el.setAttribute('target', '_blank');
+      el.setAttribute('rel', 'noopener noreferrer');
+    } else { el.removeAttribute('href'); }
+  }
+  if (tag === 'IMG') {
+    const src = el.getAttribute('src') || '';
+    if (!/^data:image\//i.test(src) && !/^https:\/\//i.test(src)) el.remove();
+  }
+}
+
+function sanitizeHtml(html) {
+  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+  for (const node of [...doc.body.childNodes]) {
+    if (node.nodeType === Node.ELEMENT_NODE) cleanElement(node);
+    else if (node.nodeType !== Node.TEXT_NODE) node.remove();
+  }
+  return doc.body.innerHTML;
+}
+
+function renderPreviewGallery() {
+  const wrap = document.getElementById('preview-gallery');
+  currentGallery = Array.isArray(gallery) ? gallery : [];
+  if (!currentGallery.length) { wrap.innerHTML = ''; return; }
+  const items = currentGallery.map((img, i) => `
+    <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeHtml(img.caption) || 'Fotka ' + (i + 1)}">
+      <img src="${escapeHtml(safeImage(img.thumb))}" alt="${escapeHtml(img.caption)}" loading="lazy" />
+    </button>`).join('');
+  wrap.innerHTML = `
+    <div class="blog-gallery-label">Fotogalerie</div>
+    <div class="blog-gallery">${items}</div>`;
+}
+
+function openPreview() {
+  const title = document.getElementById('post-title').value.trim();
+  document.getElementById('preview-title').textContent  = title || '(bez názvu)';
+  document.getElementById('preview-author').textContent = auth.currentUser ? authorLabel(auth.currentUser) : '';
+  document.getElementById('preview-date').textContent   = formatDate(new Date());
+  const contentEl = document.getElementById('preview-content');
+  contentEl.innerHTML = sanitizeHtml(getEditorContent());
+  enhanceCards(contentEl);
+  bindCardHandlers(contentEl);
+  renderPreviewGallery();
+  document.getElementById('preview-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePreview(e) {
+  if (e && e.target !== document.getElementById('preview-overlay')) return;
+  document.getElementById('preview-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  hideCardPreview();
+}
+
+// ── Náhled karty ze Scryfallu ─────────────────────────────────
+const CARD_IMG = name =>
+  `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}&format=image&version=normal`;
+
+let cardPreviewEl = null;
+function cardPreview() {
+  if (!cardPreviewEl) {
+    cardPreviewEl = document.createElement('div');
+    cardPreviewEl.className = 'card-preview';
+    cardPreviewEl.innerHTML = '<img alt="" />';
+    document.body.appendChild(cardPreviewEl);
+  }
+  return cardPreviewEl;
+}
+function positionCardPreview(x, y) {
+  const p = cardPreview();
+  const w = 244, h = 340, pad = 14;
+  let left = x + 22, top = y + 20;
+  if (left + w + pad > window.innerWidth) left = x - w - 22;
+  if (left < pad) left = pad;
+  if (top + h + pad > window.innerHeight) top = window.innerHeight - h - pad;
+  if (top < pad) top = pad;
+  p.style.left = left + 'px';
+  p.style.top = top + 'px';
+}
+function showCardPreview(name, x, y) {
+  const p = cardPreview();
+  const img = p.querySelector('img');
+  const src = CARD_IMG(name);
+  if (img.getAttribute('src') !== src) { img.removeAttribute('src'); img.src = src; }
+  p.dataset.for = name;
+  p.classList.add('show');
+  positionCardPreview(x, y);
+}
+function hideCardPreview() { if (cardPreviewEl) cardPreviewEl.classList.remove('show'); }
+
+function enhanceCards(root) {
+  root.querySelectorAll('.decklist-row').forEach(row => {
+    const name = row.textContent.replace(/^\s*\d+\s*/, '').trim();
+    if (name && !row.dataset.card) { row.classList.add('mtg-card'); row.dataset.card = name; }
+  });
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue.includes('[[')) return NodeFilter.FILTER_REJECT;
+      if (node.parentElement && node.parentElement.closest('a, code, pre, .mtg-card')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = []; let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(node => {
+    const parts = node.nodeValue.split(/(\[\[[^\]]+\]\])/);
+    if (parts.length === 1) return;
+    const frag = document.createDocumentFragment();
+    parts.forEach(part => {
+      const m = part.match(/^\[\[([^\]]+)\]\]$/);
+      if (m) {
+        const span = document.createElement('span');
+        span.className = 'mtg-card';
+        span.dataset.card = m[1].trim();
+        span.textContent = m[1].trim();
+        frag.appendChild(span);
+      } else if (part) {
+        frag.appendChild(document.createTextNode(part));
+      }
+    });
+    node.replaceWith(frag);
+  });
+}
+
+function bindCardHandlers(root) {
+  if (!root || root.dataset.cardsBound) return;
+  root.dataset.cardsBound = '1';
+  const touch = !window.matchMedia('(hover: hover)').matches;
+  root.addEventListener('mouseover', e => {
+    const el = e.target.closest('.mtg-card');
+    if (el && !touch) showCardPreview(el.dataset.card, e.clientX, e.clientY);
+  });
+  root.addEventListener('mousemove', e => {
+    if (touch || !cardPreviewEl || !cardPreviewEl.classList.contains('show')) return;
+    if (e.target.closest('.mtg-card')) positionCardPreview(e.clientX, e.clientY);
+  });
+  root.addEventListener('mouseout', e => {
+    const el = e.target.closest('.mtg-card');
+    if (el && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.mtg-card'))) hideCardPreview();
+  });
+  root.addEventListener('click', e => {
+    const el = e.target.closest('.mtg-card');
+    if (!el || !touch) return;
+    e.preventDefault();
+    const shown = cardPreviewEl && cardPreviewEl.classList.contains('show') && cardPreviewEl.dataset.for === el.dataset.card;
+    if (shown) hideCardPreview();
+    else { const r = el.getBoundingClientRect(); showCardPreview(el.dataset.card, r.left, r.bottom); }
+  });
+}
+
+// ── Lightbox ──────────────────────────────────────────────────
+let currentGallery = [];
+let lightboxIndex  = 0;
+const fullImageCache = new Map();
+
+async function loadFullImage(imageId) {
+  if (fullImageCache.has(imageId)) return fullImageCache.get(imageId);
+  if (!db) return null;
+  try {
+    const doc = await db.collection('postImages').doc(imageId).collection('data').doc('full').get();
+    const data = doc.exists ? doc.data().data : null;
+    fullImageCache.set(imageId, data);
+    return data;
+  } catch(e) { console.error('Image load error:', e); return null; }
+}
+
+async function showLightboxImage() {
+  const img = currentGallery[lightboxIndex];
+  if (!img) return;
+  const el = document.getElementById('lightbox-img');
+  el.src = safeImage(img.thumb);
+  el.alt = img.caption || '';
+  document.getElementById('lightbox-caption').textContent = img.caption || '';
+  document.getElementById('lightbox-counter').textContent =
+    currentGallery.length > 1 ? `${lightboxIndex + 1} / ${currentGallery.length}` : '';
+  const multiple = currentGallery.length > 1;
+  document.querySelector('.lightbox-nav.prev').style.display = multiple ? '' : 'none';
+  document.querySelector('.lightbox-nav.next').style.display = multiple ? '' : 'none';
+  if (!img.imageId) return;
+  el.classList.add('loading');
+  const shownIndex = lightboxIndex;
+  const full = await loadFullImage(img.imageId);
+  if (safeImage(full) && shownIndex === lightboxIndex) el.src = full;
+  if (shownIndex === lightboxIndex) el.classList.remove('loading');
+}
+
+function openLightbox(i) {
+  lightboxIndex = i;
+  showLightboxImage();
+  document.getElementById('lightbox').classList.add('open');
+}
+function stepLightbox(e, dir) {
+  if (e) e.stopPropagation();
+  if (!currentGallery.length) return;
+  lightboxIndex = (lightboxIndex + dir + currentGallery.length) % currentGallery.length;
+  showLightboxImage();
+}
+function closeLightbox(e) {
+  if (e && e.target !== document.getElementById('lightbox')) return;
+  document.getElementById('lightbox').classList.remove('open');
+}
+function lightboxOpen() {
+  return document.getElementById('lightbox').classList.contains('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (lightboxOpen()) {
+    if (e.key === 'Escape')     closeLightbox(null);
+    if (e.key === 'ArrowLeft')  stepLightbox(null, -1);
+    if (e.key === 'ArrowRight') stepLightbox(null,  1);
+    return;
+  }
+  if (e.key === 'Escape') closePreview();
+});
 </script>
 </body>
 </html>
