@@ -300,6 +300,11 @@
     .bac-title { font-family: 'Cinzel', serif; font-size: 0.98rem; color: var(--text-1); font-weight: 600; line-height: 1.4; }
     .bac-meta { font-size: 0.74rem; color: var(--text-3); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .bac-meta .bac-author { color: var(--gold-dim); }
+    .bac-share { font-size: 0.68rem; font-weight: 600; border-radius: 100px; padding: 2px 9px; border: 1px solid var(--border); }
+    .bac-share.editable { color: var(--gold-light); border-color: var(--gold-dim); background: rgba(201,168,76,0.12); }
+    .bac-share.locked { color: var(--text-3); }
+    .blog-admin-card.readonly { opacity: 0.9; }
+    .blog-admin-card.readonly .bac-open { cursor: zoom-in; }
     .bac-actions { display: flex; gap: 7px; border-top: 1px solid var(--border); padding: 12px 18px; }
     .bac-actions .btn-sm.danger { margin-left: auto; }
     .blog-admin-empty { grid-column: 1 / -1; color: var(--text-3); font-size: 0.9rem; text-align: center; padding: 40px; }
@@ -625,6 +630,13 @@
           <label for="publish-toggle-input">Zveřejnit</label>
           <label class="toggle-switch">
             <input type="checkbox" id="publish-toggle-input" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="publish-toggle" id="editable-toggle-wrap" style="margin-left:0">
+          <label for="editable-toggle-input" title="Když je zapnuté, můžou tvůj příspěvek upravovat i ostatní admini. Jinak ho vidí jen jako náhled.">Povolit úpravy ostatním</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="editable-toggle-input" />
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -1109,6 +1121,11 @@ let draftId = db.collection('posts').doc().id;
 let gallery = [];
 let allSections = [];        // [{ id, name, order }] — spravovane v adminu
 let postSectionIds = [];     // sekce prave editovaneho prispevku
+// Autor a nastaveni sdileni prave otevreneho prispevku. Diky tomu
+// pri uprave nezmenime vlastnictvi a cizi editor neprepise povoleni.
+let editingAuthorId = null;
+let editingAuthorName = '';
+let editingEditable = false;
 
 function resetEditor() {
   editingPostId = null;
@@ -1123,6 +1140,10 @@ function resetEditor() {
   document.getElementById('publish-toggle-input').checked = false;
   document.getElementById('comments-toggle').checked = true;
   document.getElementById('comments-panel').hidden = true;
+  // Novy prispevek zakladas ty → jsi autor a povoleni muzes menit.
+  editingAuthorId = null; editingAuthorName = ''; editingEditable = false;
+  const editIn = document.getElementById('editable-toggle-input');
+  editIn.checked = false; editIn.disabled = false;
   document.getElementById('save-status').textContent = '';
   document.getElementById('save-status').className = 'save-status';
   document.getElementById('editor-panel-title').textContent = 'Nový příspěvek';
@@ -1306,6 +1327,9 @@ async function savePost() {
   statusEl.className = 'save-status';
 
   const user = auth.currentUser;
+  const creating = !editingPostId;
+  // Vlastnikem jsi bud u noveho prispevku, nebo kdyz autorId sedi na tebe.
+  const isOwner = creating || !editingAuthorId || editingAuthorId === user.uid;
   try {
     const data = {
       title,
@@ -1314,8 +1338,12 @@ async function savePost() {
       gallery:    gallery.map(({ imageId, thumb, caption }) => ({ imageId, thumb, caption: caption || '' })),
       sections:   postSectionIds.slice(),
       commentsEnabled: document.getElementById('comments-toggle').checked,
-      authorId:   user.uid,
-      authorName: authorLabel(user),
+      // Vlastnictvi se pri uprave nemeni. Jmeno autora obnovime jen jemu
+      // samotnemu (kvuli zmene zobrazovaneho jmena), cizi editor ho necha byt.
+      authorId:   creating ? user.uid : (editingAuthorId || user.uid),
+      authorName: creating ? authorLabel(user) : (isOwner ? authorLabel(user) : editingAuthorName),
+      // Povoleni upravovat ostatnim prepina jen autor; cizi editor drzi puvodni.
+      editableByOthers: isOwner ? document.getElementById('editable-toggle-input').checked : editingEditable,
       updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
     };
     if (editingPostId) {
@@ -1327,6 +1355,10 @@ async function savePost() {
       editingPostId = draftId;
       document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
     }
+    // Po ulozeni si aktualizujeme referenci autora/povoleni.
+    editingAuthorId = data.authorId;
+    editingAuthorName = data.authorName;
+    editingEditable = data.editableByOthers;
     await syncImageVisibility(editingPostId, published);
     statusEl.textContent = '✓ Uloženo';
     statusEl.className = 'save-status ok';
@@ -1470,16 +1502,23 @@ function renderBlogList() {
     return;
   }
   list.innerHTML = '';
+  const uid = auth.currentUser?.uid;
   posts.forEach(p => {
     const id = p.id;
     const date = p.createdAt?.toDate?.()?.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '—';
     const thumb = Array.isArray(p.gallery) && p.gallery[0]?.thumb ? p.gallery[0].thumb : '';
     const tags = postSectionIdsOf(p).map(sid => nameById[sid]).filter(Boolean)
       .map(n => `<span class="bac-tag">${escapeHtml(n)}</span>`).join('');
+    // Cizi prispevek smis upravit jen kdyz to autor povolil; jinak jen nahled.
+    const isOwner = !p.authorId || p.authorId === uid;
+    const canEdit = isOwner || p.editableByOthers === true;
+    const mark = isOwner ? ''
+      : canEdit ? '<span class="bac-share editable" title="Autor povolil úpravy ostatním">✎ sdílený</span>'
+                : '<span class="bac-share locked" title="Upravovat může jen autor">🔒 jen náhled</span>';
     const card = document.createElement('div');
-    card.className = 'blog-admin-card';
+    card.className = 'blog-admin-card' + (canEdit ? '' : ' readonly');
     card.innerHTML = `
-      <div class="bac-open" title="Upravit příspěvek">
+      <div class="bac-open" title="${canEdit ? 'Upravit příspěvek' : 'Zobrazit náhled'}">
         <div class="bac-cover">
           ${thumb ? `<img src="${escapeHtml(thumb)}" alt="" loading="lazy" />` : '<div class="bac-nocover">bez fotky</div>'}
           <span class="bac-badge ${p.published ? 'pub' : ''}">${p.published ? 'Zveřejněno' : 'Koncept'}</span>
@@ -1487,15 +1526,19 @@ function renderBlogList() {
         <div class="bac-body">
           ${tags ? `<div class="bac-tags">${tags}</div>` : ''}
           <div class="bac-title">${escapeHtml(p.title) || '(bez názvu)'}</div>
-          <div class="bac-meta"><span class="bac-author">${escapeHtml(p.authorName)}</span><span>${date}</span></div>
+          <div class="bac-meta"><span class="bac-author">${escapeHtml(p.authorName)}</span><span>${date}</span>${mark}</div>
         </div>
       </div>
       <div class="bac-actions">
-        <button class="btn-sm publish-btn ${p.published ? 'active' : ''}" onclick="togglePublish('${id}', ${p.published})">${p.published ? 'Skrýt' : 'Zveřejnit'}</button>
-        <button class="btn-sm danger" onclick="deletePost('${id}', this)">Smazat</button>
+        ${canEdit
+          ? `<button class="btn-sm publish-btn ${p.published ? 'active' : ''}" onclick="togglePublish('${id}', ${p.published})">${p.published ? 'Skrýt' : 'Zveřejnit'}</button>`
+          : `<button class="btn-sm bac-preview" type="button">Náhled</button>`}
+        ${isOwner ? `<button class="btn-sm danger" onclick="deletePost('${id}', this)">Smazat</button>` : ''}
       </div>
     `;
-    card.querySelector('.bac-open').addEventListener('click', () => editPost(id));
+    card.querySelector('.bac-open').addEventListener('click', () => canEdit ? editPost(id) : openPreviewPost(p));
+    const previewBtn = card.querySelector('.bac-preview');
+    if (previewBtn) previewBtn.addEventListener('click', () => openPreviewPost(p));
     list.appendChild(card);
   });
 }
@@ -1521,6 +1564,14 @@ async function editPost(id) {
   setEditorContent(p.content || '');
   document.getElementById('publish-toggle-input').checked = !!p.published;
   document.getElementById('comments-toggle').checked = p.commentsEnabled !== false;
+  // Vlastnictvi a nastaveni sdileni si drzime, at je pri ulozeni nezmenime.
+  editingAuthorId = p.authorId || null;
+  editingAuthorName = p.authorName || '';
+  editingEditable = p.editableByOthers === true;
+  const isOwner = !editingAuthorId || editingAuthorId === auth.currentUser.uid;
+  const editIn = document.getElementById('editable-toggle-input');
+  editIn.checked = editingEditable;
+  editIn.disabled = !isOwner;   // priznak "povolit upravy" prepina jen autor
   document.getElementById('save-status').textContent = '';
   document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
   captureEditorSnapshot();
@@ -1863,7 +1914,8 @@ function editorSignature() {
     gallery:   (gallery || []).map(g => [g.imageId ?? null, g.caption || '']),
     sections:  postSectionIds.slice().sort(),
     published: document.getElementById('publish-toggle-input').checked,
-    comments:  document.getElementById('comments-toggle').checked
+    comments:  document.getElementById('comments-toggle').checked,
+    editable:  document.getElementById('editable-toggle-input').checked
   });
 }
 function captureEditorSnapshot() {
@@ -2002,9 +2054,9 @@ function sanitizeHtml(html) {
   return doc.body.innerHTML;
 }
 
-function renderPreviewGallery() {
+function renderPreviewGallery(galleryArr) {
   const wrap = document.getElementById('preview-gallery');
-  currentGallery = Array.isArray(gallery) ? gallery : [];
+  currentGallery = Array.isArray(galleryArr) ? galleryArr : [];
   if (!currentGallery.length) { wrap.innerHTML = ''; return; }
   const items = currentGallery.map((img, i) => `
     <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeHtml(img.caption) || 'Fotka ' + (i + 1)}">
@@ -2015,18 +2067,40 @@ function renderPreviewGallery() {
     <div class="blog-gallery">${items}</div>`;
 }
 
-function openPreview() {
-  const title = document.getElementById('post-title').value.trim();
-  document.getElementById('preview-title').textContent  = title || '(bez názvu)';
-  document.getElementById('preview-author').textContent = auth.currentUser ? authorLabel(auth.currentUser) : '';
-  document.getElementById('preview-date').textContent   = formatDate(new Date());
+// Spolecne jadro nahledu — vykresli libovolny prispevek do modalu.
+function showPreview({ title, author, date, content, gallery: galleryArr }) {
+  document.getElementById('preview-title').textContent  = (title || '').trim() || '(bez názvu)';
+  document.getElementById('preview-author').textContent = author || '';
+  document.getElementById('preview-date').textContent   = date ? formatDate(date) : '';
   const contentEl = document.getElementById('preview-content');
-  contentEl.innerHTML = sanitizeHtml(getEditorContent());
+  contentEl.innerHTML = sanitizeHtml(content || '');
   enhanceCards(contentEl);
   bindCardHandlers(contentEl);
-  renderPreviewGallery();
+  renderPreviewGallery(galleryArr || []);
   document.getElementById('preview-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+// Nahled rozdelaneho prispevku z editoru.
+function openPreview() {
+  showPreview({
+    title:   document.getElementById('post-title').value,
+    author:  auth.currentUser ? authorLabel(auth.currentUser) : '',
+    date:    new Date(),
+    content: getEditorContent(),
+    gallery: gallery
+  });
+}
+
+// Nahled hotoveho prispevku ze seznamu (pro cizi prispevky bez prava upravy).
+function openPreviewPost(p) {
+  showPreview({
+    title:   p.title,
+    author:  p.authorName,
+    date:    p.createdAt,
+    content: p.content,
+    gallery: p.gallery
+  });
 }
 
 function closePreview(e) {
