@@ -123,6 +123,11 @@
     .ql-container.ql-snow { background: var(--bg-2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm); min-height: 320px; }
     .ql-editor { color: var(--text-1); font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; min-height: 280px; }
     .ql-editor.ql-blank::before { color: var(--text-3) !important; font-style: normal; }
+    /* Oprava skoku stranky pri vlozeni (paste): Quill pri vkladani zaostri
+       skryty schranovy prvek, ktery ma ve vychozim stylu position:absolute
+       a top:50%. Prohlizec ho pak "scrollne do view" a stranka odskoci
+       nahoru. Fixed ho drzi mimo scroll, takze pohled zustane na miste. */
+    .ql-clipboard { position: fixed !important; top: 0 !important; }
     .ql-snow .ql-picker-options { background: var(--bg-3) !important; border-color: var(--border) !important; }
 
     /* Editor poznámky u turnaje — nižší než editor příspěvku */
@@ -890,6 +895,20 @@ function imageUploadHandler() {
   const range = quill.getSelection(true);
   quill.insertEmbed(range.index, 'image', url);
 }
+
+// Quill pri vlozeni (paste) na chvili prehodi fokus na skryty schranovy
+// prvek a prohlizec kvuli tomu odscrolluje stranku nahoru. Kolem vlozeni
+// do editoru si proto zapamatujeme polohu stranky a hned ji vratime, aby
+// pohled zustal na miste. (Plati pro oba editory — post i poznamku turnaje.)
+document.addEventListener('paste', e => {
+  if (!(e.target instanceof Element) || !e.target.closest('.ql-editor')) return;
+  const x = window.scrollX, y = window.scrollY;
+  const restore = () => window.scrollTo(x, y);
+  restore();
+  requestAnimationFrame(restore);
+  setTimeout(restore, 0);
+  setTimeout(restore, 20);
+}, true);
 
 // ── Vizuální / HTML režim ─────────────────────────────────────
 let htmlMode = false;
