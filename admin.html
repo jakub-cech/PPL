@@ -7,6 +7,19 @@
        prohlizec ignoruje a GitHub Pages vlastni hlavicky nastavit neumi. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com; form-action 'none'; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Ochrana proti clickjackingu: frame-ancestors nejde nastavit pres <meta>
+       a GitHub Pages neposila zadne hlavicky, proto admin schovame a hned
+       ho zase odkryjeme, jen kdyz stranka nebezi ve framu. Kdyby ji nekdo
+       vlozil do <iframe> (a treba zablokoval presmerovani sandboxem),
+       zustane skryta a neni na co kliknout. -->
+  <style id="anti-clickjack">html{display:none !important;}</style>
+  <script>
+    if (self === top) {
+      document.getElementById('anti-clickjack').remove();
+    } else {
+      top.location = self.location;   // vylomit se z framu
+    }
+  </script>
   <title>PPL Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -1227,7 +1240,7 @@ function renderGallery() {
     const item = document.createElement('div');
     item.className = 'gallery-item';
     item.innerHTML = `
-      <div class="gallery-thumb"><img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" /></div>
+      <div class="gallery-thumb"><img src="${escapeHtml(safeImage(img.thumb))}" alt="" loading="lazy" /></div>
       <input class="gallery-caption" type="text" placeholder="Popisek…" value="" />
       <div class="gallery-item-actions">
         <button type="button" title="Posunout doleva"  ${i === 0 ? 'disabled' : ''}>◀</button>
