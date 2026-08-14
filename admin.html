@@ -1369,7 +1369,11 @@ async function savePost() {
     btn.disabled = false;
     return true;
   } catch(e) {
-    statusEl.textContent = 'Chyba při ukládání.';
+    // Zamitnuti pravidly vypiseme konkretne — nejcasteji jde o cizi
+    // prispevek bez povolenych uprav nebo ucet, ktery neni mezi adminy.
+    statusEl.textContent = e?.code === 'permission-denied'
+      ? 'Úpravu zamítla pravidla Firestore — buď nemáš k příspěvku právo (autor nepovolil úpravy), nebo účet není mezi adminy.'
+      : 'Chyba při ukládání.';
     statusEl.className = 'save-status err';
     console.error(e);
   }

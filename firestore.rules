@@ -46,18 +46,24 @@ service cloud.firestore {
       allow create: if isAdmin()
                     && request.resource.data.authorId == request.auth.uid;
       allow update: if isAdmin()
-                    && request.resource.data.authorId == resource.data.authorId
-                    && (
-                         resource.data.authorId == request.auth.uid
-                         || resource.data.get('editableByOthers', false) == true
-                       )
-                    && (
-                         resource.data.authorId == request.auth.uid
-                         || request.resource.data.get('editableByOthers', false)
-                            == resource.data.get('editableByOthers', false)
-                       );
+                    // Vlastnictvi se po nastaveni uz nemeni. Starsi prispevek
+                    // bez autora si prvni upravujici admin smi prohlasit za svuj
+                    // (jen na sebe, ne na nekoho jineho).
+                    && (('authorId' in resource.data)
+                          ? request.resource.data.authorId == resource.data.authorId
+                          : request.resource.data.authorId == request.auth.uid)
+                    // Upravit smi vlastnik, nebo kdokoli kdyz to vlastnik povolil.
+                    && (!('authorId' in resource.data)
+                        || resource.data.authorId == request.auth.uid
+                        || resource.data.get('editableByOthers', false) == true)
+                    // Priznak "povolit upravy" prepina jen vlastnik.
+                    && (!('authorId' in resource.data)
+                        || resource.data.authorId == request.auth.uid
+                        || request.resource.data.get('editableByOthers', false)
+                           == resource.data.get('editableByOthers', false));
       allow delete: if isAdmin()
-                    && resource.data.authorId == request.auth.uid;
+                    && (!('authorId' in resource.data)
+                        || resource.data.authorId == request.auth.uid);
 
       // Komentare. Druhe misto (vedle registraci), kam smi zapsat
       // i neprihlaseny navstevnik, proto tesna pravidla:
