@@ -489,8 +489,40 @@
     }
     .results-link:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
 
+    /* ── FORMÁT PAUPER ── */
+    #format { background: var(--bg-0); }
+    .format-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 52px; }
+    .format-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 28px 26px;
+    }
+    .format-card-icon {
+      width: 46px; height: 46px; margin-bottom: 18px;
+      background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim);
+      border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    }
+    .format-card h3 {
+      font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600;
+      color: var(--gold-light); letter-spacing: 0.02em; margin-bottom: 10px;
+    }
+    .format-card p { font-size: 0.9rem; color: var(--text-2); line-height: 1.7; }
+    .format-banlist {
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+      flex-wrap: wrap; margin-top: 20px; padding: 24px 28px;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-left: 2px solid var(--gold-dim); border-radius: var(--radius-md);
+    }
+    .format-banlist-text { flex: 1 1 320px; }
+    .format-banlist-label {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--gold-dim); margin-bottom: 8px;
+    }
+    .format-banlist-text p { font-size: 0.9rem; color: var(--text-2); line-height: 1.7; }
+    .format-banlist .btn { white-space: nowrap; }
+    @media (max-width: 800px) { .format-grid { grid-template-columns: 1fr; } }
+
     /* ── INFO CARDS ── */
-    #liga { background: var(--bg-0); }
+    #liga { background: var(--bg-1); }
     /* Dva rovnocenne panely — prakticke info vlevo, herni system vpravo. */
     .liga-panels {
       display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
@@ -547,7 +579,7 @@
     .grand-prize .gp-desc  { font-size: 0.85rem; color: var(--text-2); }
 
     /* ── COMMUNITY ── */
-    #komunita { background: var(--bg-0); }
+    #komunita { background: var(--bg-1); }
     .community-inner { display: flex; flex-direction: column; align-items: center; text-align: center; }
     .community-desc { font-size: 1rem; color: var(--text-2); max-width: 480px; margin: 0 auto 40px; line-height: 1.7; }
     .social-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
@@ -752,7 +784,7 @@
     }
 
     /* ── MERCH ── */
-    #merch { background: var(--bg-1); }
+    #merch { background: var(--bg-0); }
     .merch-coming {
       display: flex; flex-direction: column; align-items: center;
       gap: 14px; padding: 56px 24px;
@@ -794,6 +826,7 @@
       <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
       <li><a href="#vysledky"><span data-i18n="nav.results"></span></a></li>
       <li><a href="#blog"><span     data-i18n="nav.blog"></span></a></li>
+      <li><a href="#format"><span   data-i18n="nav.format"></span></a></li>
       <li><a href="#liga"><span     data-i18n="nav.info"></span></a></li>
       <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
       <li><a href="#komunita"><span data-i18n="nav.community"></span></a></li>
@@ -815,6 +848,7 @@
     <a href="#turnaje"  onclick="closeMenu()"><span data-i18n="nav.tournaments"></span></a>
     <a href="#vysledky" onclick="closeMenu()"><span data-i18n="nav.results"></span></a>
     <a href="#blog"     onclick="closeMenu()"><span data-i18n="nav.blog"></span></a>
+    <a href="#format"   onclick="closeMenu()"><span data-i18n="nav.format"></span></a>
     <a href="#liga"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
     <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
     <a href="#komunita" onclick="closeMenu()"><span data-i18n="nav.community"></span></a>
@@ -946,6 +980,60 @@
 </div>
 
 <!-- ── LIGA (info + systém) ── -->
+<!-- ── FORMÁT PAUPER ── -->
+<section id="format">
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="format.label"></span>
+      <h2 class="section-title" data-i18n="format.title"></h2>
+      <p class="section-desc" data-i18n="format.desc"></p>
+    </div>
+
+    <div class="format-grid">
+      <div class="format-card reveal">
+        <div class="format-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16v14a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M4 8h16"/><circle cx="12" cy="14" r="2.4" fill="rgba(201,168,76,0.18)" stroke="none"/>
+          </svg>
+        </div>
+        <h3 data-i18n="format.f1.title"></h3>
+        <p data-i18n="format.f1.body"></p>
+      </div>
+
+      <div class="format-card reveal">
+        <div class="format-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"/><line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        </div>
+        <h3 data-i18n="format.f2.title"></h3>
+        <p data-i18n="format.f2.body"></p>
+      </div>
+
+      <div class="format-card reveal">
+        <div class="format-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l2.4 6.9H21l-5.3 4.1 2 6.9L12 15.8 6.3 19.9l2-6.9L3 8.9h6.6z" fill="rgba(201,168,76,0.12)"/>
+          </svg>
+        </div>
+        <h3 data-i18n="format.f3.title"></h3>
+        <p data-i18n="format.f3.body"></p>
+      </div>
+    </div>
+
+    <div class="format-banlist reveal">
+      <div class="format-banlist-text">
+        <div class="format-banlist-label" data-i18n="format.ban.label"></div>
+        <p data-i18n="format.ban.body"></p>
+      </div>
+      <a class="btn btn-primary" href="https://magic.wizards.com/en/banned-restricted-list" target="_blank" rel="noopener">
+        <span data-i18n="format.ban.cta"></span>
+      </a>
+    </div>
+  </div>
+</section>
+
 <section id="liga">
   <div class="container">
     <div class="ornament"><div class="ornament-diamond"></div></div>
@@ -1139,6 +1227,7 @@
 const i18n = {
   cs: {
     "nav.info":        "Liga",
+    "nav.format":      "Formát",
     "nav.system":      "Systém",
     "nav.community":   "Komunita",
     "nav.results":     "Výsledky",
@@ -1193,6 +1282,19 @@ const i18n = {
 
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
+
+    "format.label": "Formát",
+    "format.title": "Co je Pauper",
+    "format.desc":  "Pauper je konstruovaný věčný formát, ve kterém smí být v balíčku jen karty vydané v základní vzácnosti — commony. Díky tomu je levný a dostupný, ale herně pořád hluboký: sáhneš do celé historie Magicu a rozhoduje spíš stavba balíčku a hraní než tloušťka peněženky.",
+    "format.f1.title": "Jenom commony",
+    "format.f1.body":  "Každá karta musí někdy vyjít v základní (common) vzácnosti — ať už na papíře, nebo na Magic Online. Vzácné, mýtické ani neobvyklé karty do Pauperu nepatří.",
+    "format.f2.title": "Klasická pravidla",
+    "format.f2.body":  "Nejméně 60 karet v balíčku, sideboard až 15 karet a nejvýš 4 kopie od jedné karty (kromě základních zemí). Jinak běžná konstruovaná pravidla.",
+    "format.f3.title": "Dostupný, a přesto hluboký",
+    "format.f3.body":  "Vstupní cena je zlomkem jiných formátů. I tak má Pauper pestré metagame a vlastní turnajovou scénu po celém světě.",
+    "format.ban.label": "Ban list",
+    "format.ban.body":  "Pár nejsilnějších commonů je ve formátu zakázaných. Aktuální seznam zakázaných karet v Pauperu spravuje a průběžně aktualizuje Wizards of the Coast.",
+    "format.ban.cta":   "Otevřít aktuální ban list",
 
     "tournaments.reg.count":    "Přihlášeno",
     "tournaments.reg.signed":   "přihlášených",
@@ -1272,6 +1374,7 @@ const i18n = {
 
   en: {
     "nav.info":        "League",
+    "nav.format":      "Format",
     "nav.system":      "System",
     "nav.community":   "Community",
     "nav.results":     "Standings",
@@ -1326,6 +1429,19 @@ const i18n = {
 
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
+
+    "format.label": "Format",
+    "format.title": "What is Pauper",
+    "format.desc":  "Pauper is a constructed eternal format where your deck may only contain cards printed at common rarity. That keeps it cheap and accessible, yet still deep: you draw on Magic's whole history, and deckbuilding and play matter more than budget.",
+    "format.f1.title": "Commons only",
+    "format.f1.body":  "Every card must have been printed at common rarity — in paper or on Magic Online. No rares, mythics or uncommons.",
+    "format.f2.title": "Classic rules",
+    "format.f2.body":  "A minimum of 60 cards, up to a 15-card sideboard and at most 4 copies of any card (basic lands aside). Otherwise standard constructed rules.",
+    "format.f3.title": "Cheap yet deep",
+    "format.f3.body":  "Entry cost is a fraction of other formats. Even so, Pauper has a rich metagame and its own tournament scene worldwide.",
+    "format.ban.label": "Ban list",
+    "format.ban.body":  "A handful of the strongest commons are banned. The current Pauper banned list is maintained and updated by Wizards of the Coast.",
+    "format.ban.cta":   "Open the current ban list",
 
     "tournaments.reg.count":    "Signed up",
     "tournaments.reg.signed":   "signed up",
