@@ -479,6 +479,12 @@
     .results-table tbody td { color: var(--text-2); }
     .results-table tbody td:first-child { color: var(--gold-light); font-family: 'Cinzel', serif; font-weight: 600; width: 1%; }
     .results-table tbody td:nth-child(2) { color: var(--text-1); }
+    /* Oddeleni Top 8 od hracu pod carou: vyrazna zlata cara pod 8. hracem
+       a ztlumene radky pod ni. */
+    .results-table tbody tr.cut-line td { border-bottom: 2px solid var(--gold); }
+    .results-table tbody tr.below-cut td { color: var(--text-3); background: rgba(0,0,0,0.22); }
+    .results-table tbody tr.below-cut td:first-child { color: var(--text-3); }
+    .results-table tbody tr.below-cut:hover { background: transparent; }
     .results-note { margin-top: 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
     .results-msg { color: var(--text-3); font-size: 0.9rem; }
     .results-link {
@@ -1847,13 +1853,21 @@ function playerRows(rows) {
   return { head, body: players.length ? players : body };
 }
 
-function resultsTable(head, body) {
+function resultsTable(head, body, cutAfter) {
   const shown = body.slice(0, RESULTS_MAX_ROWS);
+  // U Top 8 oddelime prvnich `cutAfter` hracu od tech "pod carou" — jen
+  // kdyz nejaci pod carou opravdu jsou, jinak delici cara nema smysl.
+  const cut = cutAfter && shown.length > cutAfter ? cutAfter : 0;
+  const rows = shown.map((r, ri) => {
+    const cls = cut && ri === cut - 1 ? ' class="cut-line"'
+              : cut && ri >= cut      ? ' class="below-cut"' : '';
+    return `<tr${cls}>${head.map((_, i) => `<td>${escapeHtml(r[i] ?? '')}</td>`).join('')}</tr>`;
+  }).join('');
   return `
     <div class="results-wrap">
       <table class="results-table">
         <thead><tr>${head.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
-        <tbody>${shown.map(r => `<tr>${head.map((_, i) => `<td>${escapeHtml(r[i] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody>
+        <tbody>${rows}</tbody>
       </table>
     </div>`;
 }
@@ -1893,7 +1907,7 @@ function renderResults(lang) {
   let top8 = '';
   if (Array.isArray(cachedTop8) && cachedTop8.length >= 2) {
     const { head, body } = playerRows(cachedTop8);
-    top8 = `<div class="results-sub">${t['results.top8']}</div>` + resultsTable(head, body);
+    top8 = `<div class="results-sub">${t['results.top8']}</div>` + resultsTable(head, body, 8);
   }
 
   box.innerHTML = rounds + standings + top8;
