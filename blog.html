@@ -899,6 +899,18 @@ function safeImage(s) {
   return /^data:image\//.test(String(s ?? '')) ? String(s) : '';
 }
 
+// Obalka karty blogu: fotka oznacena jako obalka (jinak prvni v galerii)
+// a zarovnani orezu podle post.coverAlign.
+function postCover(p) {
+  const g = Array.isArray(p.gallery) ? p.gallery : [];
+  if (!g.length) return null;
+  const chosen = g.find(x => x && x.cover) || g[0];
+  const thumb = safeImage(chosen && chosen.thumb);
+  if (!thumb) return null;
+  const align = { top: 'center top', bottom: 'center bottom' }[p.coverAlign] || 'center center';
+  return { thumb, align };
+}
+
 // Z HTML obsahu vytahne cisty text pro ukazku na karte. DOMParser
 // na rozdil od innerHTML nic nespousti ani nenacita, takze je i na
 // neduveryhodny obsah bezpecny — a zaroven prelozi entity, takze se
@@ -1420,8 +1432,9 @@ function renderGrid() {
   list.forEach((p, idx) => {
     const date = formatDate(p.createdAt);
     const excerpt = excerptFromHtml(p.content, BLOG_EXCERPT_LENGTH);
-    const cover = Array.isArray(p.gallery) && p.gallery.length && safeImage(p.gallery[0].thumb)
-      ? `<div class="blog-card-cover"><img src="${escapeHtml(safeImage(p.gallery[0].thumb))}" alt="" loading="lazy" /></div>`
+    const cov = postCover(p);
+    const cover = cov
+      ? `<div class="blog-card-cover"><img src="${escapeHtml(cov.thumb)}" alt="" loading="lazy" style="object-position:${cov.align}" /></div>`
       : '';
     const tags = postSections(p).map(id => nameById[id]).filter(Boolean)
       .map(n => `<span class="blog-card-tag">${escapeHtml(n)}</span>`).join('');

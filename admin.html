@@ -136,9 +136,14 @@
     .t-form .ql-editor { min-height: 130px; }
 
     /* Sekce příspěvku */
-    .sections-block { margin: 20px 0 8px; }
+    /* Zařazení do sekcí je vlastní ohraničený blok, jasně oddělený od
+       samotného příspěvku (názvu a obsahu) mezerou pod ním. */
+    .sections-block {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 18px 20px; margin: 4px 0 28px;
+    }
     .sections-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-    .sections-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+    .sections-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-dim); }
     .sections-hint { font-size: 0.76rem; color: var(--text-3); }
     .sections-chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 20px; }
     .sec-chip {
@@ -198,8 +203,22 @@
     .gallery-status.err { color: var(--red); }
     .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
     .gallery-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; display: flex; flex-direction: column; }
-    .gallery-thumb { aspect-ratio: 4 / 3; background: var(--bg-3); }
+    .gallery-item.is-cover { border-color: var(--gold-dim); }
+    .gallery-thumb { aspect-ratio: 4 / 3; background: var(--bg-3); position: relative; }
     .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-cover-badge {
+      position: absolute; top: 6px; left: 6px;
+      background: rgba(201,168,76,0.92); color: #0d0d0f;
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 100px;
+    }
+    .gallery-item-actions button.cover-btn { color: var(--text-3); font-size: 0.9rem; }
+    .gallery-item-actions button.cover-btn.on { color: var(--gold); }
+    .gallery-cover-align { display: inline-flex; align-items: center; gap: 8px; font-size: 0.76rem; color: var(--text-3); margin-left: auto; }
+    .gallery-cover-align select {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-1); padding: 5px 8px; font-family: inherit; font-size: 0.78rem;
+    }
     .gallery-caption {
       background: var(--bg-3); border: none; border-top: 1px solid var(--border);
       padding: 7px 10px; font-family: 'Inter', sans-serif; font-size: 0.76rem; color: var(--text-1); width: 100%;
@@ -360,6 +379,28 @@
     .t-row-regs { flex-shrink: 0; text-align: right; min-width: 92px; font-size: 0.72rem; color: var(--text-3); }
     .t-row-regs b { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold-light); display: block; }
     .t-row-act { display: flex; gap: 7px; flex-shrink: 0; }
+    .t-row.past { opacity: 0.75; }
+    /* Skupiny turnaju (nadchazejici / archiv) */
+    .t-group + .t-group { margin-top: 30px; }
+    .t-group-head {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--gold-light);
+      letter-spacing: 0.04em; padding: 6px 0 14px; margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .t-group-count {
+      font-size: 0.7rem; color: var(--text-3);
+      border: 1px solid var(--border); border-radius: 100px; padding: 1px 9px;
+    }
+    details.t-group > summary.t-group-head { cursor: pointer; list-style: none; }
+    details.t-group > summary.t-group-head::-webkit-details-marker { display: none; }
+    details.t-group > summary.t-group-head::before {
+      content: '▸'; color: var(--gold-dim); font-size: 0.8rem; transition: transform 0.2s;
+    }
+    details.t-group[open] > summary.t-group-head::before { transform: rotate(90deg); }
+    .t-group.archive .t-row { margin-top: 10px; }
+    .btn-sm:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-sm:disabled:hover { color: inherit; border-color: var(--border); background: none; }
 
     /* Přihlášení hráči v úpravě turnaje */
     .reg-panel {
@@ -596,9 +637,22 @@
           <button type="button" id="mode-visual" class="mode-tab active" onclick="setEditorMode('visual')">Vizuálně</button>
           <button type="button" id="mode-html" class="mode-tab" onclick="setEditorMode('html')">HTML</button>
         </div>
-        <div class="mode-tools" id="html-tools" hidden>
-          <button class="btn-sm" type="button" onclick="insertTableSkeleton()">+ Tabulka</button>
-          <button class="btn-sm" type="button" onclick="toggleDecklistPanel()">+ Decklist</button>
+        <div class="mode-tools">
+          <button class="btn-sm" type="button" onclick="toggleMarkdownPanel()">↓ Markdown</button>
+          <span id="html-tools" hidden>
+            <button class="btn-sm" type="button" onclick="insertTableSkeleton()">+ Tabulka</button>
+            <button class="btn-sm" type="button" onclick="toggleDecklistPanel()">+ Decklist</button>
+          </span>
+        </div>
+      </div>
+
+      <!-- Panel pro vlozeni Markdownu -->
+      <div class="decklist-panel" id="markdown-panel" hidden>
+        <div class="decklist-panel-hint">Napiš nebo vlož text v Markdownu a převeď ho do článku. Umí nadpisy (<code>##</code>), <code>**tučné**</code>, <code>*kurzívu*</code>, odkazy, seznamy, tabulky, citace i kód. Vloží se na místo kurzoru.</div>
+        <textarea id="markdown-input" class="html-source" spellcheck="false" placeholder="## Nadpis&#10;&#10;Odstavec s **tučným** textem a [odkazem](https://example.com).&#10;&#10;- první bod&#10;- druhý bod"></textarea>
+        <div class="decklist-panel-actions">
+          <button class="btn-sm" type="button" onclick="applyMarkdown()">Převést a vložit</button>
+          <button class="btn-sm" type="button" onclick="toggleMarkdownPanel()">Zrušit</button>
         </div>
       </div>
 
@@ -619,7 +673,15 @@
       <div class="gallery-block">
         <div class="gallery-head">
           <span class="gallery-label">Fotogalerie</span>
-          <span class="gallery-hint">Fotky se zmenší na 1600 px a převedou do WebP. Vejde se jich zhruba 20 na příspěvek.</span>
+          <span class="gallery-hint">Fotky se zmenší na 1600 px a převedou do WebP. Vejde se jich zhruba 20 na příspěvek. Hvězdičkou zvol úvodní obrázek (obálku).</span>
+          <span class="gallery-cover-align" id="cover-align-wrap" hidden>
+            <label for="cover-align">Ořez obálky</label>
+            <select id="cover-align">
+              <option value="center">na střed</option>
+              <option value="top">nahoře</option>
+              <option value="bottom">dole</option>
+            </select>
+          </span>
         </div>
         <div class="dropzone" id="dropzone">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -795,6 +857,8 @@
 <script src="vendor/firebase-12.16.0-firestore-compat.js"></script>
 <!-- Quill -->
 <script src="vendor/quill-1.3.7.min.js"></script>
+<!-- Markdown → HTML převodník pro vkládání příspěvků v Markdownu -->
+<script src="vendor/marked-4.3.0.min.js"></script>
 
 <script>
 // ── Firebase config — same values as in index.html ──
@@ -987,6 +1051,29 @@ function applyDecklist() {
   document.getElementById('decklist-panel').hidden = true;
 }
 
+// ── Markdown ──────────────────────────────────────────────────
+function toggleMarkdownPanel() {
+  const panel = document.getElementById('markdown-panel');
+  panel.hidden = !panel.hidden;
+  if (!panel.hidden) document.getElementById('markdown-input').focus();
+}
+
+// Prevede napsany Markdown na HTML a vlozi ho do clanku na misto kurzoru.
+// Vysledek jde stejnym filtrem jako zbytek obsahu az pri vykresleni na webu.
+function applyMarkdown() {
+  const md = document.getElementById('markdown-input').value;
+  if (!md.trim()) { document.getElementById('markdown-panel').hidden = true; return; }
+  if (typeof marked === 'undefined') { alert('Markdown knihovna se nenačetla, zkus obnovit stránku.'); return; }
+  const html = marked.parse(md, { breaks: true, mangle: false, headerIds: false });
+  // Zustavame v HTML rezimu, aby se prevedene HTML zachovalo presne tak, jak
+  // je (vizualni Quill editor neumi napr. h1 a strukturu by mohl zjednodusit).
+  // Vysledek si prohlednes tlacitkem Náhled.
+  insertIntoSource('\n' + html + '\n');
+  document.getElementById('markdown-input').value = '';
+  document.getElementById('markdown-panel').hidden = true;
+  editorChanged();
+}
+
 // Text "4 Lightning Bolt" na radek → HTML. Radek "Sideboard" oddeluje
 // hlavni deck od sideboardu, prazdne radky se ignoruji.
 function decklistToHtml(raw) {
@@ -1164,6 +1251,7 @@ function resetEditor() {
   editingPostId = null;
   draftId = db.collection('posts').doc().id;
   gallery = [];
+  document.getElementById('cover-align').value = 'center';
   renderGallery();
   setGalleryStatus('');
   postSectionIds = [];
@@ -1252,16 +1340,34 @@ async function deleteSection(sec) {
 }
 
 // ── Galerie ───────────────────────────────────────────────────
+// Obalka = fotka oznacena hvezdickou; kdyz zadna, bere se prvni.
+function effectiveCoverIndex() {
+  const idx = gallery.findIndex(g => g && g.cover);
+  return idx >= 0 ? idx : (gallery.length ? 0 : -1);
+}
+
+function setCover(i) {
+  gallery.forEach((g, j) => { g.cover = (j === i); });
+  renderGallery();
+  editorChanged();
+}
+
 function renderGallery() {
   const grid = document.getElementById('gallery-grid');
   grid.innerHTML = '';
+  const coverIdx = effectiveCoverIndex();
   gallery.forEach((img, i) => {
+    const isCover = i === coverIdx;
     const item = document.createElement('div');
-    item.className = 'gallery-item';
+    item.className = 'gallery-item' + (isCover ? ' is-cover' : '');
     item.innerHTML = `
-      <div class="gallery-thumb"><img src="${escapeHtml(safeImage(img.thumb))}" alt="" loading="lazy" /></div>
+      <div class="gallery-thumb">
+        <img src="${escapeHtml(safeImage(img.thumb))}" alt="" loading="lazy" />
+        ${isCover ? '<span class="gallery-cover-badge">Obálka</span>' : ''}
+      </div>
       <input class="gallery-caption" type="text" placeholder="Popisek…" value="" />
       <div class="gallery-item-actions">
+        <button type="button" class="cover-btn ${isCover ? 'on' : ''}" title="Nastavit jako obálku">${isCover ? '★' : '☆'}</button>
         <button type="button" title="Posunout doleva"  ${i === 0 ? 'disabled' : ''}>◀</button>
         <button type="button" title="Posunout doprava" ${i === gallery.length - 1 ? 'disabled' : ''}>▶</button>
         <button type="button" class="danger" title="Odebrat">✕</button>
@@ -1270,12 +1376,15 @@ function renderGallery() {
     const caption = item.querySelector('.gallery-caption');
     caption.value = img.caption || '';
     caption.addEventListener('input', () => { gallery[i].caption = caption.value; });
-    const [left, right, remove] = item.querySelectorAll('.gallery-item-actions button');
-    left.addEventListener('click',   () => moveImage(i, -1));
-    right.addEventListener('click',  () => moveImage(i,  1));
-    remove.addEventListener('click', () => removeImage(i));
+    const [coverB, left, right, remove] = item.querySelectorAll('.gallery-item-actions button');
+    coverB.addEventListener('click',  () => setCover(i));
+    left.addEventListener('click',    () => moveImage(i, -1));
+    right.addEventListener('click',   () => moveImage(i,  1));
+    remove.addEventListener('click',  () => removeImage(i));
     grid.appendChild(item);
   });
+  const alignWrap = document.getElementById('cover-align-wrap');
+  if (alignWrap) alignWrap.hidden = gallery.length === 0;
 }
 
 function moveImage(i, dir) {
@@ -1368,7 +1477,8 @@ async function savePost() {
       title,
       content,
       published,
-      gallery:    gallery.map(({ imageId, thumb, caption }) => ({ imageId, thumb, caption: caption || '' })),
+      gallery:    gallery.map(({ imageId, thumb, caption, cover }) => ({ imageId, thumb, caption: caption || '', cover: !!cover })),
+      coverAlign: document.getElementById('cover-align').value,
       sections:   postSectionIds.slice(),
       commentsEnabled: document.getElementById('comments-toggle').checked,
       // Vlastnictvi se pri uprave nemeni. Jmeno autora obnovime jen jemu
@@ -1592,6 +1702,7 @@ async function editPost(id) {
   editingPostId = id;
   draftId = id;
   gallery = Array.isArray(p.gallery) ? p.gallery.map(g => ({ ...g })) : [];
+  document.getElementById('cover-align').value = ['top','center','bottom'].includes(p.coverAlign) ? p.coverAlign : 'center';
   // Sekce, ktere uz neexistuji (byly smazane), tise vypustime.
   postSectionIds = (Array.isArray(p.sections) ? p.sections : []).filter(id => allSections.some(s => s.id === id));
   renderSectionChips();
@@ -1786,47 +1897,105 @@ async function loadTournamentList() {
       catch(e) { x.regCount = null; }
     }));
 
+    // Rozdeleni na nadchazejici a archiv (probehle). Archiv je slozeny
+    // a probehlym turnajum jsou vypnute vsechny akce krome kopirovani.
+    const upcoming = rows.filter(x => !isTournamentPast(x));
+    const past     = rows.filter(x =>  isTournamentPast(x)).reverse();
     list.innerHTML = '';
-    rows.forEach(x => {
-      const d = x.date?.toDate?.();
-      const minuly = d && d.getTime() < Date.now();
-      const kapacita = x.capacity === 0 ? 'Registrace zavřená'
-                     : x.capacity ? 'Kapacita ' + x.capacity
-                     : 'Bez omezení';
-      const item = document.createElement('div');
-      item.className = 't-row';
-      item.innerHTML = `
-        <div class="t-row-date">
-          <div class="t-row-day">${d ? d.getDate() : '—'}</div>
-          <div class="t-row-mon">${d ? d.toLocaleDateString('cs-CZ', { month: 'short' }) + ' ' + d.getFullYear() : ''}</div>
-          <div class="t-row-time">${d ? d.toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' }) : ''}</div>
-        </div>
-        <div class="t-row-info">
-          <div class="t-row-title">${escapeHtml(x.title) || '(bez názvu)'}</div>
-          <div class="t-badges">
-            <span class="status-badge ${x.published ? 'published' : 'draft'}">${x.published ? 'Zveřejněno' : 'Koncept'}</span>
-            <span class="status-badge draft">${kapacita}</span>
-            <span class="status-badge draft">${x.showRegistrations ? 'Seznam veřejný' : 'Seznam skrytý'}</span>
-            ${minuly ? '<span class="status-badge draft">Proběhlý</span>' : ''}
-          </div>
-        </div>
-        <div class="t-row-regs">
-          <b>${x.regCount === null ? '?' : x.regCount}${x.capacity ? ' / ' + x.capacity : ''}</b>
-          přihlášených
-        </div>
-        <div class="t-row-act">
-          <button class="btn-sm" onclick="editTournament('${x.id}')">Upravit</button>
-          <button class="btn-sm publish-btn ${x.published ? 'active' : ''}" onclick="toggleTournament('${x.id}', ${!!x.published})">
-            ${x.published ? 'Skrýt' : 'Zveřejnit'}
-          </button>
-          <button class="btn-sm danger" onclick="deleteTournament('${x.id}', this)">Smazat</button>
-        </div>
-      `;
-      list.appendChild(item);
-    });
+    list.appendChild(tournamentGroup('Nadcházející turnaje', upcoming, false, false));
+    if (past.length) list.appendChild(tournamentGroup('Archiv — proběhlé turnaje', past, true, true));
   } catch(e) {
     list.innerHTML = '<div class="posts-empty">Chyba při načítání.</div>';
     console.error(e);
+  }
+}
+
+function isTournamentPast(x) {
+  const d = x.date?.toDate?.();
+  return !!d && d.getTime() < Date.now();
+}
+
+// Skupina turnaju. Archiv je <details> (slozeny), aby prehled zustal cisty.
+function tournamentGroup(title, items, past, collapsible) {
+  const wrap = document.createElement(collapsible ? 'details' : 'div');
+  wrap.className = 't-group' + (past ? ' archive' : '');
+  const head = document.createElement(collapsible ? 'summary' : 'div');
+  head.className = 't-group-head';
+  head.innerHTML = `<span>${title}</span><span class="t-group-count">${items.length}</span>`;
+  wrap.appendChild(head);
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'posts-empty'; empty.style.padding = '18px 4px';
+    empty.textContent = 'Žádné nadcházející turnaje. Založ první tlačítkem nahoře.';
+    wrap.appendChild(empty);
+  } else {
+    items.forEach(x => wrap.appendChild(tournamentRow(x, past)));
+  }
+  return wrap;
+}
+
+function tournamentRow(x, past) {
+  const d = x.date?.toDate?.();
+  const kapacita = x.capacity === 0 ? 'Registrace zavřená'
+                 : x.capacity ? 'Kapacita ' + x.capacity
+                 : 'Bez omezení';
+  const item = document.createElement('div');
+  item.className = 't-row' + (past ? ' past' : '');
+  // U probehlych turnaju je aktivni jen Kopírovat, ostatni akce jsou vypnute.
+  const off = past ? 'disabled' : '';
+  item.innerHTML = `
+    <div class="t-row-date">
+      <div class="t-row-day">${d ? d.getDate() : '—'}</div>
+      <div class="t-row-mon">${d ? d.toLocaleDateString('cs-CZ', { month: 'short' }) + ' ' + d.getFullYear() : ''}</div>
+      <div class="t-row-time">${d ? d.toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' }) : ''}</div>
+    </div>
+    <div class="t-row-info">
+      <div class="t-row-title">${escapeHtml(x.title) || '(bez názvu)'}</div>
+      <div class="t-badges">
+        <span class="status-badge ${x.published ? 'published' : 'draft'}">${x.published ? 'Zveřejněno' : 'Koncept'}</span>
+        <span class="status-badge draft">${kapacita}</span>
+        <span class="status-badge draft">${x.showRegistrations ? 'Seznam veřejný' : 'Seznam skrytý'}</span>
+        ${past ? '<span class="status-badge draft">Proběhlý</span>' : ''}
+      </div>
+    </div>
+    <div class="t-row-regs">
+      <b>${x.regCount === null ? '?' : x.regCount}${x.capacity ? ' / ' + x.capacity : ''}</b>
+      přihlášených
+    </div>
+    <div class="t-row-act">
+      <button class="btn-sm" ${off} onclick="editTournament('${x.id}')">Upravit</button>
+      <button class="btn-sm publish-btn ${x.published ? 'active' : ''}" ${off} onclick="toggleTournament('${x.id}', ${!!x.published})">
+        ${x.published ? 'Skrýt' : 'Zveřejnit'}
+      </button>
+      <button class="btn-sm" onclick="copyTournament('${x.id}')">Kopírovat</button>
+      <button class="btn-sm danger" ${off} onclick="deleteTournament('${x.id}', this)">Smazat</button>
+    </div>
+  `;
+  return item;
+}
+
+// Kopie turnaje = novy koncept predvyplneny podle vybraneho, jen s prazdnym
+// terminem. Prihlaseni hraci se nekopiruji.
+async function copyTournament(id) {
+  try {
+    const doc = await db.collection('tournaments').doc(id).get();
+    const x = doc.data() || {};
+    resetTournamentForm();   // editingTournamentId = null → ulozi se jako novy
+    document.getElementById('t-title').value = x.title || '';
+    noteQuill.root.innerHTML = x.note || '';
+    document.getElementById('t-url').value = x.eventUrl || '';
+    document.getElementById('t-capacity').value = x.capacity ?? '';
+    document.getElementById('t-show-regs').checked = x.showRegistrations === true;
+    document.getElementById('t-publish').checked = false;
+    document.getElementById('t-date').value = '';
+    document.getElementById('t-panel-title').textContent = 'Nový turnaj (kopie)';
+    const st = document.getElementById('t-status');
+    st.textContent = 'Zkopírováno — doplň nový termín a ulož.';
+    st.className = 'save-status';
+    showTournamentEditor();
+  } catch(e) {
+    console.error(e);
+    alert('Kopírování se nepovedlo.');
   }
 }
 
@@ -1948,7 +2117,8 @@ function editorSignature() {
   return JSON.stringify({
     title:     document.getElementById('post-title').value,
     content:   getEditorContent(),
-    gallery:   (gallery || []).map(g => [g.imageId ?? null, g.caption || '']),
+    gallery:   (gallery || []).map(g => [g.imageId ?? null, g.caption || '', !!g.cover]),
+    coverAlign: document.getElementById('cover-align').value,
     sections:  postSectionIds.slice().sort(),
     published: document.getElementById('publish-toggle-input').checked,
     comments:  document.getElementById('comments-toggle').checked,
