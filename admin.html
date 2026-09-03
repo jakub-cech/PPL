@@ -203,8 +203,22 @@
     .gallery-status.err { color: var(--red); }
     .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
     .gallery-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; display: flex; flex-direction: column; }
-    .gallery-thumb { aspect-ratio: 4 / 3; background: var(--bg-3); }
+    .gallery-item.is-cover { border-color: var(--gold-dim); }
+    .gallery-thumb { aspect-ratio: 4 / 3; background: var(--bg-3); position: relative; }
     .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-cover-badge {
+      position: absolute; top: 6px; left: 6px;
+      background: rgba(201,168,76,0.92); color: #0d0d0f;
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 100px;
+    }
+    .gallery-item-actions button.cover-btn { color: var(--text-3); font-size: 0.9rem; }
+    .gallery-item-actions button.cover-btn.on { color: var(--gold); }
+    .gallery-cover-align { display: inline-flex; align-items: center; gap: 8px; font-size: 0.76rem; color: var(--text-3); margin-left: auto; }
+    .gallery-cover-align select {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-1); padding: 5px 8px; font-family: inherit; font-size: 0.78rem;
+    }
     .gallery-caption {
       background: var(--bg-3); border: none; border-top: 1px solid var(--border);
       padding: 7px 10px; font-family: 'Inter', sans-serif; font-size: 0.76rem; color: var(--text-1); width: 100%;
@@ -659,7 +673,15 @@
       <div class="gallery-block">
         <div class="gallery-head">
           <span class="gallery-label">Fotogalerie</span>
-          <span class="gallery-hint">Fotky se zmenší na 1600 px a převedou do WebP. Vejde se jich zhruba 20 na příspěvek.</span>
+          <span class="gallery-hint">Fotky se zmenší na 1600 px a převedou do WebP. Vejde se jich zhruba 20 na příspěvek. Hvězdičkou zvol úvodní obrázek (obálku).</span>
+          <span class="gallery-cover-align" id="cover-align-wrap" hidden>
+            <label for="cover-align">Ořez obálky</label>
+            <select id="cover-align">
+              <option value="center">na střed</option>
+              <option value="top">nahoře</option>
+              <option value="bottom">dole</option>
+            </select>
+          </span>
         </div>
         <div class="dropzone" id="dropzone">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -1229,6 +1251,7 @@ function resetEditor() {
   editingPostId = null;
   draftId = db.collection('posts').doc().id;
   gallery = [];
+  document.getElementById('cover-align').value = 'center';
   renderGallery();
   setGalleryStatus('');
   postSectionIds = [];
@@ -1317,16 +1340,34 @@ async function deleteSection(sec) {
 }
 
 // ── Galerie ───────────────────────────────────────────────────
+// Obalka = fotka oznacena hvezdickou; kdyz zadna, bere se prvni.
+function effectiveCoverIndex() {
+  const idx = gallery.findIndex(g => g && g.cover);
+  return idx >= 0 ? idx : (gallery.length ? 0 : -1);
+}
+
+function setCover(i) {
+  gallery.forEach((g, j) => { g.cover = (j === i); });
+  renderGallery();
+  editorChanged();
+}
+
 function renderGallery() {
   const grid = document.getElementById('gallery-grid');
   grid.innerHTML = '';
+  const coverIdx = effectiveCoverIndex();
   gallery.forEach((img, i) => {
+    const isCover = i === coverIdx;
     const item = document.createElement('div');
-    item.className = 'gallery-item';
+    item.className = 'gallery-item' + (isCover ? ' is-cover' : '');
     item.innerHTML = `
-      <div class="gallery-thumb"><img src="${escapeHtml(safeImage(img.thumb))}" alt="" loading="lazy" /></div>
+      <div class="gallery-thumb">
+        <img src="${escapeHtml(safeImage(img.thumb))}" alt="" loading="lazy" />
+        ${isCover ? '<span class="gallery-cover-badge">Obálka</span>' : ''}
+      </div>
       <input class="gallery-caption" type="text" placeholder="Popisek…" value="" />
       <div class="gallery-item-actions">
+        <button type="button" class="cover-btn ${isCover ? 'on' : ''}" title="Nastavit jako obálku">${isCover ? '★' : '☆'}</button>
         <button type="button" title="Posunout doleva"  ${i === 0 ? 'disabled' : ''}>◀</button>
         <button type="button" title="Posunout doprava" ${i === gallery.length - 1 ? 'disabled' : ''}>▶</button>
         <button type="button" class="danger" title="Odebrat">✕</button>
@@ -1335,12 +1376,15 @@ function renderGallery() {
     const caption = item.querySelector('.gallery-caption');
     caption.value = img.caption || '';
     caption.addEventListener('input', () => { gallery[i].caption = caption.value; });
-    const [left, right, remove] = item.querySelectorAll('.gallery-item-actions button');
-    left.addEventListener('click',   () => moveImage(i, -1));
-    right.addEventListener('click',  () => moveImage(i,  1));
-    remove.addEventListener('click', () => removeImage(i));
+    const [coverB, left, right, remove] = item.querySelectorAll('.gallery-item-actions button');
+    coverB.addEventListener('click',  () => setCover(i));
+    left.addEventListener('click',    () => moveImage(i, -1));
+    right.addEventListener('click',   () => moveImage(i,  1));
+    remove.addEventListener('click',  () => removeImage(i));
     grid.appendChild(item);
   });
+  const alignWrap = document.getElementById('cover-align-wrap');
+  if (alignWrap) alignWrap.hidden = gallery.length === 0;
 }
 
 function moveImage(i, dir) {
@@ -1433,7 +1477,8 @@ async function savePost() {
       title,
       content,
       published,
-      gallery:    gallery.map(({ imageId, thumb, caption }) => ({ imageId, thumb, caption: caption || '' })),
+      gallery:    gallery.map(({ imageId, thumb, caption, cover }) => ({ imageId, thumb, caption: caption || '', cover: !!cover })),
+      coverAlign: document.getElementById('cover-align').value,
       sections:   postSectionIds.slice(),
       commentsEnabled: document.getElementById('comments-toggle').checked,
       // Vlastnictvi se pri uprave nemeni. Jmeno autora obnovime jen jemu
@@ -1657,6 +1702,7 @@ async function editPost(id) {
   editingPostId = id;
   draftId = id;
   gallery = Array.isArray(p.gallery) ? p.gallery.map(g => ({ ...g })) : [];
+  document.getElementById('cover-align').value = ['top','center','bottom'].includes(p.coverAlign) ? p.coverAlign : 'center';
   // Sekce, ktere uz neexistuji (byly smazane), tise vypustime.
   postSectionIds = (Array.isArray(p.sections) ? p.sections : []).filter(id => allSections.some(s => s.id === id));
   renderSectionChips();
@@ -2071,7 +2117,8 @@ function editorSignature() {
   return JSON.stringify({
     title:     document.getElementById('post-title').value,
     content:   getEditorContent(),
-    gallery:   (gallery || []).map(g => [g.imageId ?? null, g.caption || '']),
+    gallery:   (gallery || []).map(g => [g.imageId ?? null, g.caption || '', !!g.cover]),
+    coverAlign: document.getElementById('cover-align').value,
     sections:  postSectionIds.slice().sort(),
     published: document.getElementById('publish-toggle-input').checked,
     comments:  document.getElementById('comments-toggle').checked,
