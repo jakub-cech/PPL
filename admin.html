@@ -591,12 +591,12 @@
 
   <div class="admin-body">
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('blog', this)">📝 Blog</button>
-      <button class="tab-btn"       onclick="switchTab('tournaments', this)">🗓️ Turnaje</button>
+      <button class="tab-btn active" onclick="switchTab('tournaments', this)">🗓️ Turnaje</button>
+      <button class="tab-btn"       onclick="switchTab('blog', this)">📝 Blog</button>
     </div>
 
     <!-- Blog tab -->
-    <div class="tab-panel active" id="tab-blog">
+    <div class="tab-panel" id="tab-blog">
 
       <!-- Pohled 1: seznam prispevku (jako web + admin akce) -->
       <div id="blog-view-list">
@@ -749,7 +749,7 @@
     </div>
 
 <!-- Tournaments tab -->
-    <div class="tab-panel" id="tab-tournaments">
+    <div class="tab-panel active" id="tab-tournaments">
 
       <!-- Pohled 1: seznam -->
       <div id="t-view-list">
@@ -895,6 +895,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById('admin').style.display = 'block';
     document.getElementById('admin-user-name').textContent = authorLabel(user);
     loadSections().then(loadAllPosts);
+    loadTournamentList();
   } else {
     document.getElementById('login-wrap').style.display = '';
     document.getElementById('admin').style.display = 'none';
@@ -1026,7 +1027,7 @@ function setEditorMode(mode) {
   } else if (mode === 'visual' && htmlMode) {
     const html = document.getElementById('html-source').value;
     if (!quillCanRender(html)) {
-      alert('Vizuální editor neumí tabulky ani decklisty — zůstaň prosím v HTML režimu, jinak by se ztratily.');
+      alert('Vizuální editor nezvládne tento obsah (tabulky, decklisty, článkové tagy…) — zůstaň prosím v HTML režimu, jinak by se ztratil.');
       return;
     }
     quill.root.innerHTML = html;
@@ -1464,7 +1465,13 @@ dropzone.addEventListener('drop', e => {
 
 async function savePost() {
   const title   = document.getElementById('post-title').value.trim();
-  const content = getEditorContent();
+  // Pokud je vizualni rezim, ale html-source obsahuje tagy ktere Quill neumi,
+  // pouzijeme html-source misto Quill vystupu (Quill by obsah zmanil).
+  let content = getEditorContent();
+  if (!htmlMode) {
+    const src = document.getElementById('html-source').value;
+    if (src && !quillCanRender(src)) content = src;
+  }
   const published = document.getElementById('publish-toggle-input').checked;
   // Akce jsou nad prispevkem i pod nim — stav a zablokovani tlacitka
   // proto drzime na vsech .save-status / .btn-save v editoru.
