@@ -591,12 +591,12 @@
 
   <div class="admin-body">
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('tournaments', this)">🗓️ Turnaje</button>
-      <button class="tab-btn"       onclick="switchTab('blog', this)">📝 Blog</button>
+      <button class="tab-btn active" onclick="switchTab('blog', this)">📝 Blog</button>
+      <button class="tab-btn"       onclick="switchTab('tournaments', this)">🗓️ Turnaje</button>
     </div>
 
     <!-- Blog tab -->
-    <div class="tab-panel" id="tab-blog">
+    <div class="tab-panel active" id="tab-blog">
 
       <!-- Pohled 1: seznam prispevku (jako web + admin akce) -->
       <div id="blog-view-list">
@@ -749,7 +749,7 @@
     </div>
 
 <!-- Tournaments tab -->
-    <div class="tab-panel active" id="tab-tournaments">
+    <div class="tab-panel" id="tab-tournaments">
 
       <!-- Pohled 1: seznam -->
       <div id="t-view-list">
@@ -895,7 +895,6 @@ auth.onAuthStateChanged(user => {
     document.getElementById('admin').style.display = 'block';
     document.getElementById('admin-user-name').textContent = authorLabel(user);
     loadSections().then(loadAllPosts);
-    loadTournamentList();
   } else {
     document.getElementById('login-wrap').style.display = '';
     document.getElementById('admin').style.display = 'none';
