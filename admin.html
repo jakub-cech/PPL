@@ -236,6 +236,7 @@
     .gallery-item-actions button.danger:hover { color: var(--red); }
 
     .editor-actions { display: flex; gap: 12px; margin-top: 20px; align-items: center; flex-wrap: wrap; }
+    .editor-actions.editor-actions-top { margin-top: 4px; margin-bottom: 22px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
     .btn-save {
       background: linear-gradient(135deg, #c9a84c, #a07830); color: #0d0d0f;
       border: none; border-radius: var(--radius-sm); padding: 11px 28px;
@@ -615,18 +616,14 @@
         <button class="btn-back" type="button" onclick="leaveEditor(showBlogList)">← Zpět na příspěvky</button>
       <div class="panel-title" id="editor-panel-title">Nový příspěvek</div>
 
-      <!-- Sekce příspěvku -->
-      <div class="sections-block">
-        <div class="sections-head">
-          <span class="sections-label">Sekce</span>
-          <span class="sections-hint">Klikni pro zařazení příspěvku. Článek může patřit do víc sekcí.</span>
-        </div>
-        <div class="sections-chips" id="post-sections"></div>
-        <div class="sections-add">
-          <input type="text" id="new-section-name" maxlength="30" placeholder="Nová sekce (např. Reporty)" />
-          <button class="btn-sm" type="button" onclick="addSection()">+ Přidat</button>
-          <button class="btn-sm" type="button" id="sections-manage-btn" onclick="toggleSectionManage()">Spravovat</button>
-        </div>
+      <!-- Akce nad příspěvkem (stejné jsou i dole) -->
+      <div class="editor-actions editor-actions-top">
+        <button class="btn-save" onclick="savePost()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Uložit
+        </button>
+        <button class="btn-outline" type="button" onclick="openPreview()">Náhled</button>
+        <span class="save-status"></span>
       </div>
 
       <input class="post-title-input" id="post-title" type="text" placeholder="Název příspěvku…" />
@@ -692,13 +689,26 @@
         <div class="gallery-grid" id="gallery-grid"></div>
       </div>
 
+      <!-- Sekce příspěvku — na závěr, u přepínačů -->
+      <div class="sections-block">
+        <div class="sections-head">
+          <span class="sections-label">Sekce</span>
+          <span class="sections-hint">Klikni pro zařazení příspěvku. Článek může patřit do víc sekcí.</span>
+        </div>
+        <div class="sections-chips" id="post-sections"></div>
+        <div class="sections-add">
+          <input type="text" id="new-section-name" maxlength="30" placeholder="Nová sekce (např. Reporty)" />
+          <button class="btn-sm" type="button" onclick="addSection()">+ Přidat</button>
+          <button class="btn-sm" type="button" id="sections-manage-btn" onclick="toggleSectionManage()">Spravovat</button>
+        </div>
+      </div>
+
       <div class="editor-actions">
         <button class="btn-save" id="save-btn" onclick="savePost()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           Uložit
         </button>
         <button class="btn-outline" type="button" onclick="openPreview()">Náhled</button>
-        <button class="btn-outline" onclick="leaveEditor(resetEditor)">Nový</button>
         <span class="save-status" id="save-status"></span>
         <div class="publish-toggle" style="margin-left:0">
           <label for="comments-toggle" title="Když je vypnuté, návštěvníci nemohou k příspěvku psát komentáře">Povolit komentáře</label>
@@ -1265,8 +1275,7 @@ function resetEditor() {
   editingAuthorId = null; editingAuthorName = ''; editingEditable = false;
   const editIn = document.getElementById('editable-toggle-input');
   editIn.checked = false; editIn.disabled = false;
-  document.getElementById('save-status').textContent = '';
-  document.getElementById('save-status').className = 'save-status';
+  document.querySelectorAll('#blog-view-edit .save-status').forEach(el => { el.textContent = ''; el.className = 'save-status'; });
   document.getElementById('editor-panel-title').textContent = 'Nový příspěvek';
   captureEditorSnapshot();
   // Zalozku zamerne neprepiname: tlacitko "Nový" je uz v editoru a pri
@@ -1454,19 +1463,20 @@ async function savePost() {
   const title   = document.getElementById('post-title').value.trim();
   const content = getEditorContent();
   const published = document.getElementById('publish-toggle-input').checked;
-  const btn = document.getElementById('save-btn');
-  const statusEl = document.getElementById('save-status');
+  // Akce jsou nad prispevkem i pod nim — stav a zablokovani tlacitka
+  // proto drzime na vsech .save-status / .btn-save v editoru.
+  const setBtn = d => document.querySelectorAll('#blog-view-edit .btn-save').forEach(b => b.disabled = d);
+  const setStatus = (t, c) => document.querySelectorAll('#blog-view-edit .save-status')
+    .forEach(el => { el.textContent = t; el.className = 'save-status' + (c ? ' ' + c : ''); });
 
-  if (!title) { statusEl.textContent = 'Zadej název příspěvku.'; statusEl.className = 'save-status err'; return false; }
+  if (!title) { setStatus('Zadej název příspěvku.', 'err'); return false; }
   if (postSizeBytes() > POST_MAX_BYTES) {
-    statusEl.textContent = 'Příspěvek je i s náhledy moc velký — uber pár fotek z galerie.';
-    statusEl.className = 'save-status err';
+    setStatus('Příspěvek je i s náhledy moc velký — uber pár fotek z galerie.', 'err');
     return false;
   }
 
-  btn.disabled = true;
-  statusEl.textContent = 'Ukládám…';
-  statusEl.className = 'save-status';
+  setBtn(true);
+  setStatus('Ukládám…');
 
   const user = auth.currentUser;
   const creating = !editingPostId;
@@ -1503,23 +1513,21 @@ async function savePost() {
     editingAuthorName = data.authorName;
     editingEditable = data.editableByOthers;
     await syncImageVisibility(editingPostId, published);
-    statusEl.textContent = '✓ Uloženo';
-    statusEl.className = 'save-status ok';
+    setStatus('✓ Uloženo', 'ok');
     // Ulozeny stav je nova referencni podoba — editor uz neni "rozdelany".
     captureEditorSnapshot();
     loadAllPosts();
-    btn.disabled = false;
+    setBtn(false);
     return true;
   } catch(e) {
     // Zamitnuti pravidly vypiseme konkretne — nejcasteji jde o cizi
     // prispevek bez povolenych uprav nebo ucet, ktery neni mezi adminy.
-    statusEl.textContent = e?.code === 'permission-denied'
+    setStatus(e?.code === 'permission-denied'
       ? 'Úpravu zamítla pravidla Firestore — buď nemáš k příspěvku právo (autor nepovolil úpravy), nebo účet není mezi adminy.'
-      : 'Chyba při ukládání.';
-    statusEl.className = 'save-status err';
+      : 'Chyba při ukládání.', 'err');
     console.error(e);
   }
-  btn.disabled = false;
+  setBtn(false);
   return false;
 }
 
@@ -1720,7 +1728,7 @@ async function editPost(id) {
   const editIn = document.getElementById('editable-toggle-input');
   editIn.checked = editingEditable;
   editIn.disabled = !isOwner;   // priznak "povolit upravy" prepina jen autor
-  document.getElementById('save-status').textContent = '';
+  document.querySelectorAll('#blog-view-edit .save-status').forEach(el => { el.textContent = ''; el.className = 'save-status'; });
   document.getElementById('editor-panel-title').textContent = 'Upravit příspěvek';
   captureEditorSnapshot();
   showBlogEditor();
@@ -2137,8 +2145,9 @@ function isEditorDirty() { return editorSnapshot !== null && editorSignature() !
 // prispevek zase lisi od ulozene podoby, potvrzeni schovame, at
 // neni matouci.
 function clearSavedStatus() {
-  const el = document.getElementById('save-status');
-  if (el.classList.contains('ok')) { el.textContent = ''; el.className = 'save-status'; }
+  document.querySelectorAll('#blog-view-edit .save-status').forEach(el => {
+    if (el.classList.contains('ok')) { el.textContent = ''; el.className = 'save-status'; }
+  });
 }
 function editorChanged() { if (isEditorDirty()) clearSavedStatus(); }
 
