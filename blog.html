@@ -624,7 +624,7 @@
     .modal-overlay.open { opacity: 1; pointer-events: auto; }
     .modal-box {
       background: var(--bg-2); border: 1px solid var(--border);
-      border-radius: var(--radius-md); max-width: 720px; width: 100%;
+      border-radius: var(--radius-md); max-width: 860px; width: 100%;
       padding: 40px; position: relative; margin: auto;
     }
     .modal-close {
@@ -650,6 +650,21 @@
     .modal-content-box th, .modal-content-box td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
     .modal-content-box thead th { background: var(--bg-3); color: var(--gold-dim); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
     .modal-content-box caption { color: var(--text-3); font-size: 0.8rem; margin-bottom: 8px; text-align: left; }
+    .modal-content-box .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 18px 0; }
+    .modal-content-box .table-scroll table { margin: 0; width: auto; min-width: 100%; }
+    .modal-content-box .table-scroll th, .modal-content-box .table-scroll td { white-space: nowrap; }
+    .modal-content-box pre { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .modal-link {
+      margin-left: auto; background: none; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--gold); cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 600;
+      padding: 5px 12px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;
+    }
+    .modal-link:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+    @media (max-width: 600px) {
+      .modal-overlay { padding: 20px 10px; }
+      .modal-box { padding: 28px 18px; }
+    }
     .modal-content-box h4 { font-family: 'Cinzel', serif; color: var(--text-1); margin: 20px 0 10px; font-size: 1rem; }
     .modal-content-box h5, .modal-content-box h6 { color: var(--gold-dim); margin: 16px 0 8px; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
     /* Decklist */
@@ -850,6 +865,10 @@
     <div class="modal-meta">
       <span class="modal-author-text" id="blog-modal-author"></span>
       <span id="blog-modal-date"></span>
+      <button class="modal-link" id="blog-modal-link" type="button" onclick="copyPostLink()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <span data-i18n="blog.copylink"></span>
+      </button>
     </div>
     <div class="modal-content-box" id="blog-modal-content"></div>
     <div id="blog-modal-gallery"></div>
@@ -1009,20 +1028,38 @@ function renderGallery(post, lang) {
   `;
 }
 
+// Siroky obsah (tabulky, kod) zabalime do posuvatelneho ramce, aby se na
+// uzkem displeji neorezaval.
+function wrapWideContent(root) {
+  root.querySelectorAll('table').forEach(tbl => {
+    if (tbl.parentElement && tbl.parentElement.classList.contains('table-scroll')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'table-scroll';
+    tbl.replaceWith(wrap);
+    wrap.appendChild(tbl);
+  });
+}
+
+let currentPostId = null;
+
 function openBlogModal(post) {
   const lang = document.documentElement.lang || 'cs';
+  currentPostId = post.id || null;
   document.getElementById('blog-modal-title').textContent   = post.title || '';
   document.getElementById('blog-modal-author').textContent  = post.authorName || '';
   document.getElementById('blog-modal-date').textContent    = formatDate(post.createdAt);
   const contentEl = document.getElementById('blog-modal-content');
   contentEl.innerHTML = sanitizeHtml(post.content);
+  wrapWideContent(contentEl);
   enhanceCards(contentEl);
   bindCardHandlers(contentEl);
   renderGallery(post, lang);
   renderComments(post);
+  document.getElementById('blog-modal-link').hidden = !post.id;
   const overlay = document.getElementById('blog-overlay');
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+  if (post.id && location.hash !== '#post-' + post.id) location.hash = 'post-' + post.id;
 }
 
 function closeBlogModal(e) {
@@ -1030,7 +1067,35 @@ function closeBlogModal(e) {
   document.getElementById('blog-overlay').classList.remove('open');
   document.body.style.overflow = '';
   hideCardPreview();
+  currentPostId = null;
+  if (location.hash.indexOf('#post-') === 0) history.replaceState(null, '', location.pathname + location.search);
 }
+
+function copyPostLink() {
+  if (!currentPostId) return;
+  const url = new URL('blog.html#post-' + currentPostId, location.href).href;
+  const done = () => {
+    const t = i18n[document.documentElement.lang || 'cs'];
+    const span = document.querySelector('#blog-modal-link span');
+    const orig = span.textContent;
+    span.textContent = t['blog.copied'];
+    setTimeout(() => { span.textContent = orig; }, 1800);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+  else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch(e){} ta.remove(); done(); }
+}
+
+function openPostFromHash() {
+  const m = location.hash.match(/^#post-(.+)$/);
+  if (m) {
+    if (currentPostId === m[1]) return;
+    const post = (cachedPosts || []).find(p => p.id === m[1]);
+    if (post) openBlogModal(post);
+  } else if (currentPostId) {
+    closeBlogModal(null);
+  }
+}
+window.addEventListener('hashchange', openPostFromHash);
 
 // ── Lightbox ──────────────────────────────────────────────────
 let currentGallery = [];
@@ -1314,6 +1379,8 @@ const i18n = {
     'blog.empty':   'Zatím žádné příspěvky.',
     'blog.read':    'Číst dál →',
     'blog.gallery': 'Fotogalerie',
+    'blog.copylink': 'Odkaz',
+    'blog.copied':   'Zkopírováno ✓',
     'comments.title':   'Komentáře',
     'comments.loading': 'Načítám komentáře…',
     'comments.empty':   'Zatím žádné komentáře. Buď první.',
@@ -1338,6 +1405,8 @@ const i18n = {
     'blog.empty':   'No posts yet.',
     'blog.read':    'Read more →',
     'blog.gallery': 'Photo gallery',
+    'blog.copylink': 'Link',
+    'blog.copied':   'Copied ✓',
     'comments.title':   'Comments',
     'comments.loading': 'Loading comments…',
     'comments.empty':   'No comments yet. Be the first.',
@@ -1389,6 +1458,7 @@ async function loadPosts() {
       .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
   } catch(e) { console.error('Blog load error:', e); cachedPosts = []; }
   render();
+  openPostFromHash();
 }
 
 function postSections(p) { return Array.isArray(p.sections) ? p.sections : []; }
