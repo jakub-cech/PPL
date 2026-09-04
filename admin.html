@@ -7,6 +7,9 @@
        prohlizec ignoruje a GitHub Pages vlastni hlavicky nastavit neumi. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com; form-action 'none'; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <!-- Ochrana proti clickjackingu: frame-ancestors nejde nastavit pres <meta>
        a GitHub Pages neposila zadne hlavicky, proto admin schovame a hned
        ho zase odkryjeme, jen kdyz stranka nebezi ve framu. Kdyby ji nekdo
@@ -1470,6 +1473,9 @@ async function savePost() {
     .forEach(el => { el.textContent = t; el.className = 'save-status' + (c ? ' ' + c : ''); });
 
   if (!title) { setStatus('Zadej název příspěvku.', 'err'); return false; }
+  if (!content || content === '<p><br></p>') {
+    if (!confirm('Obsah příspěvku je prázdný — chceš ho přesto uložit?')) { return false; }
+  }
   if (postSizeBytes() > POST_MAX_BYTES) {
     setStatus('Příspěvek je i s náhledy moc velký — uber pár fotek z galerie.', 'err');
     return false;
