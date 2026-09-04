@@ -994,7 +994,7 @@ let htmlMode = false;
 // rezimu, aby ho prepnuti do vizualniho editoru nezahodilo.
 function quillCanRender(html) {
   const h = String(html || '');
-  return !/<(table|thead|tbody|tfoot|tr|th|td|figure|figcaption|col|colgroup|div|h[4-6])[\s>]/i.test(h)
+  return !/<(table|thead|tbody|tfoot|tr|th|td|figure|figcaption|col|colgroup|div|h[4-6]|article|section|header|footer|nav|aside|main|details|summary|address|hgroup)[\s>]/i.test(h)
       && !/class\s*=\s*["']?decklist/i.test(h);
 }
 
