@@ -445,9 +445,13 @@
     }
 
     /* ── PRŮBĚŽNÉ VÝSLEDKY ── */
-    #vysledky { background: var(--bg-0); }
+    /* Sekce se v pozadi stridaji bg-1 / bg-0, aby na sebe vizualne
+       nenavazovaly. Pri zmene poradi sekci je potreba stridani dodrzet. */
+    #vysledky { background: var(--bg-1); }
     .season-picker { margin-top: 36px; display: flex; justify-content: flex-end; }
-    .season-picker select { font-size: 0.85rem; padding: 8px 36px 8px 14px; background-color: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); border-radius: var(--radius-md); }
+    /* width:auto prebiji .form-select, ktery je delany na formularova pole
+       pres celou sirku — prepinac ma byt jen tak siroky, jak je text. */
+    .season-picker select { width: auto; font-size: 0.85rem; padding: 8px 36px 8px 14px; background-color: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); border-radius: var(--radius-md); }
     .results-banner {
       display: flex; align-items: center; justify-content: space-between; gap: 20px;
       flex-wrap: wrap; margin-top: 52px; padding: 18px 24px; text-decoration: none;
@@ -630,7 +634,7 @@
     }
 
     /* ── BLOG ── */
-    #blog { background: var(--bg-1); }
+    #blog { background: var(--bg-0); }
     .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-top: 52px; }
     .blog-card {
       background: var(--bg-2); border: 1px solid var(--border);
@@ -1008,7 +1012,6 @@
   <div class="lightbox-counter" id="lightbox-counter"></div>
 </div>
 
-<!-- ── LIGA (info + systém) ── -->
 <!-- ── FORMÁT PAUPER ── -->
 <section id="format">
   <div class="container">
@@ -1063,6 +1066,7 @@
   </div>
 </section>
 
+<!-- ── LIGA (info + systém) ── -->
 <section id="liga">
   <div class="container">
     <div class="ornament"><div class="ornament-diamond"></div></div>
