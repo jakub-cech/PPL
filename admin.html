@@ -883,12 +883,12 @@
             </span>
           </div>
           <div class="field">
-            <label for="s-top8">Název záložky s Top 8</label>
-            <input type="text" id="s-top8" placeholder="Top 8 Hráčů" />
+            <label for="s-top8">Záložka s Top 8</label>
+            <input type="text" id="s-top8" placeholder="Název záložky, nebo odkaz na ni" />
             <span class="field-hint">
-              Prázdné = blok Top 8 se nezobrazí. U publikovaného odkazu název nestačí —
-              klikni v tabulce na záložku a vlož sem celou adresu z prohlížeče
-              (<code>…#gid=123456</code>), číslo si z ní vezmu.
+              Prázdné = blok Top 8 se nezobrazí. Stačí název záložky. Jen u publikovaného
+              odkazu název nefunguje — tam klikni v tabulce na záložku a vlož sem adresu
+              z prohlížeče, číslo <code>gid</code> si z ní vezmu.
             </span>
           </div>
           <div class="field">
@@ -2399,6 +2399,12 @@ function renderSeasonPreview() {
       : `Tabulka: <b>${escapeHtml(s.resultsSheetId)}</b>`;
     if (isPubToken(s.resultsSheetId) && s.top8Sheet && !/^\d+$/.test(s.top8Sheet)) {
       sheet += ` <span class="sp-warn">— u publikovaného odkazu název záložky nestačí, vlož k Top 8 adresu s <code>#gid=…</code>.</span>`;
+    }
+    // Co se vzalo jako Top 8 — at je videt rozdil mezi nazvem a cislem gid.
+    if (s.top8Sheet) {
+      sheet += /^\d+$/.test(s.top8Sheet)
+        ? `<br>Top 8: záložka číslo <b>${escapeHtml(s.top8Sheet)}</b>`
+        : `<br>Top 8: záložka <b>${escapeHtml(s.top8Sheet)}</b>`;
     }
   }
   box.innerHTML = `
