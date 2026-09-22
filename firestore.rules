@@ -102,6 +102,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Sezony ligy — z cehoz se na webu odvozuji terminy turnaju, nadpisy
+    // a odkaz na Google tabulku s vysledky. Cist je musi kazdy navstevnik,
+    // menit jen admin.
+    match /seasons/{seasonId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     // Turnaje — stejny princip jako prispevky.
     match /tournaments/{tournamentId} {
       allow read:  if resource.data.published == true || isAdmin();
