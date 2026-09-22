@@ -7,7 +7,7 @@
        prohlizec ignoruje a GitHub Pages vlastni hlavicky nastavit neumi. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://api.web3forms.com https://docs.google.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plzeňská Pauper Liga 2026</title>
+  <title>Plzeňská Pauper Liga</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -446,6 +446,8 @@
 
     /* ── PRŮBĚŽNÉ VÝSLEDKY ── */
     #vysledky { background: var(--bg-0); }
+    .season-picker { margin-top: 36px; display: flex; justify-content: flex-end; }
+    .season-picker select { font-size: 0.85rem; padding: 8px 36px 8px 14px; background-color: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); border-radius: var(--radius-md); }
     .results-banner {
       display: flex; align-items: center; justify-content: space-between; gap: 20px;
       flex-wrap: wrap; margin-top: 52px; padding: 18px 24px; text-decoration: none;
@@ -843,7 +845,7 @@
 <!-- ── NAV ── -->
 <nav>
   <div class="nav-inner">
-    <a class="nav-logo" href="#">PPL 2026</a>
+    <a class="nav-logo" href="#">PPL</a>
 
     <ul class="nav-links" id="nav-links-desktop">
       <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
@@ -889,7 +891,7 @@
     <!-- Text -->
     <div class="hero-text reveal">
       <div class="hero-badge" data-i18n="hero.badge"></div>
-      <h1>Plzeňská<br /><span>Pauper Liga</span><br />2026</h1>
+      <h1>Plzeňská<br /><span>Pauper Liga</span></h1>
       <p class="hero-sub" data-i18n="hero.sub"></p>
       <div class="hero-ctas">
         <!-- Vysledky uz jsou primo na strance, odkaz proto vede do sekce
@@ -910,7 +912,7 @@
       <picture>
         <source srcset="logo.webp" type="image/webp" />
         <img class="hero-logo" src="logo.png" width="752" height="752"
-             fetchpriority="high" alt="Plzeňská Pauper Liga 2026" />
+             fetchpriority="high" alt="Plzeňská Pauper Liga" />
       </picture>
     </div>
   </div>
@@ -1173,7 +1175,7 @@
       <div class="merch-form-title" data-i18n="merch.form.title"></div>
       <form class="merch-form" id="merch-form" action="https://api.web3forms.com/submit" method="POST">
         <input type="hidden" name="access_key" value="07712b78-b2ff-4833-8f16-109f0f06d16e" />
-        <input type="hidden" name="subject" value="Nová objednávka merch – PPL 2026" />
+        <input type="hidden" name="subject" value="Nová objednávka merch – PPL" />
         <input type="hidden" name="from_name" value="PPL Merch" />
         <!-- replyto se záměrně nenastavuje: Web3Forms použije adresu z pole email,
              takže na notifikaci lze rovnou odpovědět zájemci -->
@@ -1243,7 +1245,7 @@
 
 <!-- ── FOOTER ── -->
 <footer>
-  <div class="footer-logo">Plzeňská Pauper Liga 2026</div>
+  <div class="footer-logo">Plzeňská Pauper Liga</div>
   <p class="footer-copy" data-i18n="footer.copy"></p>
 </footer>
 
@@ -1267,8 +1269,8 @@ const i18n = {
     "tournaments.empty":   "Zatím nejsou vypsané žádné turnaje.",
     "tournaments.link":    "Detail události",
 
-    "hero.badge": "Sezóna 2026 · Aktivní",
-    "hero.sub":   "Kompetitivní Pauper v Plzni.\nSezóna Březen – Září 2026.",
+    "hero.badge": "Sezóna 2026–2027 · Aktivní",
+    "hero.sub":   "Kompetitivní Pauper v Plzni.\nSezóna Říjen 2026 – Červen 2027.",
     "hero.cta1":  "Průběžné výsledky",
     "hero.cta2":  "Přidat se na Discord",
 
@@ -1280,7 +1282,7 @@ const i18n = {
     "info.card1.title": "Lokace",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Kdy hrajeme",
-    "info.card2.body":  "Vždy <strong>první středa v měsíci</strong>:<br><br>4. března<br>1. dubna<br>6. května<br>3. června<br>1. července<br>5. srpna<br>2. září",
+    "info.card2.body":  "Vždy <strong>první středa v měsíci</strong>:<br><br>7. října<br>4. listopadu<br>2. prosince<br>6. ledna<br>3. února<br>3. března<br>7. dubna<br>5. května<br>2. června",
     "info.card3.title": "Vstupné",
     "info.card3.body":  "<strong>150 Kč</strong> celkem:<br>100 Kč → bank na ceny<br>20 Kč → provoz<br>30 Kč → ligový bank",
     "info.card4.title": "Proxy pravidla",
@@ -1295,7 +1297,7 @@ const i18n = {
       "Na každém turnaji se hrají přesně <strong>4 kola Swiss</strong>.",
       "Do celkového pořadí se počítá <strong>5 nejlepších výsledků</strong> ze všech turnajů ligy.",
       "Hráči s nejvyšším bodovým ziskem po regulérní sezóně postoupí do <strong>TOP 8</strong>.",
-      "TOP 8 hráčů se v září utkají ve <strong>finále s Double Elimination</strong> bracketem.",
+      "TOP 8 hráčů se v červnu utkají ve <strong>finále s Double Elimination</strong> bracketem.",
       "Finálový turnaj se hraje <strong>bez proxy karet</strong> – vyžadují se originální karty."
     ],
     "system.prizes": [
@@ -1305,7 +1307,7 @@ const i18n = {
     ],
     "system.grand.label": "Hlavní Cena",
     "system.grand.title": "Finálový Vítěz",
-    "system.grand.desc":  "Přímá kvalifikace na <strong>MČR v Pauperu 2026</strong>",
+    "system.grand.desc":  "Přímá kvalifikace na <strong>MČR v Pauperu 2027</strong>",
 
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
@@ -1398,7 +1400,7 @@ const i18n = {
     "community.desc":  "Sleduj aktuální dění, propozice a domlouvej testování. Komunita je aktivní – přidej se.",
     "community.dc":    "Discord Server",
 
-    "footer.copy": "© 2026 Plzeňská Pauper Liga. Všechna práva vyhrazena."
+    "footer.copy": "© 2026–2027 Plzeňská Pauper Liga. Všechna práva vyhrazena."
   },
 
   en: {
@@ -1416,8 +1418,8 @@ const i18n = {
     "tournaments.empty":   "No events scheduled yet.",
     "tournaments.link":    "Event details",
 
-    "hero.badge": "Season 2026 · Active",
-    "hero.sub":   "Competitive Pauper in Plzeň.\nSeason March – September 2026.",
+    "hero.badge": "Season 2026–2027 · Active",
+    "hero.sub":   "Competitive Pauper in Plzeň.\nSeason October 2026 – June 2027.",
     "hero.cta1":  "Current Standings",
     "hero.cta2":  "Join Discord",
 
@@ -1429,7 +1431,7 @@ const i18n = {
     "info.card1.title": "Location",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Schedule",
-    "info.card2.body":  "Always the <strong>first Wednesday of the month</strong>:<br><br>March 4<br>April 1<br>May 6<br>June 3<br>July 1<br>August 5<br>September 2",
+    "info.card2.body":  "Always the <strong>first Wednesday of the month</strong>:<br><br>October 7<br>November 4<br>December 2<br>January 6<br>February 3<br>March 3<br>April 7<br>May 5<br>June 2",
     "info.card3.title": "Entry Fee",
     "info.card3.body":  "<strong>150 CZK</strong> total:<br>100 CZK → prize pool<br>20 CZK → venue costs<br>30 CZK → league bank",
     "info.card4.title": "Proxy Rules",
@@ -1444,7 +1446,7 @@ const i18n = {
       "Each event consists of exactly <strong>4 Swiss rounds</strong>.",
       "Only your <strong>5 best results</strong> from all league tournaments count toward standings.",
       "Players with the highest point totals advance to <strong>TOP 8</strong>.",
-      "The TOP 8 compete in September at a <strong>Double Elimination Finals</strong> bracket.",
+      "The TOP 8 compete in June at a <strong>Double Elimination Finals</strong> bracket.",
       "The finals event is played <strong>without proxies</strong> — original cards required."
     ],
     "system.prizes": [
@@ -1454,7 +1456,7 @@ const i18n = {
     ],
     "system.grand.label": "Grand Prize",
     "system.grand.title": "Finals Champion",
-    "system.grand.desc":  "Direct qualification to <strong>Czech Pauper Championship 2026</strong>",
+    "system.grand.desc":  "Direct qualification to <strong>Czech Pauper Championship 2027</strong>",
 
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
@@ -1547,7 +1549,7 @@ const i18n = {
     "community.desc":  "Follow news, announcements, and find testing partners. The community is active — join us.",
     "community.dc":    "Discord Server",
 
-    "footer.copy": "© 2026 Plzeňská Pauper Liga. All rights reserved."
+    "footer.copy": "© 2026–2027 Plzeňská Pauper Liga. All rights reserved."
   }
 };
 
@@ -1837,18 +1839,28 @@ async function loadBlogPosts() {
 // Data se tahaji primo z Google tabulky. Aby to fungovalo, musi byt list
 // zverejneny pres Soubor → Sdilet → Publikovat na webu. Kdyz se stahnout
 // nepodari, sekce misto tabulky nabidne odkaz do tabulky.
-const RESULTS_SHEET_ID = '1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ';
-// Druha zalozka tabulky poradi. Musi presne odpovidat nazvu zalozky
-// v Google tabulce — misto nazvu jde uvest i cislo gid z adresy
-// (napr. { gid: '123456789' }). Kdyz se nenacte, blok se proste neukaze.
-const RESULTS_TOP8     = { sheet: 'Top 8 Hráčů' };
-// Samostatna tabulka s vysledky jednotlivych kol — jen odkaz, netahame ji.
-const ROUNDS_SHEET_ID  = '1KJ6UbtduGuhpnFrIywQ63RxzdvaDD5OqQaqQeExSuTA';
-const ROUNDS_LINK      = `https://docs.google.com/spreadsheets/d/${ROUNDS_SHEET_ID}/edit?usp=sharing`;
-const RESULTS_LINK     = `https://docs.google.com/spreadsheets/d/${RESULTS_SHEET_ID}/edit?usp=sharing`;
+const SEASONS = [
+  {
+    id: '2026-2027',
+    label: { cs: 'Sezóna 2026–2027', en: 'Season 2026–2027' },
+    resultsSheetId: '1X9RMaeZP6mc59Dbv1PphBFl9sBmITmcf7E06my9nNIY',
+    top8: { sheet: 'Top 8 Hráčů' },
+    roundsSheetId: null
+  },
+  {
+    id: '2026',
+    label: { cs: 'Sezóna 2026 (archiv)', en: 'Season 2026 (archive)' },
+    resultsSheetId: '1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ',
+    top8: { sheet: 'Top 8 Hráčů' },
+    roundsSheetId: '1KJ6UbtduGuhpnFrIywQ63RxzdvaDD5OqQaqQeExSuTA'
+  }
+];
+let currentSeason = SEASONS[0];
+function sheetLink(id) { return `https://docs.google.com/spreadsheets/d/${id}/edit?usp=sharing`; }
 const RESULTS_MAX_ROWS = 60;
 
 function sheetCsvUrl(id, part) {
+  if (!id) return null;
   const base = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
   if (part?.gid)   return `${base}&gid=${encodeURIComponent(part.gid)}`;
   if (part?.sheet) return `${base}&sheet=${encodeURIComponent(part.sheet)}`;
@@ -1911,23 +1923,46 @@ function resultsTable(head, body, cutAfter) {
     </div>`;
 }
 
+function renderSeasonPicker(lang) {
+  if (SEASONS.length < 2) return '';
+  const opts = SEASONS.map(s =>
+    `<option value="${s.id}"${s.id === currentSeason.id ? ' selected' : ''}>${escapeHtml(s.label[lang] || s.label.cs)}</option>`
+  ).join('');
+  return `<div class="season-picker"><select class="form-select" onchange="switchSeason(this.value)">${opts}</select></div>`;
+}
+
+function switchSeason(id) {
+  const s = SEASONS.find(x => x.id === id);
+  if (!s || s.id === currentSeason.id) return;
+  currentSeason = s;
+  cachedResults = null;
+  cachedTop8 = null;
+  loadResults();
+}
+
 function renderResults(lang) {
   const box = document.getElementById('results-body');
   const t = i18n[lang];
-  const link = `<a class="results-link" href="${RESULTS_LINK}" target="_blank" rel="noopener">${t['results.open']}</a>`;
+  const resultsLink = sheetLink(currentSeason.resultsSheetId);
+  const link = `<a class="results-link" href="${resultsLink}" target="_blank" rel="noopener">${t['results.open']}</a>`;
 
-  // Odkaz na kompletni vysledky kol stoji na zacatku sekce.
-  const rounds = `
-    <a class="results-banner" href="${ROUNDS_LINK}" target="_blank" rel="noopener">
+  const picker = renderSeasonPicker(lang);
+
+  let rounds = '';
+  if (currentSeason.roundsSheetId) {
+    const roundsLink = sheetLink(currentSeason.roundsSheetId);
+    rounds = `
+    <a class="results-banner" href="${roundsLink}" target="_blank" rel="noopener">
       <span class="results-banner-text">
         <strong>${t['results.rounds.title']}</strong>
         <span>${t['results.rounds.desc']}</span>
       </span>
       <span class="results-banner-cta">${t['results.rounds.cta']}</span>
     </a>`;
+  }
 
   if (cachedResults === null) {
-    box.innerHTML = rounds + `<p class="results-msg">${t['results.loading']}</p>`;
+    box.innerHTML = picker + rounds + `<p class="results-msg">${t['results.loading']}</p>`;
     return;
   }
 
@@ -1949,7 +1984,7 @@ function renderResults(lang) {
     top8 = `<div class="results-sub">${t['results.top8']}</div>` + resultsTable(head, body, 8);
   }
 
-  box.innerHTML = rounds + standings + top8;
+  box.innerHTML = picker + rounds + standings + top8;
 }
 
 let cachedResults = null;   // null = nacita se, false = nepodarilo se
@@ -1963,12 +1998,11 @@ async function fetchSheet(url) {
 }
 
 async function loadResults() {
-  // Poradi a Top 8 tahame zvlast — kdyz druha zalozka chybi nebo ma jiny
-  // nazev, hlavni tabulka se tim nesmi rozbit.
-  const [poradi, top8] = await Promise.allSettled([
-    fetchSheet(sheetCsvUrl(RESULTS_SHEET_ID)),
-    fetchSheet(sheetCsvUrl(RESULTS_SHEET_ID, RESULTS_TOP8))
-  ]);
+  const s = currentSeason;
+  const promises = [fetchSheet(sheetCsvUrl(s.resultsSheetId))];
+  const top8Url = sheetCsvUrl(s.resultsSheetId, s.top8);
+  if (top8Url) promises.push(fetchSheet(top8Url));
+  const [poradi, top8] = await Promise.allSettled(promises);
   if (poradi.status === 'fulfilled') cachedResults = poradi.value;
   else { console.warn('Results load error:', poradi.reason); cachedResults = false; }
   if (top8.status === 'fulfilled') cachedTop8 = top8.value;
