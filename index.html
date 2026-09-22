@@ -662,6 +662,9 @@
     .blog-card-read { font-size: 0.75rem; font-weight: 600; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-top: auto; }
     .blog-loading { color: var(--text-3); font-size: 0.9rem; margin-top: 40px; text-align: center; }
     .blog-all-wrap { margin-top: 32px; text-align: center; }
+    .tournament-more-wrap { margin-top: 28px; text-align: center; }
+    /* Tlacitko vypada jako .results-link, jen si sraz vlastni vzhled buttonu. */
+    .tournament-more-wrap .results-link { background: none; font-family: inherit; cursor: pointer; }
 
     .modal-overlay {
       position: fixed; inset: 0; z-index: 200;
@@ -1372,6 +1375,8 @@ const i18n = {
     "tournaments.loading": "Načítám turnaje…",
     "tournaments.empty":   "Zatím nejsou vypsané žádné turnaje.",
     "tournaments.link":    "Detail události",
+    "tournaments.more":    "Zobrazit další turnaje ({n})",
+    "tournaments.less":    "Zobrazit jen nejbližší",
 
     "hero.badge": "Sezóna {season} · Aktivní",
     "hero.sub":   "Kompetitivní Pauper v Plzni.\nSezóna {seasonRange}.",
@@ -1522,6 +1527,8 @@ const i18n = {
     "tournaments.loading": "Loading events…",
     "tournaments.empty":   "No events scheduled yet.",
     "tournaments.link":    "Event details",
+    "tournaments.more":    "Show more events ({n})",
+    "tournaments.less":    "Show only the next few",
 
     "hero.badge": "Season {season} · Active",
     "hero.sub":   "Competitive Pauper in Plzeň.\nSeason {seasonRange}.",
@@ -2168,6 +2175,17 @@ async function loadResults() {
 // ── Turnaje ───────────────────────────────────────────────────
 let cachedTournaments = null;
 
+// Nadchazejicich turnaju je cela sezona; hned po ruce maji byt jen
+// nejblizsi, zbytek az na vyzadani. Stav prezije i prepnuti jazyka,
+// aby rozkliknuty seznam neskocil zpatky.
+const TOURNAMENTS_PREVIEW = 3;
+let tournamentsExpanded = false;
+
+function toggleTournaments() {
+  tournamentsExpanded = !tournamentsExpanded;
+  renderTournaments(document.documentElement.lang || 'cs');
+}
+
 function renderTournaments(lang) {
   const list = document.getElementById('tournament-list');
   const t = i18n[lang];
@@ -2181,7 +2199,9 @@ function renderTournaments(lang) {
   }
   const locale = lang === 'cs' ? 'cs-CZ' : 'en-GB';
   list.innerHTML = '';
-  cachedTournaments.forEach((x, idx) => {
+  const hidden = cachedTournaments.length - TOURNAMENTS_PREVIEW;
+  const shown = tournamentsExpanded ? cachedTournaments : cachedTournaments.slice(0, TOURNAMENTS_PREVIEW);
+  shown.forEach((x, idx) => {
     const d = x.date.toDate ? x.date.toDate() : new Date(x.date);
     // Na karte jen strucny nahled, cela poznamka je az v detailu.
     const noteText = excerptFromHtml(x.note, TOURNAMENT_NOTE_PREVIEW);
@@ -2216,6 +2236,20 @@ function renderTournaments(lang) {
     list.appendChild(card);
     observer.observe(card);
   });
+
+  if (hidden > 0) {
+    const wrap = document.createElement('div');
+    wrap.className = 'tournament-more-wrap';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'results-link';
+    btn.textContent = tournamentsExpanded
+      ? t['tournaments.less']
+      : fillVars(t['tournaments.more'], { n: String(hidden) });
+    btn.addEventListener('click', toggleTournaments);
+    wrap.appendChild(btn);
+    list.appendChild(wrap);
+  }
 }
 
 // Kolik znaku poznamky se vejde na kartu, nez se orizne.
