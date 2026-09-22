@@ -297,6 +297,11 @@
     .season-preview b { color: var(--text-1); font-weight: 600; }
     .season-preview .sp-warn { color: #d98b5f; }
     .s-row-act { display: flex; gap: 8px; flex-wrap: wrap; }
+    .gen-box { max-width: 640px; text-align: left; }
+    .gen-list { max-height: 260px; overflow-y: auto; }
+    .gen-list .gen-row { display: flex; gap: 10px; padding: 3px 0; }
+    .gen-list .gen-date { color: var(--text-1); font-weight: 600; white-space: nowrap; }
+    .gen-list .gen-dup { color: var(--text-3); }
 
     /* Posts list */
     .posts-list { display: flex; flex-direction: column; gap: 12px; }
@@ -948,6 +953,38 @@
       <button class="btn-save" id="leave-save">Uložit a odejít</button>
       <button class="btn-outline leave-discard" id="leave-discard">Zahodit změny</button>
       <button class="btn-outline" id="leave-cancel">Zůstat</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hromadné založení turnajů celé sezóny -->
+<div class="modal-overlay" id="gen-overlay" onclick="closeGenerator(event)">
+  <div class="modal-box gen-box">
+    <div class="leave-title">Vygenerovat turnaje sezóny</div>
+    <p class="leave-text" id="gen-intro"></p>
+    <div class="t-form">
+      <div class="field">
+        <label for="gen-time">Čas začátku</label>
+        <input type="time" id="gen-time" value="18:00" />
+      </div>
+      <div class="field">
+        <label for="gen-capacity">Počet míst</label>
+        <input type="number" id="gen-capacity" min="0" max="999" placeholder="Prázdné = neomezeno" />
+      </div>
+      <div class="field full">
+        <label for="gen-title">Název turnaje</label>
+        <input type="text" id="gen-title" />
+        <span class="field-hint">
+          <code>{kolo}</code> nahradím pořadím kola, <code>{mesic}</code> názvem měsíce
+          a <code>{rok}</code> rokem.
+        </span>
+      </div>
+    </div>
+    <div class="season-preview gen-list" id="gen-preview"></div>
+    <div class="leave-actions">
+      <button class="btn-save" id="gen-run" onclick="runGenerator()">Vytvořit turnaje</button>
+      <button class="btn-outline" onclick="closeGenerator()">Zrušit</button>
+      <span class="save-status" id="gen-status"></span>
     </div>
   </div>
 </div>
@@ -2294,6 +2331,7 @@ function seasonRow(s) {
     </div>
     <div class="t-row-act s-row-act">
       <button class="btn-sm" onclick="editSeason('${escapeHtml(s.id)}')">Upravit</button>
+      <button class="btn-sm" onclick="openGenerator('${escapeHtml(s.id)}')">Vygenerovat turnaje</button>
       <button class="btn-sm publish-btn ${s.active ? 'active' : ''}" onclick="setActiveSeason('${escapeHtml(s.id)}')" ${s.active ? 'disabled' : ''}>
         ${s.active ? 'Aktuální' : 'Nastavit jako aktuální'}
       </button>
@@ -2476,10 +2514,127 @@ async function deleteSeason(id, btn) {
 // Nahled se prepocitava pri kazde zmene formulare.
 document.addEventListener('input', e => {
   if (e.target.closest?.('#s-view-edit')) renderSeasonPreview();
+  if (e.target.closest?.('#gen-overlay')) renderGenPreview();
 });
 document.addEventListener('change', e => {
   if (e.target.closest?.('#s-view-edit')) renderSeasonPreview();
+  if (e.target.closest?.('#gen-overlay')) renderGenPreview();
 });
+
+// ── Hromadné založení turnajů ─────────────────────────────────
+// Termíny i pocet kol plynou ze sezony, rucne se zadava jen to, co maji
+// turnaje spolecne. Zaklada se jako koncepty, at se nic neobjevi na webu
+// driv, nez to admin zkontroluje.
+let genSeason = null;
+let genExistingDays = null;   // dny, na ktere uz turnaj je
+
+function openGenerator(id) {
+  const s = allSeasons.find(x => x.id === id);
+  if (!s) return;
+  genSeason = s;
+  genExistingDays = null;
+  const n = seasonMonthList(s).length;
+  document.getElementById('gen-intro').textContent =
+    `Sezóna ${seasonRangeLabel(s)} — ${n} turnajů, vždy první středu v měsíci. `
+    + 'Založí se jako koncepty, zveřejníš je až budeš chtít.';
+  document.getElementById('gen-title').value = `PPL ${seasonRangeLabel(s)} — {kolo}. kolo`;
+  document.getElementById('gen-time').value = '18:00';
+  document.getElementById('gen-capacity').value = '';
+  document.getElementById('gen-status').textContent = '';
+  document.getElementById('gen-status').className = 'save-status';
+  document.getElementById('gen-run').disabled = false;
+  renderGenPreview();
+  document.getElementById('gen-overlay').classList.add('open');
+  // Uz zalozene turnaje si nacteme dopredu, at je v nahledu videt,
+  // ktere termíny se preskoci.
+  loadExistingDays().then(renderGenPreview);
+}
+
+function closeGenerator(ev) {
+  if (ev && ev.target !== ev.currentTarget) return;
+  document.getElementById('gen-overlay').classList.remove('open');
+  genSeason = null;
+}
+
+async function loadExistingDays() {
+  try {
+    const snap = await db.collection('tournaments').get();
+    genExistingDays = new Set(snap.docs
+      .map(d => d.data().date?.toDate?.())
+      .filter(Boolean)
+      .map(d => d.toDateString()));
+  } catch(e) { console.warn('Turnaje se nepodařilo načíst:', e); genExistingDays = new Set(); }
+}
+
+// Seznam turnaju, ktere by se zalozily. Cas bereme v mistnim pasmu,
+// stejne jako to dela rucni formular.
+function genTournaments() {
+  if (!genSeason) return [];
+  const tpl  = document.getElementById('gen-title').value;
+  const time = document.getElementById('gen-time').value || '18:00';
+  const [hh, mm] = time.split(':').map(Number);
+  return seasonMonthList(genSeason).map(([y, mo], i) => {
+    const date = new Date(y, mo - 1, seasonFirstWednesday(y, mo), hh || 0, mm || 0);
+    const title = String(tpl)
+      .replace(/\{kolo\}/g,  String(i + 1))
+      .replace(/\{mesic\}/g, S_MONTHS_CS[mo - 1])
+      .replace(/\{rok\}/g,   String(y));
+    return { date, title };
+  });
+}
+
+function renderGenPreview() {
+  const box = document.getElementById('gen-preview');
+  const list = genTournaments();
+  if (!list.length) { box.innerHTML = '<span class="sp-warn">Sezóna nemá platný rozsah.</span>'; return; }
+  box.innerHTML = list.map(t => {
+    const dup = genExistingDays?.has(t.date.toDateString());
+    const when = t.date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })
+               + ' ' + t.date.toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' });
+    return `<div class="gen-row${dup ? ' gen-dup' : ''}">
+      <span class="gen-date">${escapeHtml(when)}</span>
+      <span>${escapeHtml(t.title)}${dup ? ' — na tento den už turnaj je, přeskočím' : ''}</span>
+    </div>`;
+  }).join('');
+}
+
+async function runGenerator() {
+  const btn = document.getElementById('gen-run');
+  const status = document.getElementById('gen-status');
+  const list = genTournaments();
+  if (!list.length) return;
+
+  btn.disabled = true;
+  status.textContent = 'Zakládám…';
+  status.className = 'save-status';
+  try {
+    if (!genExistingDays) await loadExistingDays();
+    const capacity = parseCapacity(document.getElementById('gen-capacity').value);
+    const fresh = list.filter(t => !genExistingDays.has(t.date.toDateString()));
+
+    await Promise.all(fresh.map(t => db.collection('tournaments').add({
+      date:      firebase.firestore.Timestamp.fromDate(t.date),
+      title:     t.title,
+      note:      '',
+      capacity,
+      showRegistrations: true,
+      eventUrl:  '',
+      published: false,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })));
+
+    const skipped = list.length - fresh.length;
+    status.textContent = `✓ Vytvořeno ${fresh.length}`
+      + (skipped ? `, ${skipped} už existovalo` : '') + ' — najdeš je v Turnajích jako koncepty.';
+    status.className = 'save-status ok';
+    genExistingDays = null;
+  } catch(e) {
+    status.textContent = 'Založení se nepodařilo.';
+    status.className = 'save-status err';
+    btn.disabled = false;
+    console.error(e);
+  }
+}
 
 // ── Tabs ──────────────────────────────────────────────────────
 function switchTab(name, clickedBtn) {
