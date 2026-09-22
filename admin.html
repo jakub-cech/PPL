@@ -875,10 +875,11 @@
           </div>
           <div class="field full">
             <label for="s-results">Google tabulka s průběžným pořadím</label>
-            <input type="text" id="s-results" placeholder="ID tabulky, nebo rovnou celý odkaz" />
+            <input type="text" id="s-results" placeholder="Vlož adresu otevřené tabulky z řádku prohlížeče" />
             <span class="field-hint">
-              Tabulka musí být publikovaná: Soubor → Sdílet → Publikovat na webu.
-              Samotné sdílení odkazem nestačí.
+              Otevři tabulku a zkopíruj adresu z prohlížeče — vypadá jako
+              <code>…/spreadsheets/d/<b>ID</b>/edit</code>. Odkaz z „Publikovat na webu“
+              (<code>/d/e/2PACX-…</code>) tu nefunguje, ID v sobě nemá.
             </span>
           </div>
           <div class="field">
@@ -2232,12 +2233,23 @@ function seasonRangeLabel(s) {
   return s.startYear === s.endYear ? `${s.startYear}` : `${s.startYear}–${s.endYear}`;
 }
 
+// Adresa z "Publikovat na webu" vypada jako /spreadsheets/d/e/2PACX-…
+// Zadne ID tabulky v sobe nema, jen publikacni token — pres nej se data
+// stahnout nedaji, proto ji poznavame zvlast a rovnou na ni upozornime.
+function isPublishedUrl(v) {
+  return /\/spreadsheets\/d\/e\//.test(String(v || ''));
+}
+
 // Z odkazu na Google tabulku vytahne ID, aby slo vlozit i celou adresu.
 function sheetIdFrom(v) {
   const s = String(v || '').trim();
+  if (isPublishedUrl(s)) return '';
   const m = s.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
   return m ? m[1] : s;
 }
+
+const PUB_URL_HINT = 'Tohle je odkaz z „Publikovat na webu“ — ten ID tabulky neobsahuje. '
+                   + 'Otevři tabulku a zkopíruj adresu z řádku prohlížeče (…/spreadsheets/d/ID/edit).';
 
 async function loadSeasonList() {
   const list = document.getElementById('s-list');
@@ -2368,6 +2380,10 @@ function renderSeasonPreview() {
     box.innerHTML = '<span class="sp-warn">Konec sezóny musí být po jejím začátku (a nejvýš o tři roky).</span>';
     return;
   }
+  const badUrl = ['s-results', 's-rounds']
+    .some(id => isPublishedUrl(document.getElementById(id).value));
+  if (badUrl) { box.innerHTML = `<span class="sp-warn">${escapeHtml(PUB_URL_HINT)}</span>`; return; }
+
   const dates = months
     .map(([y, mo]) => `${seasonFirstWednesday(y, mo)}. ${S_MONTHS_GEN[mo - 1]} ${y}`)
     .join(' · ');
@@ -2384,6 +2400,9 @@ async function saveSeason() {
 
   if (!data.startYear || !data.endYear) { status.textContent = 'Vyplň roky sezóny.'; status.className = 'save-status err'; return; }
   if (!seasonMonthList(data).length)    { status.textContent = 'Konec sezóny musí být po začátku.'; status.className = 'save-status err'; return; }
+  if (['s-results', 's-rounds'].some(id => isPublishedUrl(document.getElementById(id).value))) {
+    status.textContent = PUB_URL_HINT; status.className = 'save-status err'; return;
+  }
   if (!data.resultsSheetId)             { status.textContent = 'Vyplň tabulku s průběžným pořadím.'; status.className = 'save-status err'; return; }
 
   status.textContent = 'Ukládám…';
