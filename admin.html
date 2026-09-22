@@ -285,6 +285,19 @@
     .t-form input::placeholder, .t-form textarea::placeholder { color: var(--text-3); }
     @media (max-width: 600px) { .t-form { grid-template-columns: 1fr; } }
 
+    /* ── Sezóny ── */
+    .season-hint { font-size: 0.85rem; color: var(--text-3); line-height: 1.6; margin: -8px 0 20px; max-width: 70ch; }
+    .field-hint { font-size: 0.78rem; color: var(--text-3); line-height: 1.5; }
+    .season-range { display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
+    .season-preview {
+      margin: 20px 0 4px; padding: 16px 18px; background: var(--bg-2);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.85rem; color: var(--text-2); line-height: 1.7;
+    }
+    .season-preview b { color: var(--text-1); font-weight: 600; }
+    .season-preview .sp-warn { color: #d98b5f; }
+    .s-row-act { display: flex; gap: 8px; flex-wrap: wrap; }
+
     /* Posts list */
     .posts-list { display: flex; flex-direction: column; gap: 12px; }
     .post-item {
@@ -593,6 +606,7 @@
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('blog', this)">📝 Blog</button>
       <button class="tab-btn"       onclick="switchTab('tournaments', this)">🗓️ Turnaje</button>
+      <button class="tab-btn"       onclick="switchTab('seasons', this)">🏆 Sezóny</button>
     </div>
 
     <!-- Blog tab -->
@@ -817,6 +831,87 @@
             <span class="reg-panel-count" id="t-reg-count"></span>
           </div>
           <div id="t-reg-list"></div>
+        </div>
+      </div>
+    </div>
+
+<!-- Seasons tab -->
+    <div class="tab-panel" id="tab-seasons">
+
+      <!-- Pohled 1: seznam -->
+      <div id="s-view-list">
+        <div class="panel-title panel-title-row">
+          Sezóny ligy
+          <button class="btn-save" onclick="newSeason()">+ Nová sezóna</button>
+        </div>
+        <p class="season-hint">
+          Termíny turnajů, nadpisy i patička na webu se dopočítají z rozsahu sezóny —
+          hraje se vždy první středu v měsíci. Označená sezóna je ta, kterou web
+          ukazuje jako aktuální; ostatní zůstanou návštěvníkům dostupné v archivu.
+        </p>
+        <div class="posts-list" id="s-list">
+          <div class="posts-loading">Načítám…</div>
+        </div>
+      </div>
+
+      <!-- Pohled 2: zalozeni a uprava -->
+      <div id="s-view-edit" hidden>
+        <button class="btn-back" type="button" onclick="showSeasonList()">← Zpět na seznam sezón</button>
+        <div class="panel-title" id="s-panel-title">Nová sezóna</div>
+        <div class="t-form">
+          <div class="field">
+            <label for="s-start-month">Začátek sezóny</label>
+            <div class="season-range">
+              <select id="s-start-month" class="season-month"></select>
+              <input type="number" id="s-start-year" min="2000" max="2100" placeholder="2026" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="s-end-month">Konec sezóny</label>
+            <div class="season-range">
+              <select id="s-end-month" class="season-month"></select>
+              <input type="number" id="s-end-year" min="2000" max="2100" placeholder="2027" />
+            </div>
+          </div>
+          <div class="field full">
+            <label for="s-results">Google tabulka s průběžným pořadím</label>
+            <input type="text" id="s-results" placeholder="ID tabulky, nebo rovnou celý odkaz" />
+            <span class="field-hint">
+              Tabulka musí být publikovaná: Soubor → Sdílet → Publikovat na webu.
+              Samotné sdílení odkazem nestačí.
+            </span>
+          </div>
+          <div class="field">
+            <label for="s-top8">Název záložky s Top 8</label>
+            <input type="text" id="s-top8" placeholder="Top 8 Hráčů" />
+            <span class="field-hint">Prázdné = blok Top 8 se nezobrazí.</span>
+          </div>
+          <div class="field">
+            <label for="s-champ">Ročník MČR pro kvalifikaci</label>
+            <input type="number" id="s-champ" min="2000" max="2100" placeholder="Prázdné = koncový rok sezóny" />
+          </div>
+          <div class="field full">
+            <label for="s-rounds">Google tabulka s výsledky kol</label>
+            <input type="text" id="s-rounds" placeholder="Nepovinné — prázdné = odkaz se nezobrazí" />
+          </div>
+        </div>
+
+        <!-- Nahled dopocitanych udaju, at je pred ulozenim videt vysledek -->
+        <div class="season-preview" id="s-preview"></div>
+
+        <div class="editor-actions">
+          <button class="btn-save" onclick="saveSeason()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Uložit
+          </button>
+          <span class="save-status" id="s-status"></span>
+          <div class="publish-toggle">
+            <label for="s-active" title="Sezóna, kterou web ukazuje jako aktuální">Aktuální sezóna</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="s-active" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -2108,6 +2203,241 @@ async function renderRegistrations(tournamentId, box) {
   });
 }
 
+// ── Sezóny ────────────────────────────────────────────────────
+// Sezona drzi jen rozsah mesicu a odkazy na tabulky; terminy turnaju,
+// nadpisy i paticku si web dopocita sam (viz seasonVars v index.html).
+const S_MONTHS_CS = ['Leden','Únor','Březen','Duben','Květen','Červen',
+                     'Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+const S_MONTHS_GEN = ['ledna','února','března','dubna','května','června',
+                      'července','srpna','září','října','listopadu','prosince'];
+
+let allSeasons = [];
+let editingSeasonId = null;
+
+function seasonFirstWednesday(year, month) {
+  const first = new Date(Date.UTC(year, month - 1, 1));
+  return 1 + ((3 - first.getUTCDay() + 7) % 7);
+}
+
+function seasonMonthList(s) {
+  const out = [];
+  const from = s.startYear * 12 + (s.startMonth - 1);
+  const to   = s.endYear   * 12 + (s.endMonth   - 1);
+  if (to < from || to - from > 36) return out;   // nesmysl radeji nekreslime
+  for (let i = from; i <= to; i++) out.push([Math.floor(i / 12), (i % 12) + 1]);
+  return out;
+}
+
+function seasonRangeLabel(s) {
+  return s.startYear === s.endYear ? `${s.startYear}` : `${s.startYear}–${s.endYear}`;
+}
+
+// Z odkazu na Google tabulku vytahne ID, aby slo vlozit i celou adresu.
+function sheetIdFrom(v) {
+  const s = String(v || '').trim();
+  const m = s.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : s;
+}
+
+async function loadSeasonList() {
+  const list = document.getElementById('s-list');
+  list.innerHTML = '<div class="posts-loading">Načítám…</div>';
+  try {
+    const snap = await db.collection('seasons').get();
+    allSeasons = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.startYear * 12 + b.startMonth) - (a.startYear * 12 + a.startMonth));
+    if (!allSeasons.length) {
+      list.innerHTML = '<div class="posts-empty">Žádné sezóny. Založ první tlačítkem nahoře.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    allSeasons.forEach(s => list.appendChild(seasonRow(s)));
+  } catch(e) {
+    list.innerHTML = '<div class="posts-empty">Chyba při načítání.</div>';
+    console.error(e);
+  }
+}
+
+function seasonRow(s) {
+  const item = document.createElement('div');
+  item.className = 't-row';
+  const months = seasonMonthList(s);
+  const from = S_MONTHS_CS[s.startMonth - 1], to = S_MONTHS_CS[s.endMonth - 1];
+  item.innerHTML = `
+    <div class="t-row-info">
+      <div class="t-row-title">Sezóna ${escapeHtml(seasonRangeLabel(s))}</div>
+      <div class="t-badges">
+        <span class="status-badge ${s.active ? 'published' : 'draft'}">${s.active ? 'Aktuální' : 'Archiv'}</span>
+        <span class="status-badge draft">${escapeHtml(from)} ${s.startYear} – ${escapeHtml(to)} ${s.endYear}</span>
+        <span class="status-badge draft">${months.length} turnajů</span>
+      </div>
+    </div>
+    <div class="t-row-act s-row-act">
+      <button class="btn-sm" onclick="editSeason('${escapeHtml(s.id)}')">Upravit</button>
+      <button class="btn-sm publish-btn ${s.active ? 'active' : ''}" onclick="setActiveSeason('${escapeHtml(s.id)}')" ${s.active ? 'disabled' : ''}>
+        ${s.active ? 'Aktuální' : 'Nastavit jako aktuální'}
+      </button>
+      <button class="btn-sm danger" onclick="deleteSeason('${escapeHtml(s.id)}', this)">Smazat</button>
+    </div>`;
+  return item;
+}
+
+function showSeasonList() {
+  document.getElementById('s-view-edit').hidden = true;
+  document.getElementById('s-view-list').hidden = false;
+  loadSeasonList();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showSeasonEditor() {
+  document.getElementById('s-view-list').hidden = true;
+  document.getElementById('s-view-edit').hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function fillMonthSelects() {
+  ['s-start-month', 's-end-month'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel.options.length) return;
+    S_MONTHS_CS.forEach((name, i) => sel.add(new Option(name, String(i + 1))));
+  });
+}
+
+function newSeason() {
+  fillMonthSelects();
+  editingSeasonId = null;
+  document.getElementById('s-panel-title').textContent = 'Nová sezóna';
+  const now = new Date();
+  document.getElementById('s-start-month').value = '10';
+  document.getElementById('s-start-year').value  = now.getFullYear();
+  document.getElementById('s-end-month').value   = '6';
+  document.getElementById('s-end-year').value    = now.getFullYear() + 1;
+  document.getElementById('s-results').value = '';
+  document.getElementById('s-top8').value    = 'Top 8 Hráčů';
+  document.getElementById('s-rounds').value  = '';
+  document.getElementById('s-champ').value   = '';
+  // Prvni zalozena sezona je rovnou aktualni, jinak by web nemel co ukazat.
+  document.getElementById('s-active').checked = !allSeasons.length;
+  document.getElementById('s-status').textContent = '';
+  renderSeasonPreview();
+  showSeasonEditor();
+}
+
+function editSeason(id) {
+  const s = allSeasons.find(x => x.id === id);
+  if (!s) return;
+  fillMonthSelects();
+  editingSeasonId = id;
+  document.getElementById('s-panel-title').textContent = 'Sezóna ' + seasonRangeLabel(s);
+  document.getElementById('s-start-month').value = String(s.startMonth);
+  document.getElementById('s-start-year').value  = s.startYear;
+  document.getElementById('s-end-month').value   = String(s.endMonth);
+  document.getElementById('s-end-year').value    = s.endYear;
+  document.getElementById('s-results').value = s.resultsSheetId || '';
+  document.getElementById('s-top8').value    = s.top8Sheet || '';
+  document.getElementById('s-rounds').value  = s.roundsSheetId || '';
+  document.getElementById('s-champ').value   = s.championshipYear || '';
+  document.getElementById('s-active').checked = !!s.active;
+  document.getElementById('s-status').textContent = '';
+  renderSeasonPreview();
+  showSeasonEditor();
+}
+
+function readSeasonForm() {
+  return {
+    startMonth: Number(document.getElementById('s-start-month').value),
+    startYear:  Number(document.getElementById('s-start-year').value),
+    endMonth:   Number(document.getElementById('s-end-month').value),
+    endYear:    Number(document.getElementById('s-end-year').value),
+    resultsSheetId: sheetIdFrom(document.getElementById('s-results').value),
+    top8Sheet:      document.getElementById('s-top8').value.trim(),
+    roundsSheetId:  sheetIdFrom(document.getElementById('s-rounds').value),
+    championshipYear: Number(document.getElementById('s-champ').value) || null,
+    active: document.getElementById('s-active').checked
+  };
+}
+
+// Nahled ukaze presne ty terminy a texty, ktere se objevi na webu —
+// chyba v rozsahu je tak videt jeste pred ulozenim.
+function renderSeasonPreview() {
+  const box = document.getElementById('s-preview');
+  const s = readSeasonForm();
+  if (!s.startYear || !s.endYear) { box.innerHTML = '<span class="sp-warn">Vyplň roky sezóny.</span>'; return; }
+  const months = seasonMonthList(s);
+  if (!months.length) {
+    box.innerHTML = '<span class="sp-warn">Konec sezóny musí být po jejím začátku (a nejvýš o tři roky).</span>';
+    return;
+  }
+  const dates = months
+    .map(([y, mo]) => `${seasonFirstWednesday(y, mo)}. ${S_MONTHS_GEN[mo - 1]} ${y}`)
+    .join(' · ');
+  box.innerHTML = `
+    <div>Na webu se ukáže: <b>Sezóna ${escapeHtml(seasonRangeLabel(s))}</b>,
+      kvalifikace na <b>MČR ${escapeHtml(String(s.championshipYear || s.endYear))}</b>,
+      finále <b>${escapeHtml(S_MONTHS_GEN[s.endMonth - 1])}</b>.</div>
+    <div style="margin-top:8px">Termíny (${months.length}): <b>${escapeHtml(dates)}</b></div>`;
+}
+
+async function saveSeason() {
+  const status = document.getElementById('s-status');
+  const data = readSeasonForm();
+
+  if (!data.startYear || !data.endYear) { status.textContent = 'Vyplň roky sezóny.'; status.className = 'save-status err'; return; }
+  if (!seasonMonthList(data).length)    { status.textContent = 'Konec sezóny musí být po začátku.'; status.className = 'save-status err'; return; }
+  if (!data.resultsSheetId)             { status.textContent = 'Vyplň tabulku s průběžným pořadím.'; status.className = 'save-status err'; return; }
+
+  status.textContent = 'Ukládám…';
+  status.className = 'save-status';
+  try {
+    const id = editingSeasonId || db.collection('seasons').doc().id;
+    await db.collection('seasons').doc(id).set(data);
+    // Aktualni sezona je vzdy jen jedna — ostatnim priznak shodime.
+    if (data.active) await clearActiveExcept(id);
+    editingSeasonId = id;
+    status.textContent = '✓ Uloženo';
+    status.className = 'save-status ok';
+    await loadSeasonList();
+  } catch(e) {
+    status.textContent = 'Uložení se nepodařilo.';
+    status.className = 'save-status err';
+    console.error(e);
+  }
+}
+
+async function clearActiveExcept(keepId) {
+  const others = allSeasons.filter(s => s.id !== keepId && s.active);
+  await Promise.all(others.map(s =>
+    db.collection('seasons').doc(s.id).update({ active: false }).catch(e => console.error(e))));
+}
+
+async function setActiveSeason(id) {
+  try {
+    await db.collection('seasons').doc(id).update({ active: true });
+    await clearActiveExcept(id);
+    await loadSeasonList();
+  } catch(e) { console.error(e); alert('Přepnutí se nepodařilo.'); }
+}
+
+async function deleteSeason(id, btn) {
+  const s = allSeasons.find(x => x.id === id);
+  if (!s) return;
+  if (s.active) { alert('Aktuální sezónu nelze smazat. Nejdřív označ jako aktuální jinou.'); return; }
+  if (!confirm(`Smazat sezónu ${seasonRangeLabel(s)}? Zmizí i z archivu na webu.`)) return;
+  btn.disabled = true;
+  try {
+    await db.collection('seasons').doc(id).delete();
+    await loadSeasonList();
+  } catch(e) { btn.disabled = false; console.error(e); alert('Smazání se nepodařilo.'); }
+}
+
+// Nahled se prepocitava pri kazde zmene formulare.
+document.addEventListener('input', e => {
+  if (e.target.closest?.('#s-view-edit')) renderSeasonPreview();
+});
+document.addEventListener('change', e => {
+  if (e.target.closest?.('#s-view-edit')) renderSeasonPreview();
+});
+
 // ── Tabs ──────────────────────────────────────────────────────
 function switchTab(name, clickedBtn) {
   // Odchod z rozdelane upravy prispevku (i preskok na jinou zalozku)
@@ -2125,6 +2455,7 @@ function doSwitchTab(name, clickedBtn) {
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'blog') showBlogList();
   if (name === 'tournaments') loadTournamentList();
+  if (name === 'seasons') showSeasonList();
 }
 
 // ── Hlídání neuložených změn ──────────────────────────────────

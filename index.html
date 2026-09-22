@@ -7,7 +7,7 @@
        prohlizec ignoruje a GitHub Pages vlastni hlavicky nastavit neumi. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://api.web3forms.com https://docs.google.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plzeňská Pauper Liga 2026</title>
+  <title>Plzeňská Pauper Liga</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -446,6 +446,8 @@
 
     /* ── PRŮBĚŽNÉ VÝSLEDKY ── */
     #vysledky { background: var(--bg-0); }
+    .season-picker { margin-top: 36px; display: flex; justify-content: flex-end; }
+    .season-picker select { font-size: 0.85rem; padding: 8px 36px 8px 14px; background-color: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); border-radius: var(--radius-md); }
     .results-banner {
       display: flex; align-items: center; justify-content: space-between; gap: 20px;
       flex-wrap: wrap; margin-top: 52px; padding: 18px 24px; text-decoration: none;
@@ -843,7 +845,7 @@
 <!-- ── NAV ── -->
 <nav>
   <div class="nav-inner">
-    <a class="nav-logo" href="#">PPL 2026</a>
+    <a class="nav-logo" href="#">PPL</a>
 
     <ul class="nav-links" id="nav-links-desktop">
       <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
@@ -889,7 +891,7 @@
     <!-- Text -->
     <div class="hero-text reveal">
       <div class="hero-badge" data-i18n="hero.badge"></div>
-      <h1>Plzeňská<br /><span>Pauper Liga</span><br />2026</h1>
+      <h1>Plzeňská<br /><span>Pauper Liga</span></h1>
       <p class="hero-sub" data-i18n="hero.sub"></p>
       <div class="hero-ctas">
         <!-- Vysledky uz jsou primo na strance, odkaz proto vede do sekce
@@ -910,7 +912,7 @@
       <picture>
         <source srcset="logo.webp" type="image/webp" />
         <img class="hero-logo" src="logo.png" width="752" height="752"
-             fetchpriority="high" alt="Plzeňská Pauper Liga 2026" />
+             fetchpriority="high" alt="Plzeňská Pauper Liga" />
       </picture>
     </div>
   </div>
@@ -1173,7 +1175,7 @@
       <div class="merch-form-title" data-i18n="merch.form.title"></div>
       <form class="merch-form" id="merch-form" action="https://api.web3forms.com/submit" method="POST">
         <input type="hidden" name="access_key" value="07712b78-b2ff-4833-8f16-109f0f06d16e" />
-        <input type="hidden" name="subject" value="Nová objednávka merch – PPL 2026" />
+        <input type="hidden" name="subject" value="Nová objednávka merch – PPL" />
         <input type="hidden" name="from_name" value="PPL Merch" />
         <!-- replyto se záměrně nenastavuje: Web3Forms použije adresu z pole email,
              takže na notifikaci lze rovnou odpovědět zájemci -->
@@ -1243,13 +1245,99 @@
 
 <!-- ── FOOTER ── -->
 <footer>
-  <div class="footer-logo">Plzeňská Pauper Liga 2026</div>
+  <div class="footer-logo">Plzeňská Pauper Liga</div>
   <p class="footer-copy" data-i18n="footer.copy"></p>
 </footer>
 
 <script src="vendor/firebase-12.16.0-app-compat.js"></script>
 <script src="vendor/firebase-12.16.0-firestore-compat.js"></script>
 <script>
+// ── Sezóny ────────────────────────────────────────────────────
+// Sezony se spravuji v adminu (kolekce "seasons" ve Firestore). Tenhle
+// seznam je zaloha pro pripad, ze se je nepodari nacist — web pak jede
+// dal, jen se o zmenach v adminu nedozvi.
+const SEASONS_FALLBACK = [
+  { id: '2026-2027', startYear: 2026, startMonth: 10, endYear: 2027, endMonth: 6,
+    resultsSheetId: '1X9RMaeZP6mc59Dbv1PphBFl9sBmITmcf7E06my9nNIY',
+    top8Sheet: 'Top 8 Hráčů', roundsSheetId: '', championshipYear: 2027, active: true },
+  { id: '2026', startYear: 2026, startMonth: 3, endYear: 2026, endMonth: 9,
+    resultsSheetId: '1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ',
+    top8Sheet: 'Top 8 Hráčů', roundsSheetId: '1KJ6UbtduGuhpnFrIywQ63RxzdvaDD5OqQaqQeExSuTA',
+    championshipYear: 2026, active: false }
+];
+
+let SEASONS = SEASONS_FALLBACK.slice();
+
+// Sezona oznacena v adminu jako aktivni. Ridi vsechny texty na strance.
+// Prepinac u vysledku meni jen zobrazenou tabulku (currentSeason), aby
+// prohlizeni archivu neprepsalo nadpis a terminy na cele strance.
+function activeSeason() {
+  return SEASONS.find(s => s.active) || SEASONS[0];
+}
+let currentSeason = activeSeason();
+
+// Misto toho, aby se kazdy rok rucne prepisovalo osmnact retezcu ve dvou
+// jazycich, drzi sezona jen pocatecni a koncovy mesic a zbytek se dopocita.
+const MONTHS = {
+  cs: {
+    // 1. pad pro "Říjen 2026", 2. pad pro "7. října", 6. pad pro "v červnu"
+    nom: ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'],
+    gen: ['ledna','února','března','dubna','května','června','července','srpna','září','října','listopadu','prosince'],
+    loc: ['v lednu','v únoru','v březnu','v dubnu','v květnu','v červnu','v červenci','v srpnu','v září','v říjnu','v listopadu','v prosinci']
+  },
+  en: {
+    nom: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+    loc: ['in January','in February','in March','in April','in May','in June','in July','in August','in September','in October','in November','in December']
+  }
+};
+
+// Den v mesici, na ktery pripada prvni streda. getUTCDay() vraci 3 pro stredu.
+function firstWednesday(year, month) {
+  const first = new Date(Date.UTC(year, month - 1, 1));
+  return 1 + ((3 - first.getUTCDay() + 7) % 7);
+}
+
+// Mesice sezony jako dvojice [rok, mesic]. Sezona prelezá pres novy rok,
+// proto se pocita pres poradove cislo mesice a ne pres dva cykly.
+function seasonMonths(s) {
+  const out = [];
+  const from = s.startYear * 12 + (s.startMonth - 1);
+  const to   = s.endYear   * 12 + (s.endMonth   - 1);
+  for (let i = from; i <= to; i++) out.push([Math.floor(i / 12), (i % 12) + 1]);
+  return out;
+}
+
+function seasonYears(s) {
+  return s.startYear === s.endYear ? `${s.startYear}` : `${s.startYear}–${s.endYear}`;
+}
+
+function seasonLabel(s, lang) {
+  return (lang === 'en' ? 'Season ' : 'Sezóna ') + seasonYears(s);
+}
+
+// Hodnoty dosazovane do retezcu v i18n, ktere zavisi na sezone.
+function seasonVars(s, lang) {
+  const m = MONTHS[lang] || MONTHS.cs;
+  const dates = seasonMonths(s).map(([y, mo]) => {
+    const d = firstWednesday(y, mo);
+    return lang === 'en' ? `${m.nom[mo - 1]} ${d}` : `${d}. ${m.gen[mo - 1]}`;
+  });
+  return {
+    season:      seasonYears(s),
+    seasonRange: `${m.nom[s.startMonth - 1]} ${s.startYear} – ${m.nom[s.endMonth - 1]} ${s.endYear}`,
+    dates:       dates.join('<br>'),
+    finalsMonth: m.loc[s.endMonth - 1],
+    champYear:   s.championshipYear || s.endYear,
+    years:       seasonYears(s)
+  };
+}
+
+// Nahradi {placeholder} v retezci. Neznamy klic nechava byt, aby byl
+// pripadny preklep videt v textu a ne jako prazdne misto.
+function fillVars(str, vars) {
+  return String(str).replace(/\{(\w+)\}/g, (all, k) => (k in vars ? vars[k] : all));
+}
+
 // ── Translations ──────────────────────────────────────────────
 const i18n = {
   cs: {
@@ -1267,8 +1355,8 @@ const i18n = {
     "tournaments.empty":   "Zatím nejsou vypsané žádné turnaje.",
     "tournaments.link":    "Detail události",
 
-    "hero.badge": "Sezóna 2026 · Aktivní",
-    "hero.sub":   "Kompetitivní Pauper v Plzni.\nSezóna Březen – Září 2026.",
+    "hero.badge": "Sezóna {season} · Aktivní",
+    "hero.sub":   "Kompetitivní Pauper v Plzni.\nSezóna {seasonRange}.",
     "hero.cta1":  "Průběžné výsledky",
     "hero.cta2":  "Přidat se na Discord",
 
@@ -1280,7 +1368,7 @@ const i18n = {
     "info.card1.title": "Lokace",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Kdy hrajeme",
-    "info.card2.body":  "Vždy <strong>první středa v měsíci</strong>:<br><br>4. března<br>1. dubna<br>6. května<br>3. června<br>1. července<br>5. srpna<br>2. září",
+    "info.card2.body":  "Vždy <strong>první středa v měsíci</strong>:<br><br>{dates}",
     "info.card3.title": "Vstupné",
     "info.card3.body":  "<strong>150 Kč</strong> celkem:<br>100 Kč → bank na ceny<br>20 Kč → provoz<br>30 Kč → ligový bank",
     "info.card4.title": "Proxy pravidla",
@@ -1295,7 +1383,7 @@ const i18n = {
       "Na každém turnaji se hrají přesně <strong>4 kola Swiss</strong>.",
       "Do celkového pořadí se počítá <strong>5 nejlepších výsledků</strong> ze všech turnajů ligy.",
       "Hráči s nejvyšším bodovým ziskem po regulérní sezóně postoupí do <strong>TOP 8</strong>.",
-      "TOP 8 hráčů se v září utkají ve <strong>finále s Double Elimination</strong> bracketem.",
+      "TOP 8 hráčů se {finalsMonth} utkají ve <strong>finále s Double Elimination</strong> bracketem.",
       "Finálový turnaj se hraje <strong>bez proxy karet</strong> – vyžadují se originální karty."
     ],
     "system.prizes": [
@@ -1305,7 +1393,7 @@ const i18n = {
     ],
     "system.grand.label": "Hlavní Cena",
     "system.grand.title": "Finálový Vítěz",
-    "system.grand.desc":  "Přímá kvalifikace na <strong>MČR v Pauperu 2026</strong>",
+    "system.grand.desc":  "Přímá kvalifikace na <strong>MČR v Pauperu {champYear}</strong>",
 
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
@@ -1398,7 +1486,7 @@ const i18n = {
     "community.desc":  "Sleduj aktuální dění, propozice a domlouvej testování. Komunita je aktivní – přidej se.",
     "community.dc":    "Discord Server",
 
-    "footer.copy": "© 2026 Plzeňská Pauper Liga. Všechna práva vyhrazena."
+    "footer.copy": "© {years} Plzeňská Pauper Liga. Všechna práva vyhrazena."
   },
 
   en: {
@@ -1416,8 +1504,8 @@ const i18n = {
     "tournaments.empty":   "No events scheduled yet.",
     "tournaments.link":    "Event details",
 
-    "hero.badge": "Season 2026 · Active",
-    "hero.sub":   "Competitive Pauper in Plzeň.\nSeason March – September 2026.",
+    "hero.badge": "Season {season} · Active",
+    "hero.sub":   "Competitive Pauper in Plzeň.\nSeason {seasonRange}.",
     "hero.cta1":  "Current Standings",
     "hero.cta2":  "Join Discord",
 
@@ -1429,7 +1517,7 @@ const i18n = {
     "info.card1.title": "Location",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Schedule",
-    "info.card2.body":  "Always the <strong>first Wednesday of the month</strong>:<br><br>March 4<br>April 1<br>May 6<br>June 3<br>July 1<br>August 5<br>September 2",
+    "info.card2.body":  "Always the <strong>first Wednesday of the month</strong>:<br><br>{dates}",
     "info.card3.title": "Entry Fee",
     "info.card3.body":  "<strong>150 CZK</strong> total:<br>100 CZK → prize pool<br>20 CZK → venue costs<br>30 CZK → league bank",
     "info.card4.title": "Proxy Rules",
@@ -1444,7 +1532,7 @@ const i18n = {
       "Each event consists of exactly <strong>4 Swiss rounds</strong>.",
       "Only your <strong>5 best results</strong> from all league tournaments count toward standings.",
       "Players with the highest point totals advance to <strong>TOP 8</strong>.",
-      "The TOP 8 compete in September at a <strong>Double Elimination Finals</strong> bracket.",
+      "The TOP 8 compete {finalsMonth} at a <strong>Double Elimination Finals</strong> bracket.",
       "The finals event is played <strong>without proxies</strong> — original cards required."
     ],
     "system.prizes": [
@@ -1454,7 +1542,7 @@ const i18n = {
     ],
     "system.grand.label": "Grand Prize",
     "system.grand.title": "Finals Champion",
-    "system.grand.desc":  "Direct qualification to <strong>Czech Pauper Championship 2026</strong>",
+    "system.grand.desc":  "Direct qualification to <strong>Czech Pauper Championship {champYear}</strong>",
 
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
@@ -1547,7 +1635,7 @@ const i18n = {
     "community.desc":  "Follow news, announcements, and find testing partners. The community is active — join us.",
     "community.dc":    "Discord Server",
 
-    "footer.copy": "© 2026 Plzeňská Pauper Liga. All rights reserved."
+    "footer.copy": "© {years} Plzeňská Pauper Liga. All rights reserved."
   }
 };
 
@@ -1558,12 +1646,15 @@ function setLang(lang) {
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
 
   const t = i18n[lang];
+  // Retezce se sezonnimi udaji ({season}, {dates}, …) se dosazuji az tady,
+  // aby se pri zmene sezony v adminu nemusely prepisovat preklady.
+  const vars = seasonVars(activeSeason(), lang);
 
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (key === 'system.rules') return;
     if (t[key] === undefined) return;
-    el.innerHTML = t[key].replace(/\n/g, '<br>');
+    el.innerHTML = fillVars(t[key], vars).replace(/\n/g, '<br>');
   });
 
   // Rule list
@@ -1571,7 +1662,7 @@ function setLang(lang) {
   ruleList.innerHTML = '';
   t['system.rules'].forEach(rule => {
     const li = document.createElement('li');
-    li.innerHTML = rule;
+    li.innerHTML = fillVars(rule, vars);
     ruleList.appendChild(li);
   });
 
@@ -1837,18 +1928,12 @@ async function loadBlogPosts() {
 // Data se tahaji primo z Google tabulky. Aby to fungovalo, musi byt list
 // zverejneny pres Soubor → Sdilet → Publikovat na webu. Kdyz se stahnout
 // nepodari, sekce misto tabulky nabidne odkaz do tabulky.
-const RESULTS_SHEET_ID = '1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ';
-// Druha zalozka tabulky poradi. Musi presne odpovidat nazvu zalozky
-// v Google tabulce — misto nazvu jde uvest i cislo gid z adresy
-// (napr. { gid: '123456789' }). Kdyz se nenacte, blok se proste neukaze.
-const RESULTS_TOP8     = { sheet: 'Top 8 Hráčů' };
-// Samostatna tabulka s vysledky jednotlivych kol — jen odkaz, netahame ji.
-const ROUNDS_SHEET_ID  = '1KJ6UbtduGuhpnFrIywQ63RxzdvaDD5OqQaqQeExSuTA';
-const ROUNDS_LINK      = `https://docs.google.com/spreadsheets/d/${ROUNDS_SHEET_ID}/edit?usp=sharing`;
-const RESULTS_LINK     = `https://docs.google.com/spreadsheets/d/${RESULTS_SHEET_ID}/edit?usp=sharing`;
 const RESULTS_MAX_ROWS = 60;
 
+function sheetLink(id) { return `https://docs.google.com/spreadsheets/d/${id}/edit?usp=sharing`; }
+
 function sheetCsvUrl(id, part) {
+  if (!id) return null;
   const base = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
   if (part?.gid)   return `${base}&gid=${encodeURIComponent(part.gid)}`;
   if (part?.sheet) return `${base}&sheet=${encodeURIComponent(part.sheet)}`;
@@ -1911,23 +1996,48 @@ function resultsTable(head, body, cutAfter) {
     </div>`;
 }
 
+function renderSeasonPicker(lang) {
+  if (SEASONS.length < 2) return '';
+  const archived = lang === 'en' ? ' (archive)' : ' (archiv)';
+  const opts = SEASONS.map(s => {
+    const label = seasonLabel(s, lang) + (s.active ? '' : archived);
+    return `<option value="${escapeHtml(s.id)}"${s.id === currentSeason.id ? ' selected' : ''}>${escapeHtml(label)}</option>`;
+  }).join('');
+  return `<div class="season-picker"><select class="form-select" onchange="switchSeason(this.value)">${opts}</select></div>`;
+}
+
+function switchSeason(id) {
+  const s = SEASONS.find(x => x.id === id);
+  if (!s || s.id === currentSeason.id) return;
+  currentSeason = s;
+  cachedResults = null;
+  cachedTop8 = null;
+  loadResults();
+}
+
 function renderResults(lang) {
   const box = document.getElementById('results-body');
   const t = i18n[lang];
-  const link = `<a class="results-link" href="${RESULTS_LINK}" target="_blank" rel="noopener">${t['results.open']}</a>`;
+  const resultsLink = sheetLink(currentSeason.resultsSheetId);
+  const link = `<a class="results-link" href="${resultsLink}" target="_blank" rel="noopener">${t['results.open']}</a>`;
 
-  // Odkaz na kompletni vysledky kol stoji na zacatku sekce.
-  const rounds = `
-    <a class="results-banner" href="${ROUNDS_LINK}" target="_blank" rel="noopener">
+  const picker = renderSeasonPicker(lang);
+
+  let rounds = '';
+  if (currentSeason.roundsSheetId) {
+    const roundsLink = sheetLink(currentSeason.roundsSheetId);
+    rounds = `
+    <a class="results-banner" href="${roundsLink}" target="_blank" rel="noopener">
       <span class="results-banner-text">
         <strong>${t['results.rounds.title']}</strong>
         <span>${t['results.rounds.desc']}</span>
       </span>
       <span class="results-banner-cta">${t['results.rounds.cta']}</span>
     </a>`;
+  }
 
   if (cachedResults === null) {
-    box.innerHTML = rounds + `<p class="results-msg">${t['results.loading']}</p>`;
+    box.innerHTML = picker + rounds + `<p class="results-msg">${t['results.loading']}</p>`;
     return;
   }
 
@@ -1949,7 +2059,7 @@ function renderResults(lang) {
     top8 = `<div class="results-sub">${t['results.top8']}</div>` + resultsTable(head, body, 8);
   }
 
-  box.innerHTML = rounds + standings + top8;
+  box.innerHTML = picker + rounds + standings + top8;
 }
 
 let cachedResults = null;   // null = nacita se, false = nepodarilo se
@@ -1962,12 +2072,34 @@ async function fetchSheet(url) {
   return rows.length >= 2 ? rows : false;
 }
 
+// Sezony z adminu. Nactou se pred vysledky, protoze urcuji, ze ktere
+// tabulky se ma tahat. Kdyz se nepodari, zustane zaloha v SEASONS_FALLBACK.
+async function loadSeasons() {
+  if (!db) return;
+  try {
+    const snap = await db.collection('seasons').get();
+    const list = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(s => s.resultsSheetId && s.startYear && s.startMonth && s.endYear && s.endMonth)
+      // Nejnovejsi sezona nahore, at je archiv v prepinaci pod aktualni.
+      .sort((a, b) => (b.startYear * 12 + b.startMonth) - (a.startYear * 12 + a.startMonth));
+    if (!list.length) return;
+    SEASONS = list;
+    currentSeason = activeSeason();
+    setLang(document.documentElement.lang || 'cs');
+  } catch(e) {
+    console.warn('Seasons load error:', e);
+  }
+}
+
 async function loadResults() {
+  const s = currentSeason;
   // Poradi a Top 8 tahame zvlast — kdyz druha zalozka chybi nebo ma jiny
   // nazev, hlavni tabulka se tim nesmi rozbit.
+  const top8Url = s.top8Sheet ? sheetCsvUrl(s.resultsSheetId, { sheet: s.top8Sheet }) : null;
   const [poradi, top8] = await Promise.allSettled([
-    fetchSheet(sheetCsvUrl(RESULTS_SHEET_ID)),
-    fetchSheet(sheetCsvUrl(RESULTS_SHEET_ID, RESULTS_TOP8))
+    fetchSheet(sheetCsvUrl(s.resultsSheetId)),
+    top8Url ? fetchSheet(top8Url) : Promise.reject(new Error('no top8 sheet'))
   ]);
   if (poradi.status === 'fulfilled') cachedResults = poradi.value;
   else { console.warn('Results load error:', poradi.reason); cachedResults = false; }
@@ -2622,7 +2754,8 @@ document.getElementById('merch-form').addEventListener('submit', async function(
 // ── Start ─────────────────────────────────────────────────────
 loadBlogPosts();
 loadTournaments();
-loadResults();
+// Vysledky az po sezonach — ty urcuji, ze ktere tabulky se maji tahat.
+loadSeasons().then(loadResults);
 </script>
 </body>
 </html>
