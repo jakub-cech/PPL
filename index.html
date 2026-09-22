@@ -1273,11 +1273,12 @@
 const SEASONS_FALLBACK = [
   { id: '2026-2027', startYear: 2026, startMonth: 10, endYear: 2027, endMonth: 6,
     resultsSheetId: '1X9RMaeZP6mc59Dbv1PphBFl9sBmITmcf7E06my9nNIY',
-    top8Sheet: 'Top 8 Hráčů', roundsSheetId: '', championshipYear: 2027, active: true },
+    top8Sheet: 'Top 8 Hráčů', roundsSheetId: '', championshipYear: 2027,
+    weekday: 3, bestResults: 5, active: true },
   { id: '2026', startYear: 2026, startMonth: 3, endYear: 2026, endMonth: 9,
     resultsSheetId: '1pl4is9i3elFWSIdOTstFy3OPe8Ql78gpM30XKJXf2BQ',
     top8Sheet: 'Top 8 Hráčů', roundsSheetId: '1KJ6UbtduGuhpnFrIywQ63RxzdvaDD5OqQaqQeExSuTA',
-    championshipYear: 2026, active: false }
+    championshipYear: 2026, weekday: 3, bestResults: 5, active: false }
 ];
 
 let SEASONS = SEASONS_FALLBACK.slice();
@@ -1305,10 +1306,26 @@ const MONTHS = {
   }
 };
 
-// Den v mesici, na ktery pripada prvni streda. getUTCDay() vraci 3 pro stredu.
-function firstWednesday(year, month) {
+// Dny v tydnu v poradi, ktere vraci getDay() — 0 je nedele.
+const WEEKDAYS = {
+  cs: ['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'],
+  en: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+};
+
+// Hraci den sezony. Starsi zaznamy ho jeste nemaji, tam plati streda.
+function seasonWeekday(s) {
+  return Number.isInteger(s.weekday) ? s.weekday : 3;
+}
+
+// Kolik nejlepsich vysledku se pocita do poradi.
+function seasonBest(s) {
+  return Number.isInteger(s.bestResults) && s.bestResults > 0 ? s.bestResults : 5;
+}
+
+// Den v mesici, na ktery pripada prvni vyskyt daneho dne v tydnu.
+function firstWeekdayOfMonth(year, month, weekday) {
   const first = new Date(Date.UTC(year, month - 1, 1));
-  return 1 + ((3 - first.getUTCDay() + 7) % 7);
+  return 1 + ((weekday - first.getUTCDay() + 7) % 7);
 }
 
 // Mesice sezony jako dvojice [rok, mesic]. Sezona prelezá pres novy rok,
@@ -1329,11 +1346,30 @@ function seasonLabel(s, lang) {
   return (lang === 'en' ? 'Season ' : 'Sezóna ') + seasonYears(s);
 }
 
+// Cestina ma u poctu tri tvary: 1 turnaj, 2–4 turnaje, 5+ turnaju.
+function czPlural(n, one, few, many) {
+  return n === 1 ? one : (n >= 2 && n <= 4 ? few : many);
+}
+
+function countPhrase(n, lang) {
+  return lang === 'en'
+    ? `${n} event${n === 1 ? '' : 's'}`
+    : `${n} ${czPlural(n, 'turnaj', 'turnaje', 'turnajů')}`;
+}
+
+function bestPhrase(n, lang) {
+  return lang === 'en'
+    ? `${n} best result${n === 1 ? '' : 's'}`
+    : `${n} ${czPlural(n, 'nejlepší výsledek', 'nejlepší výsledky', 'nejlepších výsledků')}`;
+}
+
 // Hodnoty dosazovane do retezcu v i18n, ktere zavisi na sezone.
 function seasonVars(s, lang) {
   const m = MONTHS[lang] || MONTHS.cs;
+  const w = seasonWeekday(s);
+  const days = WEEKDAYS[lang] || WEEKDAYS.cs;
   const dates = seasonMonths(s).map(([y, mo]) => {
-    const d = firstWednesday(y, mo);
+    const d = firstWeekdayOfMonth(y, mo, w);
     return lang === 'en' ? `${m.nom[mo - 1]} ${d}` : `${d}. ${m.gen[mo - 1]}`;
   });
   return {
@@ -1341,6 +1377,10 @@ function seasonVars(s, lang) {
     seasonRange: `${m.nom[s.startMonth - 1]} ${s.startYear} – ${m.nom[s.endMonth - 1]} ${s.endYear}`,
     dates:       dates.join('<br>'),
     count:       String(dates.length),
+    countPhrase: countPhrase(dates.length, lang),
+    // "první středa v měsíci" — "první" ma v 1. pade stejny tvar pro vsechny rody
+    weekday:     lang === 'en' ? `first ${days[w]} of the month` : `první ${days[w]} v měsíci`,
+    best:        bestPhrase(seasonBest(s), lang),
     finalsMonth: m.loc[s.endMonth - 1],
     champYear:   s.championshipYear || s.endYear,
     years:       seasonYears(s)
@@ -1350,7 +1390,8 @@ function seasonVars(s, lang) {
 // Datum prvniho turnaje sezony — podle nej se pozna, ze tabulka poradi
 // jeste nema co ukazat, protoze se proste nehralo.
 function seasonStart(s) {
-  return new Date(s.startYear, s.startMonth - 1, firstWednesday(s.startYear, s.startMonth));
+  return new Date(s.startYear, s.startMonth - 1,
+                  firstWeekdayOfMonth(s.startYear, s.startMonth, seasonWeekday(s)));
 }
 
 function seasonNotStarted(s) {
@@ -1395,7 +1436,7 @@ const i18n = {
     "info.card1.title": "Lokace",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Kdy hrajeme",
-    "info.card2.body":  "Vždy <strong>první středa v měsíci</strong>.<br>{count} turnajů, {seasonRange}.<br><a class=\"liga-link\" href=\"#turnaje\">Nejbližší termíny →</a>",
+    "info.card2.body":  "Vždy <strong>{weekday}</strong>.<br>{countPhrase}, {seasonRange}.<br><a class=\"liga-link\" href=\"#turnaje\">Nejbližší termíny →</a>",
     "info.card3.title": "Vstupné",
     "info.card3.body":  "<strong>150 Kč</strong> celkem:<br>100 Kč → bank na ceny<br>20 Kč → provoz<br>30 Kč → ligový bank",
     "info.card4.title": "Proxy pravidla",
@@ -1408,7 +1449,7 @@ const i18n = {
     "system.prizes.title": "Rozdělení Banku",
     "system.rules": [
       "Na každém turnaji se hrají přesně <strong>4 kola Swiss</strong>.",
-      "Do celkového pořadí se počítá <strong>5 nejlepších výsledků</strong> ze všech turnajů ligy.",
+      "Do celkového pořadí se počítá <strong>{best}</strong> ze všech turnajů ligy.",
       "Hráči s nejvyšším bodovým ziskem po regulérní sezóně postoupí do <strong>TOP 8</strong>.",
       "TOP 8 hráčů se {finalsMonth} utkají ve <strong>finále s Double Elimination</strong> bracketem.",
       "Finálový turnaj se hraje <strong>bez proxy karet</strong> – vyžadují se originální karty."
@@ -1547,7 +1588,7 @@ const i18n = {
     "info.card1.title": "Location",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Schedule",
-    "info.card2.body":  "Always the <strong>first Wednesday of the month</strong>.<br>{count} events, {seasonRange}.<br><a class=\"liga-link\" href=\"#turnaje\">Upcoming dates →</a>",
+    "info.card2.body":  "Always the <strong>{weekday}</strong>.<br>{countPhrase}, {seasonRange}.<br><a class=\"liga-link\" href=\"#turnaje\">Upcoming dates →</a>",
     "info.card3.title": "Entry Fee",
     "info.card3.body":  "<strong>150 CZK</strong> total:<br>100 CZK → prize pool<br>20 CZK → venue costs<br>30 CZK → league bank",
     "info.card4.title": "Proxy Rules",
@@ -1560,7 +1601,7 @@ const i18n = {
     "system.prizes.title": "Prize Distribution",
     "system.rules": [
       "Each event consists of exactly <strong>4 Swiss rounds</strong>.",
-      "Only your <strong>5 best results</strong> from all league tournaments count toward standings.",
+      "Only your <strong>{best}</strong> from all league tournaments count toward standings.",
       "Players with the highest point totals advance to <strong>TOP 8</strong>.",
       "The TOP 8 compete {finalsMonth} at a <strong>Double Elimination Finals</strong> bracket.",
       "The finals event is played <strong>without proxies</strong> — original cards required."
