@@ -53,11 +53,19 @@
     .login-title { font-size: 1.1rem; font-weight: 600; color: var(--text-1); margin-bottom: 24px; text-align: center; }
     .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
     .field label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
-    .field input {
+    /* Select musi vypadat stejne jako input, jinak ma nativni vysku i sirku
+       a radky formulare se rozjedou. */
+    .field input, .field select {
       background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 10px 14px; font-family: 'Inter', sans-serif; font-size: 0.9rem; color: var(--text-1); width: 100%;
     }
-    .field input:focus { outline: none; border-color: var(--gold-dim); }
+    .field select {
+      appearance: none; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5445' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 13px center;
+      padding-right: 34px;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--gold-dim); }
     .btn-primary {
       width: 100%; padding: 12px; background: linear-gradient(135deg, #c9a84c, #a07830);
       color: #0d0d0f; border: none; border-radius: var(--radius-sm); font-size: 0.88rem;
@@ -880,29 +888,6 @@
               <input type="number" id="s-end-year" min="2000" max="2100" placeholder="2027" />
             </div>
           </div>
-          <div class="field full">
-            <label for="s-results">Google tabulka s průběžným pořadím</label>
-            <input type="text" id="s-results" placeholder="Vlož odkaz na tabulku" />
-            <span class="field-hint">
-              Funguje adresa otevřené tabulky i odkaz ze „Publikovat na webu“ —
-              vlož, co máš po ruce. Tabulka musí být publikovaná
-              (Soubor → Sdílet → Publikovat na webu).
-            </span>
-          </div>
-          <div class="field">
-            <label for="s-top8">Záložka s Top 8</label>
-            <input type="text" id="s-top8" placeholder="Název záložky, nebo odkaz na ni" />
-            <span class="field-hint">
-              Stačí název záložky. Jen u publikovaného odkazu název nefunguje — tam klikni
-              v tabulce na záložku a vlož sem adresu z prohlížeče, číslo <code>gid</code>
-              si z ní vezmu. Blok se na webu objeví, až bude v záložce aspoň jeden hráč —
-              do té doby zůstane schovaný, i když je pole vyplněné.
-            </span>
-          </div>
-          <div class="field">
-            <label for="s-champ">Ročník MČR pro kvalifikaci</label>
-            <input type="number" id="s-champ" min="2000" max="2100" placeholder="Prázdné = koncový rok sezóny" />
-          </div>
           <div class="field">
             <label for="s-weekday">Hrací den</label>
             <select id="s-weekday"></select>
@@ -912,6 +897,28 @@
             <label for="s-best">Počítaných výsledků</label>
             <input type="number" id="s-best" min="1" max="99" placeholder="5" />
             <span class="field-hint">Kolik nejlepších turnajů se hráči počítá do pořadí.</span>
+          </div>
+          <div class="field">
+            <label for="s-champ">Ročník MČR pro kvalifikaci</label>
+            <input type="number" id="s-champ" min="2000" max="2100" placeholder="Prázdné = koncový rok sezóny" />
+            <span class="field-hint">Na který ročník mistrovství finále kvalifikuje.</span>
+          </div>
+          <div class="field">
+            <label for="s-top8">Záložka s Top 8</label>
+            <input type="text" id="s-top8" placeholder="Název záložky, nebo odkaz na ni" />
+            <span class="field-hint">
+              U publikovaného odkazu vlož adresu s otevřenou záložkou. Blok se ukáže,
+              až v ní bude aspoň jeden hráč.
+            </span>
+          </div>
+          <div class="field full">
+            <label for="s-results">Google tabulka s průběžným pořadím</label>
+            <input type="text" id="s-results" placeholder="Vlož odkaz na tabulku" />
+            <span class="field-hint">
+              Funguje adresa otevřené tabulky i odkaz ze „Publikovat na webu“ —
+              vlož, co máš po ruce. Tabulka musí být publikovaná
+              (Soubor → Sdílet → Publikovat na webu).
+            </span>
           </div>
           <div class="field full">
             <label for="s-rounds">Google tabulka s výsledky kol</label>
