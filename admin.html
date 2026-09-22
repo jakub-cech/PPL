@@ -903,6 +903,16 @@
             <label for="s-champ">Ročník MČR pro kvalifikaci</label>
             <input type="number" id="s-champ" min="2000" max="2100" placeholder="Prázdné = koncový rok sezóny" />
           </div>
+          <div class="field">
+            <label for="s-weekday">Hrací den</label>
+            <select id="s-weekday"></select>
+            <span class="field-hint">Hraje se vždy první takový den v měsíci.</span>
+          </div>
+          <div class="field">
+            <label for="s-best">Počítaných výsledků</label>
+            <input type="number" id="s-best" min="1" max="99" placeholder="5" />
+            <span class="field-hint">Kolik nejlepších turnajů se hráči počítá do pořadí.</span>
+          </div>
           <div class="field full">
             <label for="s-rounds">Google tabulka s výsledky kol</label>
             <input type="text" id="s-rounds" placeholder="Nepovinné — prázdné = odkaz se nezobrazí" />
@@ -2259,9 +2269,21 @@ const S_MONTHS_GEN = ['ledna','února','března','dubna','května','června',
 let allSeasons = [];
 let editingSeasonId = null;
 
-function seasonFirstWednesday(year, month) {
+// Poradi odpovida getDay() — 0 je nedele.
+const S_WEEKDAYS = ['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'];
+
+function seasonWeekday(s) { return Number.isInteger(s.weekday) ? s.weekday : 3; }
+function seasonBest(s) { return Number.isInteger(s.bestResults) && s.bestResults > 0 ? s.bestResults : 5; }
+
+// Den v mesici, na ktery pripada prvni vyskyt daneho dne v tydnu.
+function seasonFirstWeekday(year, month, weekday) {
   const first = new Date(Date.UTC(year, month - 1, 1));
-  return 1 + ((3 - first.getUTCDay() + 7) % 7);
+  return 1 + ((weekday - first.getUTCDay() + 7) % 7);
+}
+
+// Cestina: 1 vysledek, 2-4 vysledky, 5+ vysledku.
+function plVysledek(n) {
+  return n === 1 ? 'nejlepší výsledek' : (n >= 2 && n <= 4 ? 'nejlepší výsledky' : 'nejlepších výsledků');
 }
 
 function seasonMonthList(s) {
@@ -2329,7 +2351,7 @@ function seasonRow(s) {
       <div class="t-badges">
         <span class="status-badge ${s.active ? 'published' : 'draft'}">${s.active ? 'Aktuální' : 'Archiv'}</span>
         <span class="status-badge draft">${escapeHtml(from)} ${s.startYear} – ${escapeHtml(to)} ${s.endYear}</span>
-        <span class="status-badge draft">${months.length} turnajů</span>
+        <span class="status-badge draft">${months.length} ${plTurnaj(months.length)}</span>
       </div>
     </div>
     <div class="t-row-act s-row-act">
@@ -2362,6 +2384,14 @@ function fillMonthSelects() {
     if (sel.options.length) return;
     S_MONTHS_CS.forEach((name, i) => sel.add(new Option(name, String(i + 1))));
   });
+  const wd = document.getElementById('s-weekday');
+  // Od pondeli, ale hodnoty odpovidaji getDay() — nedele je 0.
+  if (!wd.options.length) {
+    [1, 2, 3, 4, 5, 6, 0].forEach(i => {
+      const n = S_WEEKDAYS[i];
+      wd.add(new Option(n.charAt(0).toUpperCase() + n.slice(1), String(i)));
+    });
+  }
 }
 
 function newSeason() {
@@ -2377,6 +2407,8 @@ function newSeason() {
   document.getElementById('s-top8').value    = 'Top 8 Hráčů';
   document.getElementById('s-rounds').value  = '';
   document.getElementById('s-champ').value   = '';
+  document.getElementById('s-weekday').value = '3';
+  document.getElementById('s-best').value    = '5';
   // Prvni zalozena sezona je rovnou aktualni, jinak by web nemel co ukazat.
   document.getElementById('s-active').checked = !allSeasons.length;
   document.getElementById('s-status').textContent = '';
@@ -2398,6 +2430,8 @@ function editSeason(id) {
   document.getElementById('s-top8').value    = s.top8Sheet || '';
   document.getElementById('s-rounds').value  = s.roundsSheetId || '';
   document.getElementById('s-champ').value   = s.championshipYear || '';
+  document.getElementById('s-weekday').value = String(seasonWeekday(s));
+  document.getElementById('s-best').value    = String(seasonBest(s));
   document.getElementById('s-active').checked = !!s.active;
   document.getElementById('s-status').textContent = '';
   renderSeasonPreview();
@@ -2414,6 +2448,8 @@ function readSeasonForm() {
     top8Sheet:      gidFrom(document.getElementById('s-top8').value),
     roundsSheetId:  sheetIdFrom(document.getElementById('s-rounds').value),
     championshipYear: Number(document.getElementById('s-champ').value) || null,
+    weekday:     Number(document.getElementById('s-weekday').value),
+    bestResults: Number(document.getElementById('s-best').value) || 5,
     active: document.getElementById('s-active').checked
   };
 }
@@ -2430,7 +2466,7 @@ function renderSeasonPreview() {
     return;
   }
   const dates = months
-    .map(([y, mo]) => `${seasonFirstWednesday(y, mo)}. ${S_MONTHS_GEN[mo - 1]} ${y}`)
+    .map(([y, mo]) => `${seasonFirstWeekday(y, mo, seasonWeekday(s))}. ${S_MONTHS_GEN[mo - 1]} ${y}`)
     .join(' · ');
   // Co se z vlozeneho odkazu vytahlo — at je videt, ze ho admin pochopil.
   let sheet = '';
@@ -2448,10 +2484,13 @@ function renderSeasonPreview() {
         : `<br>Top 8: záložka <b>${escapeHtml(s.top8Sheet)}</b>`;
     }
   }
+  const best = seasonBest(s);
   box.innerHTML = `
     <div>Na webu se ukáže: <b>Sezóna ${escapeHtml(seasonRangeLabel(s))}</b>,
       kvalifikace na <b>MČR ${escapeHtml(String(s.championshipYear || s.endYear))}</b>,
       finále <b>${escapeHtml(S_MONTHS_GEN[s.endMonth - 1])}</b>.</div>
+    <div style="margin-top:8px">Hraje se vždy <b>první ${escapeHtml(S_WEEKDAYS[seasonWeekday(s)])} v měsíci</b>,
+      do pořadí se počítá <b>${best} ${escapeHtml(plVysledek(best))}</b>.</div>
     <div style="margin-top:8px">Termíny (${months.length}): <b>${escapeHtml(dates)}</b></div>
     ${sheet ? `<div style="margin-top:8px">${sheet}</div>` : ''}`;
 }
@@ -2600,7 +2639,7 @@ function genTournaments() {
   const time = document.getElementById('gen-time').value || '18:00';
   const [hh, mm] = time.split(':').map(Number);
   return seasonMonthList(genSeason).map(([y, mo], i) => {
-    const date = new Date(y, mo - 1, seasonFirstWednesday(y, mo), hh || 0, mm || 0);
+    const date = new Date(y, mo - 1, seasonFirstWeekday(y, mo, seasonWeekday(genSeason)), hh || 0, mm || 0);
     const title = String(tpl)
       .replace(/\{kolo\}/g,  String(i + 1))
       .replace(/\{mesic\}/g, S_MONTHS_CS[mo - 1])
