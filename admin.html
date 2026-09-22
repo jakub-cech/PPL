@@ -2529,28 +2529,32 @@ document.addEventListener('change', e => {
 // turnaje spolecne. Zaklada se jako koncepty, at se nic neobjevi na webu
 // driv, nez to admin zkontroluje.
 let genSeason = null;
-let genExistingDays = null;   // dny, na ktere uz turnaj je
+// null = jeste se nacita, false = nepodarilo se, jinak { rounds, days }
+let genExisting = null;
+
+function plTurnaj(n) {
+  return n === 1 ? 'turnaj' : (n >= 2 && n <= 4 ? 'turnaje' : 'turnajů');
+}
 
 function openGenerator(id) {
   const s = allSeasons.find(x => x.id === id);
   if (!s) return;
   genSeason = s;
-  genExistingDays = null;
+  genExisting = null;
   const n = seasonMonthList(s).length;
   document.getElementById('gen-intro').textContent =
-    `Sezóna ${seasonRangeLabel(s)} — ${n} turnajů, vždy první středu v měsíci. `
+    `Sezóna ${seasonRangeLabel(s)} — ${n} ${plTurnaj(n)}, vždy první středu v měsíci. `
     + 'Založí se jako koncepty, zveřejníš je až budeš chtít.';
   document.getElementById('gen-title').value = `PPL ${seasonRangeLabel(s)} — {kolo}. kolo`;
   document.getElementById('gen-time').value = '18:00';
   document.getElementById('gen-capacity').value = '';
   document.getElementById('gen-status').textContent = '';
   document.getElementById('gen-status').className = 'save-status';
-  document.getElementById('gen-run').disabled = false;
   renderGenPreview();
   document.getElementById('gen-overlay').classList.add('open');
-  // Uz zalozene turnaje si nacteme dopredu, at je v nahledu videt,
-  // ktere termíny se preskoci.
-  loadExistingDays().then(renderGenPreview);
+  // Dokud nevime, co uz existuje, zustava tlacitko zamcene — jinak by
+  // rychle kliknuti stihlo zalozit sezonu podruhe.
+  loadExisting().then(renderGenPreview);
 }
 
 function closeGenerator(ev) {
@@ -2559,14 +2563,33 @@ function closeGenerator(ev) {
   genSeason = null;
 }
 
-async function loadExistingDays() {
+async function loadExisting() {
   try {
     const snap = await db.collection('tournaments').get();
-    genExistingDays = new Set(snap.docs
-      .map(d => d.data().date?.toDate?.())
-      .filter(Boolean)
-      .map(d => d.toDateString()));
-  } catch(e) { console.warn('Turnaje se nepodařilo načíst:', e); genExistingDays = new Set(); }
+    const rounds = new Set(), days = new Set();
+    snap.docs.forEach(d => {
+      const x = d.data();
+      // Turnaje z generatoru nesou sezonu a poradi kola. Podle nich se
+      // duplicita pozna i tehdy, kdyz se termin mezitim rucne posunul.
+      if (x.seasonId && x.round) rounds.add(x.seasonId + ':' + x.round);
+      const dt = x.date?.toDate?.();
+      if (dt) days.add(dt.toDateString());
+    });
+    genExisting = { rounds, days };
+  } catch(e) {
+    console.warn('Turnaje se nepodařilo načíst:', e);
+    genExisting = false;
+  }
+}
+
+// Duvod, proc kolo preskocit — nebo null, kdyz se ma zalozit.
+function genDuplicate(t, i) {
+  if (!genExisting) return null;
+  if (genExisting.rounds.has(genSeason.id + ':' + (i + 1))) return 'kolo';
+  // Rucne zalozene turnaje zadnou sezonu nemaji, na obsazeny vecer
+  // proto koukame i pres datum.
+  if (genExisting.days.has(t.date.toDateString())) return 'den';
+  return null;
 }
 
 // Seznam turnaju, ktere by se zalozily. Cas bereme v mistnim pasmu,
@@ -2588,17 +2611,47 @@ function genTournaments() {
 
 function renderGenPreview() {
   const box = document.getElementById('gen-preview');
+  const btn = document.getElementById('gen-run');
   const list = genTournaments();
-  if (!list.length) { box.innerHTML = '<span class="sp-warn">Sezóna nemá platný rozsah.</span>'; return; }
-  box.innerHTML = list.map(t => {
-    const dup = genExistingDays?.has(t.date.toDateString());
+  if (!list.length) {
+    box.innerHTML = '<span class="sp-warn">Sezóna nemá platný rozsah.</span>';
+    btn.disabled = true;
+    return;
+  }
+
+  let missing = 0;
+  box.innerHTML = list.map((t, i) => {
+    const dup = genDuplicate(t, i);
+    if (!dup) missing++;
     const when = t.date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })
                + ' ' + t.date.toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' });
+    const why = dup === 'kolo' ? ' — tohle kolo už je založené, přeskočím'
+              : dup === 'den'  ? ' — na tento den už turnaj je, přeskočím' : '';
     return `<div class="gen-row${dup ? ' gen-dup' : ''}">
       <span class="gen-date">${escapeHtml(when)}</span>
-      <span>${escapeHtml(t.title)}${dup ? ' — na tento den už turnaj je, přeskočím' : ''}</span>
+      <span>${escapeHtml(t.title)}${why}</span>
     </div>`;
   }).join('');
+
+  if (genExisting === null) {
+    btn.disabled = true;
+    btn.textContent = 'Načítám…';
+  } else if (genExisting === false) {
+    // Bez prehledu o existujicich turnajich bychom mohli zalozit duplicity.
+    btn.disabled = true;
+    btn.textContent = 'Nelze ověřit';
+    box.innerHTML += '<div class="sp-warn" style="margin-top:8px">'
+      + 'Nepodařilo se načíst už založené turnaje, takže nejde poznat, co by vzniklo dvakrát. '
+      + 'Zavři okno a zkus to znovu.</div>';
+  } else if (!missing) {
+    btn.disabled = true;
+    btn.textContent = 'Všechna kola už existují';
+  } else {
+    btn.disabled = false;
+    btn.textContent = missing === list.length
+      ? `Vytvořit ${missing} ${plTurnaj(missing)}`
+      : `Doplnit ${missing} chybějící`;
+  }
 }
 
 async function runGenerator() {
@@ -2611,9 +2664,14 @@ async function runGenerator() {
   status.textContent = 'Zakládám…';
   status.className = 'save-status';
   try {
-    if (!genExistingDays) await loadExistingDays();
+    if (!genExisting) await loadExisting();
+    // Duplicitu nejde poznat naslepo — radeji nezalozit nic.
+    if (!genExisting) throw new Error('existující turnaje se nepodařilo načíst');
+
     const capacity = parseCapacity(document.getElementById('gen-capacity').value);
-    const fresh = list.filter(t => !genExistingDays.has(t.date.toDateString()));
+    const fresh = list
+      .map((t, i) => ({ ...t, round: i + 1, dup: genDuplicate(t, i) }))
+      .filter(t => !t.dup);
 
     await Promise.all(fresh.map(t => db.collection('tournaments').add({
       date:      firebase.firestore.Timestamp.fromDate(t.date),
@@ -2623,18 +2681,27 @@ async function runGenerator() {
       showRegistrations: true,
       eventUrl:  '',
       published: false,
+      // Podle teto dvojice se pozna, ze kolo uz zalozene je.
+      seasonId:  genSeason.id,
+      round:     t.round,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     })));
 
     const skipped = list.length - fresh.length;
-    status.textContent = `✓ Vytvořeno ${fresh.length}`
-      + (skipped ? `, ${skipped} už existovalo` : '') + ' — najdeš je v Turnajích jako koncepty.';
+    status.textContent = fresh.length
+      ? `✓ Vytvořeno ${fresh.length} ${plTurnaj(fresh.length)}`
+        + (skipped ? `, ${skipped} už existovalo` : '')
+        + ' — najdeš je v Turnajích jako koncepty.'
+      : 'Nic k založení, všechna kola už existují.';
     status.className = 'save-status ok';
-    genExistingDays = null;
+    // Prepocet zamkne tlacitko, protoze uz nic nechybi.
+    await loadExisting();
+    renderGenPreview();
   } catch(e) {
     status.textContent = 'Založení se nepodařilo.';
     status.className = 'save-status err';
-    btn.disabled = false;
+    genExisting = null;
+    loadExisting().then(renderGenPreview);
     console.error(e);
   }
 }
