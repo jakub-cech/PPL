@@ -502,7 +502,7 @@
     .results-link:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
 
     /* ── FORMÁT PAUPER ── */
-    #format { background: var(--bg-0); }
+    #format { background: var(--bg-1); }
     .format-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 52px; }
     .format-card {
       background: var(--bg-2); border: 1px solid var(--border);
@@ -534,7 +534,7 @@
     @media (max-width: 800px) { .format-grid { grid-template-columns: 1fr; } }
 
     /* ── INFO CARDS ── */
-    #liga { background: var(--bg-1); }
+    #liga { background: var(--bg-0); }
     /* Dva rovnocenne panely — prakticke info vlevo, herni system vpravo. */
     .liga-panels {
       display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
@@ -561,6 +561,8 @@
     .liga-row-k { font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 600; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
     .liga-row-v { font-size: 0.88rem; color: var(--text-2); line-height: 1.6; }
     .liga-row-v strong { color: var(--text-1); font-weight: 500; }
+    .liga-link { display: inline-block; margin-top: 8px; color: var(--gold); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+    .liga-link:hover { border-bottom-color: var(--gold-dim); }
     /* Podnadpis uvnitr praveho panelu */
     .liga-sub { font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 600; color: var(--gold-dim); letter-spacing: 0.12em; text-transform: uppercase; margin: 26px 0 14px; }
     .liga-panel .liga-sub:first-of-type { margin-top: 22px; }
@@ -852,11 +854,11 @@
     <a class="nav-logo" href="#">PPL</a>
 
     <ul class="nav-links" id="nav-links-desktop">
-      <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
-      <li><a href="#blog"><span     data-i18n="nav.blog"></span></a></li>
-      <li><a href="#vysledky"><span data-i18n="nav.results"></span></a></li>
       <li><a href="#format"><span   data-i18n="nav.format"></span></a></li>
+      <li><a href="#blog"><span     data-i18n="nav.blog"></span></a></li>
+      <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
       <li><a href="#liga"><span     data-i18n="nav.info"></span></a></li>
+      <li><a href="#vysledky"><span data-i18n="nav.results"></span></a></li>
       <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
       <li><a href="#komunita"><span data-i18n="nav.community"></span></a></li>
     </ul>
@@ -874,11 +876,11 @@
 
   <!-- Mobile dropdown -->
   <div class="mobile-menu" id="mobile-menu">
-    <a href="#turnaje"  onclick="closeMenu()"><span data-i18n="nav.tournaments"></span></a>
-    <a href="#blog"     onclick="closeMenu()"><span data-i18n="nav.blog"></span></a>
-    <a href="#vysledky" onclick="closeMenu()"><span data-i18n="nav.results"></span></a>
     <a href="#format"   onclick="closeMenu()"><span data-i18n="nav.format"></span></a>
+    <a href="#blog"     onclick="closeMenu()"><span data-i18n="nav.blog"></span></a>
+    <a href="#turnaje"  onclick="closeMenu()"><span data-i18n="nav.tournaments"></span></a>
     <a href="#liga"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
+    <a href="#vysledky" onclick="closeMenu()"><span data-i18n="nav.results"></span></a>
     <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
     <a href="#komunita" onclick="closeMenu()"><span data-i18n="nav.community"></span></a>
   </div>
@@ -921,96 +923,6 @@
     </div>
   </div>
 </section>
-<!-- ── UPCOMING TOURNAMENTS ── -->
-<section id="turnaje">
-  <div class="container">
-    <div class="ornament"><div class="ornament-diamond"></div></div>
-    <div class="reveal">
-      <span class="section-label" data-i18n="tournaments.label"></span>
-      <h2 class="section-title" data-i18n="tournaments.title"></h2>
-      <p class="section-desc" data-i18n="tournaments.desc"></p>
-    </div>
-    <div id="tournament-list" class="tournament-list">
-      <p class="tournament-empty" data-i18n="tournaments.loading"></p>
-    </div>
-  </div>
-</section>
-
-<!-- ── BLOG ── -->
-<section id="blog">
-  <div class="container">
-    <div class="ornament"><div class="ornament-diamond"></div></div>
-    <div class="reveal">
-      <span class="section-label" data-i18n="blog.label"></span>
-      <h2 class="section-title" data-i18n="blog.title"></h2>
-      <p class="section-desc" data-i18n="blog.desc"></p>
-    </div>
-    <div id="blog-grid" class="blog-grid">
-      <p class="blog-loading" data-i18n="blog.loading"></p>
-    </div>
-    <div class="blog-all-wrap">
-      <a class="results-link" href="blog.html" data-i18n="blog.all"></a>
-    </div>
-  </div>
-</section>
-
-<!-- ── PRŮBĚŽNÉ VÝSLEDKY ── -->
-<section id="vysledky">
-  <div class="container">
-    <div class="ornament"><div class="ornament-diamond"></div></div>
-    <div class="reveal">
-      <span class="section-label" data-i18n="results.label"></span>
-      <h2 class="section-title" data-i18n="results.title"></h2>
-      <p class="section-desc" data-i18n="results.desc"></p>
-    </div>
-    <div id="results-body"></div>
-  </div>
-</section>
-
-<!-- Blog post modal -->
-<div class="modal-overlay" id="blog-overlay" onclick="closeBlogModal(event)">
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeBlogModal(null)" aria-label="Zavřít">×</button>
-    <h2 class="modal-title-text" id="blog-modal-title"></h2>
-    <div class="modal-meta">
-      <span class="modal-author-text" id="blog-modal-author"></span>
-      <span id="blog-modal-date"></span>
-      <button class="modal-link" id="blog-modal-link" type="button" onclick="copyPostLink()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-        <span data-i18n="blog.copylink"></span>
-      </button>
-    </div>
-    <div class="modal-content-box" id="blog-modal-content"></div>
-    <div id="blog-modal-gallery"></div>
-    <div id="blog-modal-comments"></div>
-  </div>
-</div>
-
-<!-- Detail turnaje -->
-<div class="modal-overlay" id="tournament-overlay" onclick="closeTournamentModal(event)">
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeTournamentModal(null)" aria-label="Zavřít">×</button>
-    <h2 class="modal-title-text" id="t-modal-title"></h2>
-    <div class="modal-meta">
-      <span class="modal-author-text" id="t-modal-when"></span>
-      <span id="t-modal-signed"></span>
-    </div>
-    <div class="modal-content-box" id="t-modal-note"></div>
-    <div id="t-modal-actions"></div>
-  </div>
-</div>
-
-<!-- Lightbox pro fotogalerii -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-  <button class="lightbox-close" onclick="closeLightbox(null)" aria-label="Zavřít">×</button>
-  <button class="lightbox-nav prev" onclick="stepLightbox(event, -1)" aria-label="Předchozí">‹</button>
-  <button class="lightbox-nav next" onclick="stepLightbox(event,  1)" aria-label="Další">›</button>
-  <figure class="lightbox-figure">
-    <img id="lightbox-img" src="" alt="" />
-    <figcaption class="lightbox-caption" id="lightbox-caption"></figcaption>
-  </figure>
-  <div class="lightbox-counter" id="lightbox-counter"></div>
-</div>
 
 <!-- ── FORMÁT PAUPER ── -->
 <section id="format">
@@ -1062,6 +974,39 @@
       <a class="btn btn-primary" href="https://magic.wizards.com/en/banned-restricted-list" target="_blank" rel="noopener">
         <span data-i18n="format.ban.cta"></span>
       </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── BLOG ── -->
+<section id="blog">
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="blog.label"></span>
+      <h2 class="section-title" data-i18n="blog.title"></h2>
+      <p class="section-desc" data-i18n="blog.desc"></p>
+    </div>
+    <div id="blog-grid" class="blog-grid">
+      <p class="blog-loading" data-i18n="blog.loading"></p>
+    </div>
+    <div class="blog-all-wrap">
+      <a class="results-link" href="blog.html" data-i18n="blog.all"></a>
+    </div>
+  </div>
+</section>
+
+<!-- ── UPCOMING TOURNAMENTS ── -->
+<section id="turnaje">
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="tournaments.label"></span>
+      <h2 class="section-title" data-i18n="tournaments.title"></h2>
+      <p class="section-desc" data-i18n="tournaments.desc"></p>
+    </div>
+    <div id="tournament-list" class="tournament-list">
+      <p class="tournament-empty" data-i18n="tournaments.loading"></p>
     </div>
   </div>
 </section>
@@ -1162,6 +1107,19 @@
   </div>
 </section>
 
+<!-- ── PRŮBĚŽNÉ VÝSLEDKY ── -->
+<section id="vysledky">
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="results.label"></span>
+      <h2 class="section-title" data-i18n="results.title"></h2>
+      <p class="section-desc" data-i18n="results.desc"></p>
+    </div>
+    <div id="results-body"></div>
+  </div>
+</section>
+
 <!-- ── MERCH ── -->
 <section id="merch">
   <div class="container">
@@ -1247,6 +1205,51 @@
   </div>
 </section>
 
+<!-- Blog post modal -->
+<div class="modal-overlay" id="blog-overlay" onclick="closeBlogModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeBlogModal(null)" aria-label="Zavřít">×</button>
+    <h2 class="modal-title-text" id="blog-modal-title"></h2>
+    <div class="modal-meta">
+      <span class="modal-author-text" id="blog-modal-author"></span>
+      <span id="blog-modal-date"></span>
+      <button class="modal-link" id="blog-modal-link" type="button" onclick="copyPostLink()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <span data-i18n="blog.copylink"></span>
+      </button>
+    </div>
+    <div class="modal-content-box" id="blog-modal-content"></div>
+    <div id="blog-modal-gallery"></div>
+    <div id="blog-modal-comments"></div>
+  </div>
+</div>
+
+<!-- Detail turnaje -->
+<div class="modal-overlay" id="tournament-overlay" onclick="closeTournamentModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeTournamentModal(null)" aria-label="Zavřít">×</button>
+    <h2 class="modal-title-text" id="t-modal-title"></h2>
+    <div class="modal-meta">
+      <span class="modal-author-text" id="t-modal-when"></span>
+      <span id="t-modal-signed"></span>
+    </div>
+    <div class="modal-content-box" id="t-modal-note"></div>
+    <div id="t-modal-actions"></div>
+  </div>
+</div>
+
+<!-- Lightbox pro fotogalerii -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox(null)" aria-label="Zavřít">×</button>
+  <button class="lightbox-nav prev" onclick="stepLightbox(event, -1)" aria-label="Předchozí">‹</button>
+  <button class="lightbox-nav next" onclick="stepLightbox(event,  1)" aria-label="Další">›</button>
+  <figure class="lightbox-figure">
+    <img id="lightbox-img" src="" alt="" />
+    <figcaption class="lightbox-caption" id="lightbox-caption"></figcaption>
+  </figure>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
 <!-- ── FOOTER ── -->
 <footer>
   <div class="footer-logo">Plzeňská Pauper Liga</div>
@@ -1330,10 +1333,21 @@ function seasonVars(s, lang) {
     season:      seasonYears(s),
     seasonRange: `${m.nom[s.startMonth - 1]} ${s.startYear} – ${m.nom[s.endMonth - 1]} ${s.endYear}`,
     dates:       dates.join('<br>'),
+    count:       String(dates.length),
     finalsMonth: m.loc[s.endMonth - 1],
     champYear:   s.championshipYear || s.endYear,
     years:       seasonYears(s)
   };
+}
+
+// Datum prvniho turnaje sezony — podle nej se pozna, ze tabulka poradi
+// jeste nema co ukazat, protoze se proste nehralo.
+function seasonStart(s) {
+  return new Date(s.startYear, s.startMonth - 1, firstWednesday(s.startYear, s.startMonth));
+}
+
+function seasonNotStarted(s) {
+  return seasonStart(s) > new Date();
 }
 
 // Nahradi {placeholder} v retezci. Neznamy klic nechava byt, aby byl
@@ -1372,7 +1386,7 @@ const i18n = {
     "info.card1.title": "Lokace",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Kdy hrajeme",
-    "info.card2.body":  "Vždy <strong>první středa v měsíci</strong>:<br><br>{dates}",
+    "info.card2.body":  "Vždy <strong>první středa v měsíci</strong>.<br>{count} turnajů, {seasonRange}.<br><a class=\"liga-link\" href=\"#turnaje\">Nejbližší termíny →</a>",
     "info.card3.title": "Vstupné",
     "info.card3.body":  "<strong>150 Kč</strong> celkem:<br>100 Kč → bank na ceny<br>20 Kč → provoz<br>30 Kč → ligový bank",
     "info.card4.title": "Proxy pravidla",
@@ -1437,6 +1451,7 @@ const i18n = {
     "results.title":       "Výsledky",
     "results.desc":        "Aktuální tabulka ligy. Aktualizuje se po každém turnaji.",
     "results.loading":     "Načítám výsledky…",
+    "results.notstarted":  "Sezóna začíná {date}. Tabulka se naplní po prvním turnaji.",
     "results.unavailable": "Tabulku se teď nedaří načíst.",
     "results.more":        "Zobrazeno prvních 60 řádků.",
     "results.open":        "Otevřít celou tabulku →",
@@ -1521,7 +1536,7 @@ const i18n = {
     "info.card1.title": "Location",
     "info.card1.body":  "<strong>Vault 0</strong><br>Plachého 30, Plzeň",
     "info.card2.title": "Schedule",
-    "info.card2.body":  "Always the <strong>first Wednesday of the month</strong>:<br><br>{dates}",
+    "info.card2.body":  "Always the <strong>first Wednesday of the month</strong>.<br>{count} events, {seasonRange}.<br><a class=\"liga-link\" href=\"#turnaje\">Upcoming dates →</a>",
     "info.card3.title": "Entry Fee",
     "info.card3.body":  "<strong>150 CZK</strong> total:<br>100 CZK → prize pool<br>20 CZK → venue costs<br>30 CZK → league bank",
     "info.card4.title": "Proxy Rules",
@@ -1586,6 +1601,7 @@ const i18n = {
     "results.title":       "Results",
     "results.desc":        "Current league table. Updated after every tournament.",
     "results.loading":     "Loading results…",
+    "results.notstarted":  "The season starts on {date}. The table fills in after the first event.",
     "results.unavailable": "The table can't be loaded right now.",
     "results.more":        "Showing the first 60 rows.",
     "results.open":        "Open the full sheet →",
@@ -2062,6 +2078,18 @@ function renderResults(lang) {
       </span>
       <span class="results-banner-cta">${t['results.rounds.cta']}</span>
     </a>`;
+  }
+
+  // Nez se odehraje prvni kolo, je tabulka bud prazdna, nebo v ni stoji
+  // jen rezijni radky. Misto matouciho vypisu nul radeji rekneme, kdy
+  // se zacina.
+  if (seasonNotStarted(currentSeason)) {
+    const when = seasonStart(currentSeason)
+      .toLocaleDateString(lang === 'en' ? 'en-GB' : 'cs-CZ',
+                          { day: 'numeric', month: 'long', year: 'numeric' });
+    box.innerHTML = picker + rounds
+      + `<p class="results-msg">${fillVars(t['results.notstarted'], { date: when })}</p>`;
+    return;
   }
 
   if (cachedResults === null) {
