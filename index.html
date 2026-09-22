@@ -1930,14 +1930,35 @@ async function loadBlogPosts() {
 // nepodari, sekce misto tabulky nabidne odkaz do tabulky.
 const RESULTS_MAX_ROWS = 60;
 
-function sheetLink(id) { return `https://docs.google.com/spreadsheets/d/${id}/edit?usp=sharing`; }
+// Odkaz na tabulku muze mit dve podoby a kazda ma vlastni export do CSV:
+//   1oTfL…      ID dokumentu z adresy otevrene tabulky
+//   2PACX-1v…   token ze Soubor → Sdilet → Publikovat na webu
+// Publikacni token zacina vzdy "2PACX-", podle toho se poznaji.
+function isPubToken(id) { return String(id || '').startsWith('2PACX-'); }
+
+function sheetLink(id) {
+  return isPubToken(id)
+    ? `https://docs.google.com/spreadsheets/d/e/${id}/pubhtml`
+    : `https://docs.google.com/spreadsheets/d/${id}/edit?usp=sharing`;
+}
 
 function sheetCsvUrl(id, part) {
   if (!id) return null;
-  const base = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
-  if (part?.gid)   return `${base}&gid=${encodeURIComponent(part.gid)}`;
-  if (part?.sheet) return `${base}&sheet=${encodeURIComponent(part.sheet)}`;
+  const pub = isPubToken(id);
+  const base = pub
+    ? `https://docs.google.com/spreadsheets/d/e/${id}/pub?output=csv`
+    : `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
+  if (part?.gid) return `${base}&gid=${encodeURIComponent(part.gid)}`;
+  // Vybrat list jmenem umi jen gviz; publikovana adresa zna pouze gid.
+  if (part?.sheet && !pub) return `${base}&sheet=${encodeURIComponent(part.sheet)}`;
   return base;
+}
+
+// Zalozka s Top 8 se zadava bud jmenem, nebo cislem gid z adresy.
+function sheetPart(v) {
+  const s = String(v || '').trim();
+  if (!s) return null;
+  return /^\d+$/.test(s) ? { gid: s } : { sheet: s };
 }
 
 // CSV z Google tabulek ma uvozovkami obalena pole, ktera mohou obsahovat
@@ -2096,7 +2117,8 @@ async function loadResults() {
   const s = currentSeason;
   // Poradi a Top 8 tahame zvlast — kdyz druha zalozka chybi nebo ma jiny
   // nazev, hlavni tabulka se tim nesmi rozbit.
-  const top8Url = s.top8Sheet ? sheetCsvUrl(s.resultsSheetId, { sheet: s.top8Sheet }) : null;
+  const top8Part = sheetPart(s.top8Sheet);
+  const top8Url = top8Part ? sheetCsvUrl(s.resultsSheetId, top8Part) : null;
   const [poradi, top8] = await Promise.allSettled([
     fetchSheet(sheetCsvUrl(s.resultsSheetId)),
     top8Url ? fetchSheet(top8Url) : Promise.reject(new Error('no top8 sheet'))
