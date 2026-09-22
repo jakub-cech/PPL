@@ -1954,10 +1954,13 @@ function sheetCsvUrl(id, part) {
   return base;
 }
 
-// Zalozka s Top 8 se zadava bud jmenem, nebo cislem gid z adresy.
+// Zalozka s Top 8 je ulozena bud jmenem, nebo cislem gid. Adresu s gid
+// admin rozebere uz pri ukladani, tady ji bereme jen pro jistotu.
 function sheetPart(v) {
   const s = String(v || '').trim();
   if (!s) return null;
+  const url = s.match(/[#&?]gid=(\d+)/);
+  if (url) return { gid: url[1] };
   return /^\d+$/.test(s) ? { gid: s } : { sheet: s };
 }
 
