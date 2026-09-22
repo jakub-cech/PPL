@@ -886,8 +886,9 @@
             <label for="s-top8">Název záložky s Top 8</label>
             <input type="text" id="s-top8" placeholder="Top 8 Hráčů" />
             <span class="field-hint">
-              Prázdné = blok Top 8 se nezobrazí. U publikovaného odkazu zadej
-              číslo <code>gid</code> záložky (najdeš ho v adrese po kliknutí na ni).
+              Prázdné = blok Top 8 se nezobrazí. U publikovaného odkazu název nestačí —
+              klikni v tabulce na záložku a vlož sem celou adresu z prohlížeče
+              (<code>…#gid=123456</code>), číslo si z ní vezmu.
             </span>
           </div>
           <div class="field">
@@ -2250,6 +2251,14 @@ function sheetIdFrom(v) {
 
 function isPubToken(id) { return String(id || '').startsWith('2PACX-'); }
 
+// Zalozka se zadava jmenem, cislem gid, nebo rovnou adresou s otevrenou
+// zalozkou (…/edit#gid=123456) — z te si gid vytahneme sami.
+function gidFrom(v) {
+  const s = String(v || '').trim();
+  const m = s.match(/[#&?]gid=(\d+)/);
+  return m ? m[1] : s;
+}
+
 async function loadSeasonList() {
   const list = document.getElementById('s-list');
   list.innerHTML = '<div class="posts-loading">Načítám…</div>';
@@ -2361,7 +2370,7 @@ function readSeasonForm() {
     endMonth:   Number(document.getElementById('s-end-month').value),
     endYear:    Number(document.getElementById('s-end-year').value),
     resultsSheetId: sheetIdFrom(document.getElementById('s-results').value),
-    top8Sheet:      document.getElementById('s-top8').value.trim(),
+    top8Sheet:      gidFrom(document.getElementById('s-top8').value),
     roundsSheetId:  sheetIdFrom(document.getElementById('s-rounds').value),
     championshipYear: Number(document.getElementById('s-champ').value) || null,
     active: document.getElementById('s-active').checked
@@ -2389,7 +2398,7 @@ function renderSeasonPreview() {
       ? `Tabulka: <b>publikovaný odkaz</b> (${escapeHtml(s.resultsSheetId.slice(0, 16))}…)`
       : `Tabulka: <b>${escapeHtml(s.resultsSheetId)}</b>`;
     if (isPubToken(s.resultsSheetId) && s.top8Sheet && !/^\d+$/.test(s.top8Sheet)) {
-      sheet += ` <span class="sp-warn">— u publikovaného odkazu musí být Top 8 zadané číslem gid, ne názvem.</span>`;
+      sheet += ` <span class="sp-warn">— u publikovaného odkazu název záložky nestačí, vlož k Top 8 adresu s <code>#gid=…</code>.</span>`;
     }
   }
   box.innerHTML = `
@@ -2409,7 +2418,7 @@ async function saveSeason() {
   if (!data.resultsSheetId)             { status.textContent = 'Vyplň tabulku s průběžným pořadím.'; status.className = 'save-status err'; return; }
   // Publikovana adresa umi vybrat list jen cislem gid, ne jmenem.
   if (isPubToken(data.resultsSheetId) && data.top8Sheet && !/^\d+$/.test(data.top8Sheet)) {
-    status.textContent = 'U publikovaného odkazu zadej k Top 8 číslo gid záložky, ne její název.';
+    status.textContent = 'U publikovaného odkazu název záložky nestačí — klikni v tabulce na Top 8 a vlož sem adresu z prohlížeče (…#gid=123456).';
     status.className = 'save-status err';
     return;
   }
