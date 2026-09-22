@@ -620,11 +620,15 @@
       .hero-ctas { justify-content: center; }
       .hero-badge { display: inline-flex; }
     }
+    /* Sedm odkazu vedle plneho nazvu ligy potrebuje kolem 860 px. Pod tim
+       se lista prepina na menu, aby nazev nemusel do zkratky. */
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+    }
     @media (max-width: 768px) {
       section { padding: 64px 0; }
       .hero-corner { display: none; }
-      .nav-links { display: none; }
-      .hamburger { display: flex; }
       .hero-logo { width: min(300px, 85vw); }
     }
     @media (max-width: 480px) {
@@ -854,7 +858,7 @@
 <!-- ── NAV ── -->
 <nav>
   <div class="nav-inner">
-    <a class="nav-logo" href="#">PPL</a>
+    <a class="nav-logo" href="#">Plzeňská Pauper Liga</a>
 
     <ul class="nav-links" id="nav-links-desktop">
       <li><a href="#format"><span   data-i18n="nav.format"></span></a></li>
