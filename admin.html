@@ -309,7 +309,17 @@
     .t-row-act.s-row-act { flex-shrink: 1; flex-wrap: wrap; justify-content: flex-end; }
     .gen-box { max-width: 640px; text-align: left; }
     .gen-list { max-height: 260px; overflow-y: auto; }
-    .gen-list .gen-row { display: flex; gap: 10px; padding: 3px 0; }
+    .gen-select {
+      display: flex; align-items: center; gap: 10px; margin: 16px 0 6px;
+      font-size: 0.8rem; color: var(--text-3);
+    }
+    .gen-select span { margin-right: auto; }
+    .gen-list .gen-row {
+      display: flex; gap: 10px; padding: 5px 4px; align-items: baseline;
+      border-radius: 4px; cursor: pointer;
+    }
+    .gen-list .gen-row:hover { background: rgba(255,255,255,0.03); }
+    .gen-list .gen-row input { margin: 0; accent-color: var(--gold); cursor: pointer; }
     .gen-list .gen-date { color: var(--text-1); font-weight: 600; white-space: nowrap; }
     .gen-list .gen-dup { color: var(--text-3); }
 
@@ -1002,7 +1012,17 @@
         </span>
       </div>
     </div>
+    <div class="gen-select" id="gen-select" hidden>
+      <span id="gen-count"></span>
+      <button type="button" class="btn-sm" onclick="genSelectAll(true)">Vybrat vše</button>
+      <button type="button" class="btn-sm" onclick="genSelectAll(false)">Zrušit výběr</button>
+    </div>
     <div class="season-preview gen-list" id="gen-preview"></div>
+    <p class="field-hint" style="margin-top:8px">
+      U zaškrtnutého turnaje, který už existuje, se přepíše datum, čas, název
+      a počet míst. Poznámka, odkaz na událost, zveřejnění i přihlášení hráči
+      zůstanou beze změny.
+    </p>
     <div class="leave-actions">
       <button class="btn-save" id="gen-run" onclick="runGenerator()">Vytvořit turnaje</button>
       <button class="btn-outline" onclick="closeGenerator()">Zrušit</button>
@@ -2579,6 +2599,9 @@ document.addEventListener('change', e => {
 let genSeason = null;
 // null = jeste se nacita, false = nepodarilo se, jinak { rounds, days }
 let genExisting = null;
+// Cisla kol, ktera admin zaskrtl. Chybejici se zaskrtnou samy, existujici
+// necham na nem — u tech znamena zaskrtnuti prepsani.
+let genChecked = new Set();
 
 function plTurnaj(n) {
   return n === 1 ? 'turnaj' : (n >= 2 && n <= 4 ? 'turnaje' : 'turnajů');
@@ -2589,6 +2612,7 @@ function openGenerator(id) {
   if (!s) return;
   genSeason = s;
   genExisting = null;
+  genChecked = new Set();
   const n = seasonMonthList(s).length;
   document.getElementById('gen-intro').textContent =
     `Sezóna ${seasonRangeLabel(s)} — ${n} ${plTurnaj(n)}, vždy první ${S_WEEKDAYS[seasonWeekday(s)]} v měsíci. `
@@ -2602,7 +2626,19 @@ function openGenerator(id) {
   document.getElementById('gen-overlay').classList.add('open');
   // Dokud nevime, co uz existuje, zustava tlacitko zamcene — jinak by
   // rychle kliknuti stihlo zalozit sezonu podruhe.
-  loadExisting().then(renderGenPreview);
+  loadExisting().then(() => {
+    // Chybejici kola zaskrtneme samy; u existujicich necháme rozhodnuti
+    // na adminovi, protoze zaskrtnuti znamena prepsani.
+    genTournaments().forEach((t, i) => {
+      if (!genExistingFor(t, i)) genChecked.add(i + 1);
+    });
+    renderGenPreview();
+  });
+}
+
+function genSelectAll(on) {
+  genChecked = on ? new Set(genTournaments().map((_, i) => i + 1)) : new Set();
+  renderGenPreview();
 }
 
 function closeGenerator(ev) {
@@ -2614,14 +2650,17 @@ function closeGenerator(ev) {
 async function loadExisting() {
   try {
     const snap = await db.collection('tournaments').get();
-    const rounds = new Set(), days = new Set();
+    // Mapy misto mnozin — u uz zalozeneho kola potrebujeme i jeho id,
+    // abychom ho pri zaskrtnuti mohli prepsat.
+    const rounds = new Map(), days = new Map();
     snap.docs.forEach(d => {
       const x = d.data();
+      const dt = x.date?.toDate?.();
+      const rec = { id: d.id, title: x.title, date: dt, capacity: x.capacity ?? null };
       // Turnaje z generatoru nesou sezonu a poradi kola. Podle nich se
       // duplicita pozna i tehdy, kdyz se termin mezitim rucne posunul.
-      if (x.seasonId && x.round) rounds.add(x.seasonId + ':' + x.round);
-      const dt = x.date?.toDate?.();
-      if (dt) days.add(dt.toDateString());
+      if (x.seasonId && x.round) rounds.set(x.seasonId + ':' + x.round, rec);
+      if (dt) days.set(dt.toDateString(), rec);
     });
     genExisting = { rounds, days };
   } catch(e) {
@@ -2630,13 +2669,16 @@ async function loadExisting() {
   }
 }
 
-// Duvod, proc kolo preskocit — nebo null, kdyz se ma zalozit.
-function genDuplicate(t, i) {
+// Uz zalozeny turnaj pro dane kolo — nebo null, kdyz se ma teprve zalozit.
+// Vraci i duvod, aby slo rozlisit kolo od turnaje zadaneho rucne.
+function genExistingFor(t, i) {
   if (!genExisting) return null;
-  if (genExisting.rounds.has(genSeason.id + ':' + (i + 1))) return 'kolo';
+  const byRound = genExisting.rounds.get(genSeason.id + ':' + (i + 1));
+  if (byRound) return { rec: byRound, why: 'kolo' };
   // Rucne zalozene turnaje zadnou sezonu nemaji, na obsazeny vecer
   // proto koukame i pres datum.
-  if (genExisting.days.has(t.date.toDateString())) return 'den';
+  const byDay = genExisting.days.get(t.date.toDateString());
+  if (byDay) return { rec: byDay, why: 'den' };
   return null;
 }
 
@@ -2667,19 +2709,46 @@ function renderGenPreview() {
     return;
   }
 
-  let missing = 0;
+  let toCreate = 0, toUpdate = 0;
   box.innerHTML = list.map((t, i) => {
-    const dup = genDuplicate(t, i);
-    if (!dup) missing++;
+    const round = i + 1;
+    const found = genExistingFor(t, i);
+    const on = genChecked.has(round);
+    if (on) { found ? toUpdate++ : toCreate++; }
     const when = t.date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })
                + ' ' + t.date.toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' });
-    const why = dup === 'kolo' ? ' — tohle kolo už je založené, přeskočím'
-              : dup === 'den'  ? ' — na tento den už turnaj je, přeskočím' : '';
-    return `<div class="gen-row${dup ? ' gen-dup' : ''}">
+    // U uz zalozeneho turnaje ukazeme, co se na nem zmeni.
+    let note = '';
+    if (found) {
+      const old = found.rec;
+      const changes = [];
+      if (old.date && old.date.getTime() !== t.date.getTime()) {
+        changes.push(old.date.toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' })
+          + ' → ' + t.date.toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' }));
+      }
+      if (old.title !== t.title) changes.push('název');
+      note = on
+        ? ` — přepíšu${changes.length ? ' (' + changes.join(', ') + ')' : ''}`
+        : (found.why === 'den' ? ' — na tento den už turnaj je' : ' — už je založené');
+    }
+    return `<label class="gen-row${found && !on ? ' gen-dup' : ''}">
+      <input type="checkbox" data-round="${round}"${on ? ' checked' : ''} />
       <span class="gen-date">${escapeHtml(when)}</span>
-      <span>${escapeHtml(t.title)}${why}</span>
-    </div>`;
+      <span>${escapeHtml(t.title)}${note}</span>
+    </label>`;
   }).join('');
+
+  box.querySelectorAll('input[data-round]').forEach(cb =>
+    cb.addEventListener('change', () => {
+      const r = Number(cb.dataset.round);
+      cb.checked ? genChecked.add(r) : genChecked.delete(r);
+      renderGenPreview();
+    }));
+
+  const bar = document.getElementById('gen-select');
+  bar.hidden = !genExisting;
+  document.getElementById('gen-count').textContent =
+    `Vybráno ${genChecked.size} z ${list.length}`;
 
   if (genExisting === null) {
     btn.disabled = true;
@@ -2691,14 +2760,15 @@ function renderGenPreview() {
     box.innerHTML += '<div class="sp-warn" style="margin-top:8px">'
       + 'Nepodařilo se načíst už založené turnaje, takže nejde poznat, co by vzniklo dvakrát. '
       + 'Zavři okno a zkus to znovu.</div>';
-  } else if (!missing) {
+  } else if (!toCreate && !toUpdate) {
     btn.disabled = true;
-    btn.textContent = 'Všechna kola už existují';
+    btn.textContent = 'Nic není vybráno';
   } else {
     btn.disabled = false;
-    btn.textContent = missing === list.length
-      ? `Vytvořit ${missing} ${plTurnaj(missing)}`
-      : `Doplnit ${missing} chybějící`;
+    const parts = [];
+    if (toCreate) parts.push(`Vytvořit ${toCreate}`);
+    if (toUpdate) parts.push(`${parts.length ? 'upravit' : 'Upravit'} ${toUpdate}`);
+    btn.textContent = parts.join(', ');
   }
 }
 
@@ -2717,31 +2787,46 @@ async function runGenerator() {
     if (!genExisting) throw new Error('existující turnaje se nepodařilo načíst');
 
     const capacity = parseCapacity(document.getElementById('gen-capacity').value);
-    const fresh = list
-      .map((t, i) => ({ ...t, round: i + 1, dup: genDuplicate(t, i) }))
-      .filter(t => !t.dup);
+    const picked = list
+      .map((t, i) => ({ ...t, round: i + 1, found: genExistingFor(t, i) }))
+      .filter(t => genChecked.has(t.round));
 
-    await Promise.all(fresh.map(t => db.collection('tournaments').add({
-      date:      firebase.firestore.Timestamp.fromDate(t.date),
-      title:     t.title,
-      note:      '',
-      capacity,
-      showRegistrations: true,
-      eventUrl:  '',
-      published: false,
-      // Podle teto dvojice se pozna, ze kolo uz zalozene je.
-      seasonId:  genSeason.id,
-      round:     t.round,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    })));
+    const created = picked.filter(t => !t.found);
+    const updated = picked.filter(t => t.found);
 
-    const skipped = list.length - fresh.length;
-    status.textContent = fresh.length
-      ? `✓ Vytvořeno ${fresh.length} ${plTurnaj(fresh.length)}`
-        + (skipped ? `, ${skipped} už existovalo` : '')
-        + ' — najdeš je v Turnajích jako koncepty.'
-      : 'Nic k založení, všechna kola už existují.';
+    await Promise.all([
+      ...created.map(t => db.collection('tournaments').add({
+        date:      firebase.firestore.Timestamp.fromDate(t.date),
+        title:     t.title,
+        note:      '',
+        capacity,
+        showRegistrations: true,
+        eventUrl:  '',
+        published: false,
+        // Podle teto dvojice se pozna, ze kolo uz zalozene je.
+        seasonId:  genSeason.id,
+        round:     t.round,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      })),
+      // U uprav menime jen to, co pochazi z tohoto formulare. Poznamka,
+      // odkaz na udalost, zverejneni ani prihlaseni hraci se nedotknou.
+      ...updated.map(t => db.collection('tournaments').doc(t.found.rec.id).update({
+        date:      firebase.firestore.Timestamp.fromDate(t.date),
+        title:     t.title,
+        capacity,
+        seasonId:  genSeason.id,
+        round:     t.round,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }))
+    ]);
+
+    const parts = [];
+    if (created.length) parts.push(`vytvořeno ${created.length}`);
+    if (updated.length) parts.push(`upraveno ${updated.length}`);
+    status.textContent = '✓ Hotovo — ' + parts.join(', ')
+      + (created.length ? '. Nové najdeš v Turnajích jako koncepty.' : '.');
     status.className = 'save-status ok';
+    genChecked = new Set();
     // Prepocet zamkne tlacitko, protoze uz nic nechybi.
     await loadExisting();
     renderGenPreview();
