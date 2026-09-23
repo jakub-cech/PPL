@@ -873,8 +873,9 @@
           Z vyplněných údajů si web dopočítá termíny turnajů, nadpisy, pravidlo
           o počítaných výsledcích i patičku — termíny vycházejí vždy na první hrací
           den v měsíci. Označená sezóna je ta, kterou web ukazuje jako aktuální;
-          ostatní zůstanou návštěvníkům dostupné v archivu. Tlačítkem u sezóny
-          k ní rovnou založíš všechny turnaje.
+          ostatní zůstanou návštěvníkům dostupné v archivu. Tlačítkem u aktuální
+          sezóny k ní rovnou založíš všechny turnaje — nebo u už založených
+          hromadně upravíš čas, název a počet míst.
         </p>
         <div class="posts-list" id="s-list">
           <div class="posts-loading">Načítám…</div>
@@ -2385,7 +2386,7 @@ function seasonRow(s) {
     </div>
     <div class="t-row-act s-row-act">
       <button class="btn-sm" onclick="editSeason('${escapeHtml(s.id)}')">Upravit</button>
-      <button class="btn-sm" onclick="openGenerator('${escapeHtml(s.id)}')">Vygenerovat turnaje</button>
+      ${s.active ? `<button class="btn-sm" onclick="openGenerator('${escapeHtml(s.id)}')">Vygenerovat turnaje</button>` : ''}
       <button class="btn-sm publish-btn ${s.active ? 'active' : ''}" onclick="setActiveSeason('${escapeHtml(s.id)}')" ${s.active ? 'disabled' : ''}>
         ${s.active ? 'Aktuální' : 'Nastavit jako aktuální'}
       </button>
