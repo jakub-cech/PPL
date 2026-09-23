@@ -860,9 +860,11 @@
           <button class="btn-save" onclick="newSeason()">+ Nová sezóna</button>
         </div>
         <p class="season-hint">
-          Termíny turnajů, nadpisy i patička na webu se dopočítají z rozsahu sezóny —
-          hraje se vždy první středu v měsíci. Označená sezóna je ta, kterou web
-          ukazuje jako aktuální; ostatní zůstanou návštěvníkům dostupné v archivu.
+          Z vyplněných údajů si web dopočítá termíny turnajů, nadpisy, pravidlo
+          o počítaných výsledcích i patičku — termíny vycházejí vždy na první hrací
+          den v měsíci. Označená sezóna je ta, kterou web ukazuje jako aktuální;
+          ostatní zůstanou návštěvníkům dostupné v archivu. Tlačítkem u sezóny
+          k ní rovnou založíš všechny turnaje.
         </p>
         <div class="posts-list" id="s-list">
           <div class="posts-loading">Načítám…</div>
@@ -2589,7 +2591,7 @@ function openGenerator(id) {
   genExisting = null;
   const n = seasonMonthList(s).length;
   document.getElementById('gen-intro').textContent =
-    `Sezóna ${seasonRangeLabel(s)} — ${n} ${plTurnaj(n)}, vždy první středu v měsíci. `
+    `Sezóna ${seasonRangeLabel(s)} — ${n} ${plTurnaj(n)}, vždy první ${S_WEEKDAYS[seasonWeekday(s)]} v měsíci. `
     + 'Založí se jako koncepty, zveřejníš je až budeš chtít.';
   document.getElementById('gen-title').value = `PPL ${seasonRangeLabel(s)} — {kolo}. kolo`;
   document.getElementById('gen-time').value = '18:00';
