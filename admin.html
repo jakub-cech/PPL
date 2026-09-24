@@ -358,21 +358,15 @@
 
     /* Posts list */
     .posts-list { display: flex; flex-direction: column; gap: 12px; }
-    .post-item {
       background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-md);
       padding: 20px 24px; display: flex; align-items: flex-start; gap: 16px;
     }
-    .post-item-info { flex: 1; min-width: 0; }
-    .post-item-title { font-weight: 600; color: var(--text-1); font-size: 0.95rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .post-item-meta { font-size: 0.78rem; color: var(--text-3); display: flex; gap: 12px; flex-wrap: wrap; }
-    .post-item-author { color: var(--gold-dim); }
     .status-badge {
       font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
       padding: 2px 8px; border-radius: 100px; border: 1px solid;
     }
     .status-badge.published { color: var(--green); border-color: var(--green); background: rgba(39,174,96,0.08); }
     .status-badge.draft     { color: var(--text-3); border-color: var(--border); }
-    .post-item-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
     .btn-sm {
       background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 6px 14px; font-size: 0.78rem; font-weight: 600; cursor: pointer;
@@ -496,12 +490,9 @@
     }
 
     .reg-admin { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); width: 100%; }
-    .reg-admin-toggle {
       background: none; border: none; padding: 0; cursor: pointer;
       font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--gold-dim); transition: color 0.2s;
     }
-    .reg-admin-toggle:hover { color: var(--gold); }
-    .reg-admin-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
     .reg-admin-row { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; }
     .reg-admin-num  { color: var(--text-3); width: 24px; flex-shrink: 0; }
     .reg-admin-name { color: var(--text-1); font-weight: 500; }
@@ -513,7 +504,6 @@
     @media (max-width: 600px) {
       .admin-body { padding: 24px 16px; }
       .login-card { padding: 32px 24px; }
-      .post-item { flex-direction: column; }
       .editor-actions { flex-direction: column; align-items: flex-start; }
       .publish-toggle { margin-left: 0; }
     }
