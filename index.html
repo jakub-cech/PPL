@@ -533,6 +533,38 @@
     .format-banlist .btn { white-space: nowrap; }
     @media (max-width: 800px) { .format-grid { grid-template-columns: 1fr; } }
 
+    /* ── ROZCESTNÍK ── */
+    #odkazy { background: var(--bg-1); }
+    .links-group { margin-top: 44px; }
+    .links-group-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .links-group-icon {
+      width: 34px; height: 34px; flex-shrink: 0;
+      background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim);
+      border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    }
+    .links-group-name {
+      font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 600;
+      color: var(--gold-light); letter-spacing: 0.04em;
+    }
+    .links-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .link-card {
+      display: flex; flex-direction: column; gap: 7px;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 20px 22px;
+      text-decoration: none; transition: border-color 0.2s, transform 0.2s;
+    }
+    .link-card:hover { border-color: var(--gold-dim); transform: translateY(-2px); }
+    .link-card-title {
+      font-size: 0.95rem; font-weight: 600; color: var(--text-1);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .link-card:hover .link-card-title { color: var(--gold-light); }
+    .link-card-title svg { flex-shrink: 0; opacity: 0.5; }
+    .link-card-desc { font-size: 0.85rem; color: var(--text-2); line-height: 1.6; flex: 1; }
+    .link-card-host { font-size: 0.75rem; color: var(--text-3); letter-spacing: 0.02em; }
+    @media (max-width: 900px) { .links-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .links-grid { grid-template-columns: 1fr; } }
+
     /* ── INFO CARDS ── */
     #liga { background: var(--bg-0); }
     /* Dva rovnocenne panely — prakticke info vlevo, herni system vpravo. */
@@ -593,7 +625,12 @@
     .grand-prize .gp-desc  { font-size: 0.85rem; color: var(--text-2); }
 
     /* ── COMMUNITY ── */
-    #komunita { background: var(--bg-1); }
+    /* Vlozenim rozcestniku se posunulo stridani — komunita proto prebira
+       tmavsi pozadi, aby na odkazy nenavazovala stejnou barvou. Kdyz zadny
+       odkaz neni a sekce se schova, vraci se k puvodni barve, jinak by
+       navazala na merch. */
+    #komunita { background: var(--bg-0); }
+    body.no-links #komunita { background: var(--bg-1); }
     .community-inner { display: flex; flex-direction: column; align-items: center; text-align: center; }
     .community-desc { font-size: 1rem; color: var(--text-2); max-width: 480px; margin: 0 auto 40px; line-height: 1.7; }
     .social-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
@@ -620,9 +657,10 @@
       .hero-ctas { justify-content: center; }
       .hero-badge { display: inline-flex; }
     }
-    /* Sedm odkazu vedle plneho nazvu ligy potrebuje kolem 860 px. Pod tim
-       se lista prepina na menu, aby nazev nemusel do zkratky. */
-    @media (max-width: 960px) {
+    /* Osm odkazu vedle plneho nazvu ligy zacina pretekat pod 960 px
+       (mereno). Menu proto nastupuje uz o kousek driv, at zbyde rezerva
+       na jine vykresleni fontu. */
+    @media (max-width: 1000px) {
       .nav-links { display: none; }
       .hamburger { display: flex; }
     }
@@ -853,7 +891,9 @@
     @media (max-width: 600px) { .merch-form { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body>
+<!-- no-links drzi pozadi komunity spravne, nez se rozcestnik nacte;
+     renderLinks ji sundá, jakmile je co ukazat. -->
+<body class="no-links">
 
 <!-- ── NAV ── -->
 <nav>
@@ -867,6 +907,7 @@
       <li><a href="#liga"><span     data-i18n="nav.info"></span></a></li>
       <li><a href="#vysledky"><span data-i18n="nav.results"></span></a></li>
       <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
+      <li><a href="#odkazy"><span data-i18n="nav.links"></span></a></li>
       <li><a href="#komunita"><span data-i18n="nav.community"></span></a></li>
     </ul>
 
@@ -889,6 +930,7 @@
     <a href="#liga"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
     <a href="#vysledky" onclick="closeMenu()"><span data-i18n="nav.results"></span></a>
     <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
+    <a href="#odkazy"   onclick="closeMenu()"><span data-i18n="nav.links"></span></a>
     <a href="#komunita" onclick="closeMenu()"><span data-i18n="nav.community"></span></a>
   </div>
 </nav>
@@ -1192,6 +1234,21 @@
   </div>
 </section>
 
+<!-- ── ROZCESTNÍK ── -->
+<!-- Obsah se vykresluje z Firestore; dokud zadny odkaz neni, sekce se
+     neukaze vubec (hidden se sundava az v renderLinks). -->
+<section id="odkazy" hidden>
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="links.label"></span>
+      <h2 class="section-title" data-i18n="links.title"></h2>
+      <p class="section-desc" data-i18n="links.desc"></p>
+    </div>
+    <div id="links-body"></div>
+  </div>
+</section>
+
 <!-- ── COMMUNITY ── -->
 <section id="komunita">
   <div class="container">
@@ -1404,6 +1461,27 @@ function fillVars(str, vars) {
   return String(str).replace(/\{(\w+)\}/g, (all, k) => (k in vars ? vars[k] : all));
 }
 
+// ── Ikony kategorií odkazů ────────────────────────────────────
+// Stejna sada je i v adminu, kde se z ni vybira. Jsou to jen vnitrky
+// <svg>, ramec kolem nich kresli linkIconSvg().
+const LINK_ICONS = {
+  book:     '<path d="M4 4h12a2 2 0 012 2v14H6a2 2 0 01-2-2z"/><path d="M4 18a2 2 0 012-2h12"/>',
+  chart:    '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  tool:     '<path d="M14.7 6.3a4 4 0 01-5 5L4 17v3h3l5.7-5.7a4 4 0 015-5z"/>',
+  video:    '<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-3v10l-6-3z"/>',
+  users:    '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0112 0"/><path d="M16 5.5a3.2 3.2 0 010 6M18 20a6 6 0 00-2-4.5"/>',
+  star:     '<path d="M12 3l2.6 5.6L21 9.4l-4.6 4.2 1.2 6.4L12 16.9 6.4 20l1.2-6.4L3 9.4l6.4-.8z"/>',
+  globe:    '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 000 18a14 14 0 000-18"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'
+};
+
+function linkIconSvg(name, size) {
+  const body = LINK_ICONS[name] || LINK_ICONS.globe;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+    stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round"
+    stroke-linejoin="round">${body}</svg>`;
+}
+
 // ── Translations ──────────────────────────────────────────────
 const i18n = {
   cs: {
@@ -1465,6 +1543,7 @@ const i18n = {
 
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
+    "nav.links": "Odkazy",
 
     "format.label": "Formát",
     "format.title": "Co je Pauper?",
@@ -1550,6 +1629,10 @@ const i18n = {
     "merch.form.note.text": "Nejde o závaznou objednávku. Ozvu se až bude merch připravený.",
     "merch.form.success": "✓ Zájem zaregistrován, ozvu se!",
 
+    "links.label": "Rozcestník",
+    "links.title": "Užitečné odkazy",
+    "links.desc":  "Kam za Pauperem i mimo ligu — pravidla, decklisty, nástroje a lidi, které stojí za to sledovat.",
+
     "community.label": "Komunita",
     "community.title": "Zůstaň v Kontaktu",
     "community.desc":  "Sleduj aktuální dění, propozice a domlouvej testování. Komunita je aktivní – přidej se.",
@@ -1617,6 +1700,7 @@ const i18n = {
 
     "nav.blog":  "Blog",
     "nav.merch": "Merch",
+    "nav.links": "Links",
 
     "format.label": "Format",
     "format.title": "What is Pauper?",
@@ -1701,6 +1785,10 @@ const i18n = {
     "merch.form.submit":  "Submit interest",
     "merch.form.note.text": "This is not a binding order. I'll reach out once merch is ready.",
     "merch.form.success": "✓ Interest registered, I'll be in touch!",
+
+    "links.label": "Signpost",
+    "links.title": "Useful links",
+    "links.desc":  "Where to find Pauper beyond the league — rules, decklists, tools and people worth following.",
 
     "community.label": "Community",
     "community.title": "Stay Connected",
@@ -1995,6 +2083,86 @@ async function loadBlogPosts() {
   }
 }
 
+
+// ── Rozcestník ────────────────────────────────────────────────
+let cachedLinks = null;      // { cats, links }
+
+async function loadLinks() {
+  if (!db) return;
+  try {
+    const [cats, links] = await Promise.all([
+      db.collection('linkCategories').get(),
+      db.collection('links').get()
+    ]);
+    const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+    cachedLinks = {
+      cats:  cats.docs.map(d => ({ id: d.id, ...d.data() })).sort(byOrder),
+      links: links.docs.map(d => ({ id: d.id, ...d.data() }))
+                  .filter(l => safeUrl(l.url)).sort(byOrder)
+    };
+    renderLinks(document.documentElement.lang || 'cs');
+  } catch(e) {
+    console.warn('Links load error:', e);
+  }
+}
+
+// Z adresy vytahne domenu, at je na karte videt, kam odkaz vede.
+function linkHost(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); }
+  catch { return ''; }
+}
+
+// Schovani sekce musi projit i k pozadi komunity, at na sebe merch
+// a komunita nenavazou stejnou barvou.
+function hideLinks(section) {
+  section.hidden = true;
+  document.body.classList.add('no-links');
+}
+
+function renderLinks(lang) {
+  const section = document.getElementById('odkazy');
+  const box = document.getElementById('links-body');
+  if (!cachedLinks || !cachedLinks.links.length) { hideLinks(section); return; }
+
+  const en = lang === 'en';
+  // Kategorie bez odkazu nema co ukazat, tu preskocime. Odkazy, ktere
+  // ukazuji na smazanou kategorii, skonci ve zbytkove skupine na konci.
+  const known = new Set(cachedLinks.cats.map(c => c.id));
+  const groups = cachedLinks.cats
+    .map(c => ({ cat: c, items: cachedLinks.links.filter(l => l.categoryId === c.id) }))
+    .filter(g => g.items.length);
+  const orphans = cachedLinks.links.filter(l => !known.has(l.categoryId));
+  if (orphans.length) groups.push({ cat: null, items: orphans });
+
+  if (!groups.length) { hideLinks(section); return; }
+  section.hidden = false;
+  document.body.classList.remove('no-links');
+
+  box.innerHTML = groups.map(g => {
+    const name = g.cat ? ((en && g.cat.nameEn) || g.cat.name) : (en ? 'Other' : 'Ostatní');
+    const cards = g.items.map(l => {
+      const url = safeUrl(l.url);
+      const desc = (en && l.descriptionEn) || l.description || '';
+      const host = linkHost(url);
+      return `<a class="link-card reveal" href="${escapeHtml(url)}" target="_blank" rel="noopener">
+        <span class="link-card-title">${escapeHtml(l.title)}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
+        </span>
+        ${desc ? `<span class="link-card-desc">${escapeHtml(desc)}</span>` : ''}
+        ${host ? `<span class="link-card-host">${escapeHtml(host)}</span>` : ''}
+      </a>`;
+    }).join('');
+    return `<div class="links-group">
+      <div class="links-group-head reveal">
+        <span class="links-group-icon">${linkIconSvg(g.cat?.icon, 18)}</span>
+        <span class="links-group-name">${escapeHtml(name)}</span>
+      </div>
+      <div class="links-grid">${cards}</div>
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+}
 
 // ── Průběžné výsledky ─────────────────────────────────────────
 // Data se tahaji primo z Google tabulky. Aby to fungovalo, musi byt list
@@ -2859,6 +3027,7 @@ window.setLang = function(lang) {
   renderBlogCards(lang);
   renderTournaments(lang);
   renderResults(lang);
+  renderLinks(lang);
 };
 
 // ── Merch form ────────────────────────────────────────────────
@@ -2890,6 +3059,7 @@ document.getElementById('merch-form').addEventListener('submit', async function(
 // ── Start ─────────────────────────────────────────────────────
 loadBlogPosts();
 loadTournaments();
+loadLinks();
 // Vysledky az po sezonach — ty urcuji, ze ktere tabulky se maji tahat.
 loadSeasons().then(loadResults);
 </script>

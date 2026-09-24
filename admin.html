@@ -309,6 +309,39 @@
     .t-row-act.s-row-act { flex-shrink: 1; flex-wrap: wrap; justify-content: flex-end; }
     .gen-box { max-width: 640px; text-align: left; }
     .gen-list { max-height: 260px; overflow-y: auto; }
+    /* ── Odkazy ── */
+    .l-head-actions { display: flex; gap: 8px; align-items: center; }
+    .l-group { margin-bottom: 26px; }
+    .l-group-head {
+      display: flex; align-items: center; gap: 10px; padding: 0 2px 8px;
+      border-bottom: 1px solid var(--border); margin-bottom: 8px;
+    }
+    .l-group-icon {
+      width: 28px; height: 28px; flex-shrink: 0; display: flex;
+      align-items: center; justify-content: center;
+      background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim); border-radius: 6px;
+    }
+    .l-group-name { font-family: 'Cinzel', serif; font-size: 0.92rem; color: var(--gold-light); }
+    .l-group-count { font-size: 0.75rem; color: var(--text-3); margin-right: auto; }
+    .l-row {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 6px;
+    }
+    .l-row-info { flex: 1; min-width: 0; }
+    .l-row-title { font-size: 0.9rem; color: var(--text-1); font-weight: 500; }
+    .l-row-url { font-size: 0.75rem; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .l-row-act { display: flex; gap: 6px; flex-shrink: 0; }
+    .l-move { padding: 4px 9px; line-height: 1; }
+    .l-empty { font-size: 0.82rem; color: var(--text-3); padding: 6px 2px; }
+    .lc-box { max-width: 520px; text-align: left; }
+    .lc-icons { display: flex; flex-wrap: wrap; gap: 8px; }
+    .lc-icon-btn {
+      width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+    }
+    .lc-icon-btn.on { border-color: var(--gold); background: rgba(201,168,76,0.12); }
+
     .gen-select {
       display: flex; align-items: center; gap: 10px; margin: 16px 0 6px;
       font-size: 0.8rem; color: var(--text-3);
@@ -632,6 +665,7 @@
       <button class="tab-btn active" onclick="switchTab('blog', this)">📝 Blog</button>
       <button class="tab-btn"       onclick="switchTab('tournaments', this)">🗓️ Turnaje</button>
       <button class="tab-btn"       onclick="switchTab('seasons', this)">🏆 Sezóny</button>
+      <button class="tab-btn"       onclick="switchTab('links', this)">🔗 Odkazy</button>
     </div>
 
     <!-- Blog tab -->
@@ -959,7 +993,92 @@
       </div>
     </div>
 
+<!-- Links tab -->
+    <div class="tab-panel" id="tab-links">
+
+      <!-- Pohled 1: seznam podle kategorii -->
+      <div id="l-view-list">
+        <div class="panel-title panel-title-row">
+          Užitečné odkazy
+          <span class="l-head-actions">
+            <button class="btn-outline btn-sm" onclick="newLinkCategory()">+ Kategorie</button>
+            <button class="btn-save" onclick="newLink()">+ Nový odkaz</button>
+          </span>
+        </div>
+        <p class="season-hint">
+          Rozcestník na webu pod sekcí Merch. Odkazy se řadí do kategorií —
+          kategorie bez odkazů se návštěvníkům nezobrazí a dokud není žádný
+          odkaz, neukáže se celá sekce.
+        </p>
+        <div class="posts-list" id="l-list">
+          <div class="posts-loading">Načítám…</div>
+        </div>
       </div>
+
+      <!-- Pohled 2: uprava odkazu -->
+      <div id="l-view-edit" hidden>
+        <button class="btn-back" type="button" onclick="showLinkList()">← Zpět na odkazy</button>
+        <div class="panel-title" id="l-panel-title">Nový odkaz</div>
+        <div class="t-form">
+          <div class="field">
+            <label for="l-title">Název</label>
+            <input type="text" id="l-title" placeholder="MTGGoldfish — Pauper" />
+          </div>
+          <div class="field">
+            <label for="l-category">Kategorie</label>
+            <select id="l-category"></select>
+          </div>
+          <div class="field full">
+            <label for="l-url">Adresa</label>
+            <input type="url" id="l-url" placeholder="https://…" />
+            <span class="field-hint">Musí začínat http:// nebo https://.</span>
+          </div>
+          <div class="field">
+            <label for="l-desc">Popis</label>
+            <input type="text" id="l-desc" placeholder="Jedna věta, co na webu najdeš." />
+          </div>
+          <div class="field">
+            <label for="l-desc-en">Popis anglicky</label>
+            <input type="text" id="l-desc-en" placeholder="Nepovinné — jinak se použije český" />
+          </div>
+        </div>
+        <div class="editor-actions">
+          <button class="btn-save" onclick="saveLink()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Uložit
+          </button>
+          <span class="save-status" id="l-status"></span>
+        </div>
+      </div>
+    </div>
+
+      </div>
+</div>
+
+<!-- Kategorie odkazů -->
+<div class="modal-overlay" id="lc-overlay" onclick="closeLinkCategory(event)">
+  <div class="modal-box lc-box">
+    <div class="leave-title" id="lc-title">Nová kategorie</div>
+    <div class="t-form">
+      <div class="field">
+        <label for="lc-name">Název</label>
+        <input type="text" id="lc-name" placeholder="Decklisty a metagame" />
+      </div>
+      <div class="field">
+        <label for="lc-name-en">Název anglicky</label>
+        <input type="text" id="lc-name-en" placeholder="Nepovinné — jinak český" />
+      </div>
+      <div class="field full">
+        <label>Ikona</label>
+        <div class="lc-icons" id="lc-icons"></div>
+      </div>
+    </div>
+    <div class="leave-actions">
+      <button class="btn-save" onclick="saveLinkCategory()">Uložit</button>
+      <button class="btn-outline" onclick="closeLinkCategory()">Zrušit</button>
+      <span class="save-status" id="lc-status"></span>
+    </div>
+  </div>
 </div>
 
 <!-- Náhled příspěvku -->
@@ -2840,6 +2959,325 @@ async function runGenerator() {
   }
 }
 
+// ── Odkazy ────────────────────────────────────────────────────
+// Kategorie i odkazy se radi podle pole order. Presun nahoru/dolu jen
+// prohodi order se sousedem, takze cisla nemusi byt souvisla.
+const LINK_ICONS = {
+  book:     '<path d="M4 4h12a2 2 0 012 2v14H6a2 2 0 01-2-2z"/><path d="M4 18a2 2 0 012-2h12"/>',
+  chart:    '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  tool:     '<path d="M14.7 6.3a4 4 0 01-5 5L4 17v3h3l5.7-5.7a4 4 0 015-5z"/>',
+  video:    '<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-3v10l-6-3z"/>',
+  users:    '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0112 0"/><path d="M16 5.5a3.2 3.2 0 010 6M18 20a6 6 0 00-2-4.5"/>',
+  star:     '<path d="M12 3l2.6 5.6L21 9.4l-4.6 4.2 1.2 6.4L12 16.9 6.4 20l1.2-6.4L3 9.4l6.4-.8z"/>',
+  globe:    '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 000 18a14 14 0 000-18"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'
+};
+
+function linkIconSvg(name, size) {
+  const body = LINK_ICONS[name] || LINK_ICONS.globe;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+    stroke="rgba(201,168,76,0.85)" stroke-width="1.6" stroke-linecap="round"
+    stroke-linejoin="round">${body}</svg>`;
+}
+
+let linkCats = [];
+let allLinks = [];
+let editingLinkId = null;
+let editingCatId = null;
+let pickedIcon = 'globe';
+
+const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+
+async function loadLinkData() {
+  const [cats, links] = await Promise.all([
+    db.collection('linkCategories').get(),
+    db.collection('links').get()
+  ]);
+  linkCats = cats.docs.map(d => ({ id: d.id, ...d.data() })).sort(byOrder);
+  allLinks = links.docs.map(d => ({ id: d.id, ...d.data() })).sort(byOrder);
+}
+
+async function loadLinkList() {
+  const list = document.getElementById('l-list');
+  list.innerHTML = '<div class="posts-loading">Načítám…</div>';
+  try {
+    await loadLinkData();
+  } catch(e) {
+    list.innerHTML = '<div class="posts-empty">Chyba při načítání.</div>';
+    console.error(e);
+    return;
+  }
+  if (!linkCats.length && !allLinks.length) {
+    list.innerHTML = '<div class="posts-empty">Zatím nic. Založ první kategorii a pak do ní odkaz.</div>';
+    return;
+  }
+
+  const known = new Set(linkCats.map(c => c.id));
+  const groups = linkCats.map(c => ({ cat: c, items: allLinks.filter(l => l.categoryId === c.id) }));
+  const orphans = allLinks.filter(l => !known.has(l.categoryId));
+  if (orphans.length) groups.push({ cat: null, items: orphans });
+
+  list.innerHTML = '';
+  groups.forEach((g, gi) => list.appendChild(linkGroupEl(g, gi, groups.length)));
+}
+
+function linkGroupEl(g, gi, total) {
+  const wrap = document.createElement('div');
+  wrap.className = 'l-group';
+  const c = g.cat;
+  const head = document.createElement('div');
+  head.className = 'l-group-head';
+  head.innerHTML = `
+    <span class="l-group-icon">${linkIconSvg(c?.icon, 16)}</span>
+    <span class="l-group-name">${escapeHtml(c ? c.name : 'Bez kategorie')}</span>
+    <span class="l-group-count">${g.items.length} ${g.items.length === 1 ? 'odkaz' : (g.items.length >= 2 && g.items.length <= 4 ? 'odkazy' : 'odkazů')}</span>`;
+  if (c) {
+    const acts = document.createElement('span');
+    acts.className = 'l-row-act';
+    acts.innerHTML = `
+      <button class="btn-sm l-move" ${gi === 0 ? 'disabled' : ''} title="Nahoru">↑</button>
+      <button class="btn-sm l-move" ${gi >= total - 1 || !g.cat ? 'disabled' : ''} title="Dolů">↓</button>
+      <button class="btn-sm">Upravit</button>
+      <button class="btn-sm danger">Smazat</button>`;
+    const [up, down, edit, del] = acts.querySelectorAll('button');
+    up.addEventListener('click', () => moveLinkCat(c.id, -1));
+    down.addEventListener('click', () => moveLinkCat(c.id, 1));
+    edit.addEventListener('click', () => editLinkCategory(c.id));
+    del.addEventListener('click', () => deleteLinkCategory(c.id));
+    head.appendChild(acts);
+  }
+  wrap.appendChild(head);
+
+  if (!g.items.length) {
+    const e = document.createElement('div');
+    e.className = 'l-empty';
+    e.textContent = 'Zatím bez odkazů — na webu se tahle kategorie nezobrazí.';
+    wrap.appendChild(e);
+  }
+  g.items.forEach((l, i) => wrap.appendChild(linkRowEl(l, i, g.items.length)));
+  return wrap;
+}
+
+function linkRowEl(l, i, total) {
+  const row = document.createElement('div');
+  row.className = 'l-row';
+  row.innerHTML = `
+    <div class="l-row-info">
+      <div class="l-row-title">${escapeHtml(l.title || '(bez názvu)')}</div>
+      <div class="l-row-url">${escapeHtml(l.url || '')}</div>
+    </div>
+    <div class="l-row-act">
+      <button class="btn-sm l-move" ${i === 0 ? 'disabled' : ''} title="Nahoru">↑</button>
+      <button class="btn-sm l-move" ${i >= total - 1 ? 'disabled' : ''} title="Dolů">↓</button>
+      <button class="btn-sm">Upravit</button>
+      <button class="btn-sm danger">Smazat</button>
+    </div>`;
+  const [up, down, edit, del] = row.querySelectorAll('button');
+  up.addEventListener('click', () => moveLink(l, -1));
+  down.addEventListener('click', () => moveLink(l, 1));
+  edit.addEventListener('click', () => editLink(l.id));
+  del.addEventListener('click', () => deleteLink(l));
+  return row;
+}
+
+// Prohodi poradi se sousedem ve stejne skupine.
+async function swapOrder(collection, a, b) {
+  await Promise.all([
+    db.collection(collection).doc(a.id).update({ order: b.order ?? 0 }),
+    db.collection(collection).doc(b.id).update({ order: a.order ?? 0 })
+  ]);
+  await loadLinkList();
+}
+
+async function moveLinkCat(id, dir) {
+  const i = linkCats.findIndex(c => c.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= linkCats.length) return;
+  try { await swapOrder('linkCategories', linkCats[i], linkCats[j]); }
+  catch(e) { console.error(e); alert('Přesun se nepodařil.'); }
+}
+
+async function moveLink(l, dir) {
+  const siblings = allLinks.filter(x => x.categoryId === l.categoryId);
+  const i = siblings.findIndex(x => x.id === l.id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= siblings.length) return;
+  try { await swapOrder('links', siblings[i], siblings[j]); }
+  catch(e) { console.error(e); alert('Přesun se nepodařil.'); }
+}
+
+// ── Odkaz ─────────────────────────────────────────────────────
+function showLinkList() {
+  document.getElementById('l-view-edit').hidden = true;
+  document.getElementById('l-view-list').hidden = false;
+  loadLinkList();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function fillLinkCategorySelect(selected) {
+  const sel = document.getElementById('l-category');
+  sel.innerHTML = '';
+  linkCats.forEach(c => sel.add(new Option(c.name, c.id)));
+  if (selected) sel.value = selected;
+}
+
+function newLink() {
+  if (!linkCats.length) { alert('Nejdřív založ aspoň jednu kategorii.'); return; }
+  editingLinkId = null;
+  document.getElementById('l-panel-title').textContent = 'Nový odkaz';
+  ['l-title', 'l-url', 'l-desc', 'l-desc-en'].forEach(id => document.getElementById(id).value = '');
+  fillLinkCategorySelect(linkCats[0].id);
+  document.getElementById('l-status').textContent = '';
+  document.getElementById('l-view-list').hidden = true;
+  document.getElementById('l-view-edit').hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function editLink(id) {
+  const l = allLinks.find(x => x.id === id);
+  if (!l) return;
+  editingLinkId = id;
+  document.getElementById('l-panel-title').textContent = l.title || 'Odkaz';
+  document.getElementById('l-title').value   = l.title || '';
+  document.getElementById('l-url').value     = l.url || '';
+  document.getElementById('l-desc').value    = l.description || '';
+  document.getElementById('l-desc-en').value = l.descriptionEn || '';
+  fillLinkCategorySelect(l.categoryId);
+  document.getElementById('l-status').textContent = '';
+  document.getElementById('l-view-list').hidden = true;
+  document.getElementById('l-view-edit').hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Do odkazu pustime jen http(s) — stejne jako to dela web pres safeUrl.
+function validLinkUrl(v) {
+  try {
+    const u = new URL(String(v).trim());
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
+  } catch { return null; }
+}
+
+async function saveLink() {
+  const status = document.getElementById('l-status');
+  const title = document.getElementById('l-title').value.trim();
+  const url   = validLinkUrl(document.getElementById('l-url').value);
+  const categoryId = document.getElementById('l-category').value;
+
+  if (!title) { status.textContent = 'Zadej název odkazu.'; status.className = 'save-status err'; return; }
+  if (!url)   { status.textContent = 'Adresa musí začínat http:// nebo https://.'; status.className = 'save-status err'; return; }
+  if (!categoryId) { status.textContent = 'Vyber kategorii.'; status.className = 'save-status err'; return; }
+
+  status.textContent = 'Ukládám…';
+  status.className = 'save-status';
+  try {
+    const data = {
+      title, url, categoryId,
+      description:   document.getElementById('l-desc').value.trim(),
+      descriptionEn: document.getElementById('l-desc-en').value.trim()
+    };
+    if (editingLinkId) {
+      await db.collection('links').doc(editingLinkId).update(data);
+    } else {
+      // Novy odkaz padne na konec sve kategorie.
+      const inCat = allLinks.filter(l => l.categoryId === categoryId);
+      data.order = inCat.length ? Math.max(...inCat.map(l => l.order ?? 0)) + 1 : 0;
+      const ref = await db.collection('links').add(data);
+      editingLinkId = ref.id;
+    }
+    status.textContent = '✓ Uloženo';
+    status.className = 'save-status ok';
+    await loadLinkData();
+  } catch(e) {
+    status.textContent = 'Uložení se nepodařilo.';
+    status.className = 'save-status err';
+    console.error(e);
+  }
+}
+
+async function deleteLink(l) {
+  if (!confirm(`Smazat odkaz „${l.title}"?`)) return;
+  try { await db.collection('links').doc(l.id).delete(); await loadLinkList(); }
+  catch(e) { console.error(e); alert('Smazání se nepodařilo.'); }
+}
+
+// ── Kategorie odkazů ──────────────────────────────────────────
+function renderIconPicker() {
+  const box = document.getElementById('lc-icons');
+  box.innerHTML = '';
+  Object.keys(LINK_ICONS).forEach(name => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'lc-icon-btn' + (name === pickedIcon ? ' on' : '');
+    b.innerHTML = linkIconSvg(name, 20);
+    b.addEventListener('click', () => { pickedIcon = name; renderIconPicker(); });
+    box.appendChild(b);
+  });
+}
+
+function newLinkCategory() {
+  editingCatId = null;
+  pickedIcon = 'globe';
+  document.getElementById('lc-title').textContent = 'Nová kategorie';
+  document.getElementById('lc-name').value = '';
+  document.getElementById('lc-name-en').value = '';
+  document.getElementById('lc-status').textContent = '';
+  renderIconPicker();
+  document.getElementById('lc-overlay').classList.add('open');
+}
+
+function editLinkCategory(id) {
+  const c = linkCats.find(x => x.id === id);
+  if (!c) return;
+  editingCatId = id;
+  pickedIcon = c.icon || 'globe';
+  document.getElementById('lc-title').textContent = 'Upravit kategorii';
+  document.getElementById('lc-name').value = c.name || '';
+  document.getElementById('lc-name-en').value = c.nameEn || '';
+  document.getElementById('lc-status').textContent = '';
+  renderIconPicker();
+  document.getElementById('lc-overlay').classList.add('open');
+}
+
+function closeLinkCategory(ev) {
+  if (ev && ev.target !== ev.currentTarget) return;
+  document.getElementById('lc-overlay').classList.remove('open');
+}
+
+async function saveLinkCategory() {
+  const status = document.getElementById('lc-status');
+  const name = document.getElementById('lc-name').value.trim();
+  if (!name) { status.textContent = 'Zadej název.'; status.className = 'save-status err'; return; }
+  status.textContent = 'Ukládám…';
+  status.className = 'save-status';
+  try {
+    const data = { name, nameEn: document.getElementById('lc-name-en').value.trim(), icon: pickedIcon };
+    if (editingCatId) {
+      await db.collection('linkCategories').doc(editingCatId).update(data);
+    } else {
+      data.order = linkCats.length ? Math.max(...linkCats.map(c => c.order ?? 0)) + 1 : 0;
+      await db.collection('linkCategories').add(data);
+    }
+    closeLinkCategory();
+    await loadLinkList();
+  } catch(e) {
+    status.textContent = 'Uložení se nepodařilo.';
+    status.className = 'save-status err';
+    console.error(e);
+  }
+}
+
+async function deleteLinkCategory(id) {
+  const c = linkCats.find(x => x.id === id);
+  if (!c) return;
+  const inCat = allLinks.filter(l => l.categoryId === id);
+  const msg = inCat.length
+    ? `Smazat kategorii „${c.name}"? Zůstane v ní ${inCat.length} odkazů — přesuň je nejdřív jinam, jinak se na webu ukážou pod „Ostatní".`
+    : `Smazat kategorii „${c.name}"?`;
+  if (!confirm(msg)) return;
+  try { await db.collection('linkCategories').doc(id).delete(); await loadLinkList(); }
+  catch(e) { console.error(e); alert('Smazání se nepodařilo.'); }
+}
+
 // ── Tabs ──────────────────────────────────────────────────────
 function switchTab(name, clickedBtn) {
   // Odchod z rozdelane upravy prispevku (i preskok na jinou zalozku)
@@ -2858,6 +3296,7 @@ function doSwitchTab(name, clickedBtn) {
   if (name === 'blog') showBlogList();
   if (name === 'tournaments') loadTournamentList();
   if (name === 'seasons') showSeasonList();
+  if (name === 'links') showLinkList();
 }
 
 // ── Hlídání neuložených změn ──────────────────────────────────
