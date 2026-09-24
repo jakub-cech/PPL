@@ -1138,11 +1138,11 @@
       <div class="liga-panel reveal">
         <div class="liga-panel-head" data-i18n="liga.panel2"></div>
 
-        <div class="liga-sub" data-i18n="system.rules.title"></div>
-        <ul class="rule-list" id="rule-list"></ul>
+        <div class="liga-sub" data-i18n="system.event.title"></div>
+        <ul class="rule-list" id="event-list"></ul>
 
-        <div class="liga-sub" data-i18n="system.prizes.title"></div>
-        <ul class="rule-list" id="prize-list"></ul>
+        <div class="liga-sub" data-i18n="system.season.title"></div>
+        <ul class="rule-list" id="season-list"></ul>
 
         <div class="grand-prize">
           <div class="gp-label" data-i18n="system.grand.label"></div>
@@ -1529,18 +1529,18 @@ const i18n = {
     "system.label":        "Pravidla",
     "system.title":        "Herní Systém a Ceny",
     "system.desc":         "Jak funguje liga od prvního kola až po finálový turnaj.",
-    "system.rules.title":  "Herní Systém",
-    "system.prizes.title": "Rozdělení Banku",
-    "system.rules": [
-      "Na každém turnaji se hrají přesně <strong>4 kola Swiss</strong>.",
+    "system.event.title":  "Jeden Turnaj",
+    "system.season.title": "Celá Sezóna",
+    "system.event": [
+      "Hrají se přesně <strong>4 kola Swiss</strong>.",
+      "<strong>Elite Winner (4–0)</strong> získává <strong>2× podíl</strong> z banku kola.",
+      "<strong>Contender Winner (3–1)</strong> získává <strong>1× podíl</strong> z banku kola."
+    ],
+    "system.season": [
       "Do celkového pořadí se počítá <strong>{best}</strong> ze všech turnajů ligy.",
       "Hráči s nejvyšším bodovým ziskem po regulérní sezóně postoupí do <strong>TOP 8</strong>.",
       "TOP 8 hráčů se {finalsMonth} utkají ve <strong>finále s Double Elimination</strong> bracketem.",
       "Finálový turnaj se hraje <strong>bez proxy karet</strong> – vyžadují se originální karty."
-    ],
-    "system.prizes": [
-      "<strong>Elite Winner (4–0)</strong> získává <strong>2× podíl</strong> z banku kola.",
-      "<strong>Contender Winner (3–1)</strong> získává <strong>1× podíl</strong> z banku kola."
     ],
     "system.grand.label": "Hlavní Cena",
     "system.grand.title": "Finálový Vítěz",
@@ -1686,18 +1686,18 @@ const i18n = {
     "system.label":        "Rules",
     "system.title":        "Game System & Prizes",
     "system.desc":         "How the league works from round one to the final tournament.",
-    "system.rules.title":  "Game System",
-    "system.prizes.title": "Prize Distribution",
-    "system.rules": [
-      "Each event consists of exactly <strong>4 Swiss rounds</strong>.",
+    "system.event.title":  "A Single Event",
+    "system.season.title": "The Whole Season",
+    "system.event": [
+      "Exactly <strong>4 Swiss rounds</strong> are played.",
+      "<strong>Elite Winner (4–0)</strong> earns a <strong>2× share</strong> of the round bank.",
+      "<strong>Contender Winner (3–1)</strong> earns a <strong>1× share</strong> of the round bank."
+    ],
+    "system.season": [
       "Only your <strong>{best}</strong> from all league tournaments count toward standings.",
       "Players with the highest point totals advance to <strong>TOP 8</strong>.",
       "The TOP 8 compete {finalsMonth} at a <strong>Double Elimination Finals</strong> bracket.",
       "The finals event is played <strong>without proxies</strong> — original cards required."
-    ],
-    "system.prizes": [
-      "<strong>Elite Winner (4–0)</strong> earns a <strong>2× share</strong> of the round bank.",
-      "<strong>Contender Winner (3–1)</strong> earns a <strong>1× share</strong> of the round bank."
     ],
     "system.grand.label": "Grand Prize",
     "system.grand.title": "Finals Champion",
@@ -1818,30 +1818,22 @@ function setLang(lang) {
 
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
-    if (key === 'system.rules') return;
-    if (t[key] === undefined) return;
+    // Pole patri do odrazkovych seznamu nize, ne do textu elementu.
+    if (t[key] === undefined || Array.isArray(t[key])) return;
     el.innerHTML = fillVars(t[key], vars).replace(/\n/g, '<br>');
   });
 
-  // Rule list
-  const ruleList = document.getElementById('rule-list');
-  ruleList.innerHTML = '';
-  t['system.rules'].forEach(rule => {
-    const li = document.createElement('li');
-    li.innerHTML = fillVars(rule, vars);
-    ruleList.appendChild(li);
-  });
-
-  // Prize list
-  const prizeList = document.getElementById('prize-list');
-  if (prizeList) {
-    prizeList.innerHTML = '';
-    t['system.prizes'].forEach(item => {
+  // Pravidla ve dvou skupinach — co plati pro jeden turnaj a co pro sezonu.
+  [['event-list', 'system.event'], ['season-list', 'system.season']].forEach(([id, key]) => {
+    const ul = document.getElementById(id);
+    if (!ul) return;
+    ul.innerHTML = '';
+    (t[key] || []).forEach(rule => {
       const li = document.createElement('li');
-      li.innerHTML = item;
-      prizeList.appendChild(li);
+      li.innerHTML = fillVars(rule, vars);
+      ul.appendChild(li);
     });
-  }
+  });
 }
 
 // ── Mobile menu ───────────────────────────────────────────────
