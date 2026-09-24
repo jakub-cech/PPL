@@ -96,6 +96,168 @@ function cleanElement(el) {
   }
 }
 
+// ── Firestore přes REST ───────────────────────────────────────
+// Veřejné stránky si vystačí s hrstkou dotazů, a tak mluví s Firestore
+// rovnou přes jeho REST rozhraní. Návštěvník tím nestahuje celou SDK
+// (163 kB komprimovaně), což je řádově víc než celá stránka.
+//
+// Napodobujeme jen ten kousek compat API, který weby opravdu používají:
+//   db.collection('x').get()
+//   db.collection('x').where('published', '==', true).get()
+//   db.collection('x').doc(id).collection('y').get()
+//   db.collection('x').doc(id).collection('y').doc(z).get()
+//   db.collection('x').doc(id).collection('y').add({ ..., db.serverTimestamp() })
+// Admin zůstává na SDK — potřebuje přihlášení, zápisy a dávky.
+
+// Čas serveru. Musí projít až do zápisu jako transformace, protože
+// pravidla u komentářů a registrací vyžadují createdAt == request.time.
+const REST_SERVER_TIME = Object.freeze({ __serverTime: true });
+
+function restTimestamp(iso) {
+  const ms = Date.parse(iso);
+  // Stejné rozhraní jako Timestamp z SDK — zbytek kódu pozná jen tyhle dvě.
+  return { toMillis: () => ms, toDate: () => new Date(ms) };
+}
+
+function restDecode(v) {
+  if (!v || typeof v !== 'object') return null;
+  if ('stringValue'    in v) return v.stringValue;
+  if ('booleanValue'   in v) return v.booleanValue;
+  if ('integerValue'   in v) return Number(v.integerValue);
+  if ('doubleValue'    in v) return Number(v.doubleValue);
+  if ('timestampValue' in v) return restTimestamp(v.timestampValue);
+  if ('nullValue'      in v) return null;
+  if ('arrayValue'     in v) return (v.arrayValue.values || []).map(restDecode);
+  if ('mapValue'       in v) return restFields(v.mapValue.fields);
+  if ('referenceValue' in v) return v.referenceValue;
+  if ('bytesValue'     in v) return v.bytesValue;
+  return null;
+}
+
+function restFields(fields) {
+  const out = {};
+  for (const [k, v] of Object.entries(fields || {})) out[k] = restDecode(v);
+  return out;
+}
+
+function restEncode(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === 'string')  return { stringValue: v };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (typeof v === 'number')  return Number.isInteger(v)
+    ? { integerValue: String(v) } : { doubleValue: v };
+  if (v instanceof Date) return { timestampValue: v.toISOString() };
+  if (Array.isArray(v))  return { arrayValue: { values: v.map(restEncode) } };
+  const fields = {};
+  for (const [k, x] of Object.entries(v)) fields[k] = restEncode(x);
+  return { mapValue: { fields } };
+}
+
+// Firestore si generuje ID dokumentu sám, když se zakládá přes .add().
+// Přes REST si ho musíme vyrobit — stejný tvar, 20 znaků z 62.
+function restAutoId() {
+  const abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  return [...crypto.getRandomValues(new Uint8Array(20))]
+    .map(n => abc[n % abc.length]).join('');
+}
+
+const REST_OPS = { '==': 'EQUAL', '!=': 'NOT_EQUAL', '<': 'LESS_THAN',
+  '<=': 'LESS_THAN_OR_EQUAL', '>': 'GREATER_THAN', '>=': 'GREATER_THAN_OR_EQUAL' };
+
+function firestoreRest(config) {
+  if (!config || !config.projectId || !config.apiKey) return null;
+  const root = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents`;
+  const key  = 'key=' + encodeURIComponent(config.apiKey);
+  const docName = path => `projects/${config.projectId}/databases/(default)/documents/${path}`;
+
+  async function call(url, body) {
+    const res = await fetch(url, body === undefined ? undefined : {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw Object.assign(new Error('Firestore HTTP ' + res.status), { status: res.status });
+    return res.json();
+  }
+
+  const snapOf = d => {
+    const data = restFields(d.fields);
+    return { id: d.name.slice(d.name.lastIndexOf('/') + 1), exists: true, data: () => data };
+  };
+  const setOf = docs => ({ docs, size: docs.length, empty: !docs.length,
+                           forEach: fn => docs.forEach(fn) });
+  const filterOf = ([f, op, v]) => ({ fieldFilter: {
+    field: { fieldPath: f }, op: REST_OPS[op] || 'EQUAL', value: restEncode(v) } });
+
+  // Výpis kolekce. Firestore stránkuje, takže bereme dokola, dokud dává token.
+  async function list(path) {
+    const docs = [];
+    for (let token = '';;) {
+      const j = await call(`${root}/${path}?${key}&pageSize=300` +
+        (token ? '&pageToken=' + encodeURIComponent(token) : ''));
+      (j.documents || []).forEach(d => docs.push(snapOf(d)));
+      token = j.nextPageToken || '';
+      if (!token) return setOf(docs);
+    }
+  }
+
+  async function query(parent, collectionId, filters) {
+    const structuredQuery = { from: [{ collectionId }] };
+    structuredQuery.where = filters.length === 1
+      ? filterOf(filters[0])
+      : { compositeFilter: { op: 'AND', filters: filters.map(filterOf) } };
+    const rows = await call(`${root}${parent ? '/' + parent : ''}:runQuery?${key}`, { structuredQuery });
+    // Odpověď může začínat položkou, která nese jen readTime.
+    return setOf((rows || []).filter(r => r.document).map(r => snapOf(r.document)));
+  }
+
+  async function add(path, data) {
+    const fields = {}, updateTransforms = [];
+    for (const [k, v] of Object.entries(data)) {
+      if (v === REST_SERVER_TIME) updateTransforms.push({ fieldPath: k, setToServerValue: 'REQUEST_TIME' });
+      else fields[k] = restEncode(v);
+    }
+    const id = restAutoId();
+    const write = { update: { name: docName(path + '/' + id), fields },
+                    // Pojistka proti přepsání, kdyby ID náhodou padlo na existující.
+                    currentDocument: { exists: false } };
+    if (updateTransforms.length) write.updateTransforms = updateTransforms;
+    await call(`${root}:commit?${key}`, { writes: [write] });
+    return { id };
+  }
+
+  function collectionRef(parent, id) {
+    const path = (parent ? parent + '/' : '') + id;
+    const withFilters = filters => ({
+      doc:   docId => documentRef(path, docId),
+      where: (f, op, v) => withFilters([...filters, [f, op, v]]),
+      add:   data => add(path, data),
+      get:   () => filters.length ? query(parent, id, filters) : list(path)
+    });
+    return withFilters([]);
+  }
+
+  function documentRef(parent, id) {
+    const path = parent + '/' + id;
+    return {
+      id,
+      collection: name => collectionRef(path, name),
+      async get() {
+        try { return snapOf(await call(`${root}/${path}?${key}`)); }
+        catch (e) {
+          // Na dokument, který neexistuje nebo na nějž návštěvník nemá právo,
+          // Firestore odpovídá 404 i 403 — pro volajícího je to obojí "není".
+          if (e.status === 404 || e.status === 403) return { id, exists: false, data: () => ({}) };
+          throw e;
+        }
+      }
+    };
+  }
+
+  return { collection: name => collectionRef('', name),
+           serverTimestamp: () => REST_SERVER_TIME };
+}
+
 // ── Náhled karty ze Scryfallu ─────────────────────────────────
 
 const CARD_IMG = name =>

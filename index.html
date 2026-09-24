@@ -1263,8 +1263,6 @@
 </footer>
 
 <script src="shared.js"></script>
-<script src="vendor/firebase-12.16.0-app-compat.js"></script>
-<script src="vendor/firebase-12.16.0-firestore-compat.js"></script>
 <script>
 // ── Sezóny ────────────────────────────────────────────────────
 // Sezony se spravuji v adminu (kolekce "seasons" ve Firestore). Tenhle
@@ -1748,8 +1746,6 @@ document.querySelectorAll('.reveal').forEach((el, i) => {
 });
 </script>
 
-<!-- Firebase SDK (compat) -->
-
 <script>
 // ══════════════════════════════════════════════════════════════
 // FIREBASE CONFIG
@@ -1764,11 +1760,10 @@ const firebaseConfig = {
   appId:             "1:786427947147:web:e77ea63364ef432e044c8e"
 };
 
-let db = null;
-try {
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-} catch(e) { console.warn('Firebase not configured yet.'); }
+// Data se čtou i zapisují přes REST (viz shared.js), aby veřejná stránka
+// nemusela stahovat Firebase SDK. Admin SDK používá dál.
+const db = firestoreRest(firebaseConfig);
+if (!db) console.warn('Firebase not configured yet.');
 
 // ── Blog state ────────────────────────────────────────────────
 let cachedPosts = null;
@@ -2400,7 +2395,7 @@ async function submitRegistration(form, tournament, statusEl, t) {
   statusEl.className = 'reg-status';
   try {
     await db.collection('tournaments').doc(tournament.id).collection('registrations').add({
-      name, note, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      name, note, createdAt: db.serverTimestamp()
     });
     rememberRegistered(tournament.id);
     await loadRegistrations([tournament]);
@@ -2603,7 +2598,7 @@ async function submitComment(form, post, statusEl, t) {
   btn.disabled = true;
   statusEl.textContent = t['comments.sending']; statusEl.className = 'comment-status';
   try {
-    const data = { text, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const data = { text, createdAt: db.serverTimestamp() };
     if (nick) data.nick = nick;
     await db.collection('posts').doc(post.id).collection('comments').add(data);
     await renderComments(post);
