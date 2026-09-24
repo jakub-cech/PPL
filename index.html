@@ -534,7 +534,7 @@
     @media (max-width: 800px) { .format-grid { grid-template-columns: 1fr; } }
 
     /* ── ROZCESTNÍK ── */
-    #odkazy { background: var(--bg-1); }
+    #odkazy { background: var(--bg-0); }
     .links-group { margin-top: 44px; }
     .links-group-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
     .links-group-icon {
@@ -625,11 +625,11 @@
     .grand-prize .gp-desc  { font-size: 0.85rem; color: var(--text-2); }
 
     /* ── COMMUNITY ── */
-    /* Vlozenim rozcestniku se posunulo stridani — komunita proto prebira
-       tmavsi pozadi, aby na odkazy nenavazovala stejnou barvou. Kdyz zadny
-       odkaz neni a sekce se schova, vraci se k puvodni barve, jinak by
-       navazala na merch. */
+    /* Kdyz rozcestnik nema co ukazat a schova se, vypadne ze stridani
+       jedna sekce — merch a komunita si proto prohodi barvy, aby merch
+       nenavazal na vysledky stejnym pozadim. */
     #komunita { background: var(--bg-0); }
+    body.no-links #merch    { background: var(--bg-0); }
     body.no-links #komunita { background: var(--bg-1); }
     .community-inner { display: flex; flex-direction: column; align-items: center; text-align: center; }
     .community-desc { font-size: 1rem; color: var(--text-2); max-width: 480px; margin: 0 auto 40px; line-height: 1.7; }
@@ -860,7 +860,7 @@
     }
 
     /* ── MERCH ── */
-    #merch { background: var(--bg-0); }
+    #merch { background: var(--bg-1); }
     .merch-coming {
       display: flex; flex-direction: column; align-items: center;
       gap: 14px; padding: 56px 24px;
@@ -868,7 +868,12 @@
       border-radius: var(--radius-md); margin-top: 40px; text-align: center;
     }
     .merch-coming-icon { font-size: 2.5rem; opacity: 0.45; }
-    .merch-coming-text { font-size: 0.9rem; color: var(--text-3); }
+    .merch-badge {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); border: 1px solid var(--gold-dim); border-radius: 100px;
+      padding: 5px 14px; background: rgba(201,168,76,0.07);
+    }
+    .merch-coming-text { font-size: 0.9rem; color: var(--text-3); max-width: 46ch; line-height: 1.7; }
     .merch-form-wrap { margin-top: 48px; max-width: 640px; }
     .merch-form-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
     .merch-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -906,8 +911,8 @@
       <li><a href="#turnaje"><span  data-i18n="nav.tournaments"></span></a></li>
       <li><a href="#liga"><span     data-i18n="nav.info"></span></a></li>
       <li><a href="#vysledky"><span data-i18n="nav.results"></span></a></li>
-      <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
       <li><a href="#odkazy"><span data-i18n="nav.links"></span></a></li>
+      <li><a href="#merch"><span data-i18n="nav.merch"></span></a></li>
       <li><a href="#komunita"><span data-i18n="nav.community"></span></a></li>
     </ul>
 
@@ -929,8 +934,8 @@
     <a href="#turnaje"  onclick="closeMenu()"><span data-i18n="nav.tournaments"></span></a>
     <a href="#liga"     onclick="closeMenu()"><span data-i18n="nav.info"></span></a>
     <a href="#vysledky" onclick="closeMenu()"><span data-i18n="nav.results"></span></a>
-    <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
     <a href="#odkazy"   onclick="closeMenu()"><span data-i18n="nav.links"></span></a>
+    <a href="#merch"    onclick="closeMenu()"><span data-i18n="nav.merch"></span></a>
     <a href="#komunita" onclick="closeMenu()"><span data-i18n="nav.community"></span></a>
   </div>
 </nav>
@@ -1169,6 +1174,21 @@
   </div>
 </section>
 
+<!-- ── ROZCESTNÍK ── -->
+<!-- Obsah se vykresluje z Firestore; dokud zadny odkaz neni, sekce se
+     neukaze vubec (hidden se sundava az v renderLinks). -->
+<section id="odkazy" hidden>
+  <div class="container">
+    <div class="ornament"><div class="ornament-diamond"></div></div>
+    <div class="reveal">
+      <span class="section-label" data-i18n="links.label"></span>
+      <h2 class="section-title" data-i18n="links.title"></h2>
+      <p class="section-desc" data-i18n="links.desc"></p>
+    </div>
+    <div id="links-body"></div>
+  </div>
+</section>
+
 <!-- ── MERCH ── -->
 <section id="merch">
   <div class="container">
@@ -1180,6 +1200,7 @@
     </div>
     <div class="merch-coming reveal">
       <div class="merch-coming-icon">🛡️</div>
+      <span class="merch-badge" data-i18n="merch.badge"></span>
       <p class="merch-coming-text" data-i18n="merch.coming"></p>
     </div>
     <div class="merch-form-wrap reveal">
@@ -1231,21 +1252,6 @@
       </form>
       <div class="form-success" id="merch-success" data-i18n="merch.form.success"></div>
     </div>
-  </div>
-</section>
-
-<!-- ── ROZCESTNÍK ── -->
-<!-- Obsah se vykresluje z Firestore; dokud zadny odkaz neni, sekce se
-     neukaze vubec (hidden se sundava az v renderLinks). -->
-<section id="odkazy" hidden>
-  <div class="container">
-    <div class="ornament"><div class="ornament-diamond"></div></div>
-    <div class="reveal">
-      <span class="section-label" data-i18n="links.label"></span>
-      <h2 class="section-title" data-i18n="links.title"></h2>
-      <p class="section-desc" data-i18n="links.desc"></p>
-    </div>
-    <div id="links-body"></div>
   </div>
 </section>
 
@@ -1534,8 +1540,7 @@ const i18n = {
     ],
     "system.prizes": [
       "<strong>Elite Winner (4–0)</strong> získává <strong>2× podíl</strong> z banku kola.",
-      "<strong>Contender Winner (3–1)</strong> získává <strong>1× podíl</strong> z banku kola.",
-      "Zbývající bank se dělí rovnoměrně mezi všechny zúčastněné hráče."
+      "<strong>Contender Winner (3–1)</strong> získává <strong>1× podíl</strong> z banku kola."
     ],
     "system.grand.label": "Hlavní Cena",
     "system.grand.title": "Finálový Vítěz",
@@ -1613,8 +1618,9 @@ const i18n = {
 
     "merch.label":        "Merch",
     "merch.title":        "Oblečení & Merch",
-    "merch.desc":         "Trička, mikiny a další liga merch. Aktuálně připravujeme kolekci.",
-    "merch.coming":       "Kolekce se připravuje. Předběžně si může zaregistrovat zájem níže.",
+    "merch.desc":         "Trička, mikiny a další liga merch.",
+    "merch.badge":        "Připravujeme",
+    "merch.coming":       "Kolekce zatím není v prodeji a nějakou dobu to ještě potrvá. Nech nám níže zájem a ozveme se, jakmile bude co objednat.",
     "merch.form.title":   "Registrace Zájmu",
     "merch.form.name":    "Jméno",
     "merch.form.email":   "E-mail",
@@ -1691,8 +1697,7 @@ const i18n = {
     ],
     "system.prizes": [
       "<strong>Elite Winner (4–0)</strong> earns a <strong>2× share</strong> of the round bank.",
-      "<strong>Contender Winner (3–1)</strong> earns a <strong>1× share</strong> of the round bank.",
-      "The remaining bank is split equally among all participants."
+      "<strong>Contender Winner (3–1)</strong> earns a <strong>1× share</strong> of the round bank."
     ],
     "system.grand.label": "Grand Prize",
     "system.grand.title": "Finals Champion",
@@ -1770,8 +1775,9 @@ const i18n = {
 
     "merch.label":        "Merch",
     "merch.title":        "Clothing & Merch",
-    "merch.desc":         "T-shirts, hoodies and more. Collection coming soon.",
-    "merch.coming":       "Collection in preparation. Register your interest below.",
+    "merch.desc":         "T-shirts, hoodies and more.",
+    "merch.badge":        "In preparation",
+    "merch.coming":       "The collection is not on sale yet and it will be a while. Leave your interest below and we'll get in touch once there is something to order.",
     "merch.form.title":   "Interest Registration",
     "merch.form.name":    "Name",
     "merch.form.email":   "E-mail",
