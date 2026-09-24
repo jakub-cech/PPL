@@ -495,8 +495,6 @@
 </footer>
 
 <script src="shared.js"></script>
-<script src="vendor/firebase-12.16.0-app-compat.js"></script>
-<script src="vendor/firebase-12.16.0-firestore-compat.js"></script>
 <script>
 // Obalka karty blogu: fotka oznacena jako obalka (jinak prvni v galerii)
 // a zarovnani orezu podle post.coverAlign.
@@ -726,7 +724,7 @@ async function submitComment(form, post, statusEl, t) {
   btn.disabled = true;
   statusEl.textContent = t['comments.sending']; statusEl.className = 'comment-status';
   try {
-    const data = { text, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const data = { text, createdAt: db.serverTimestamp() };
     if (nick) data.nick = nick;
     await db.collection('posts').doc(post.id).collection('comments').add(data);
     await renderComments(post);
@@ -795,9 +793,9 @@ const firebaseConfig = {
   messagingSenderId: "786427947147",
   appId:             "1:786427947147:web:e77ea63364ef432e044c8e"
 };
-let db = null;
-try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); }
-catch(e) { console.warn('Firebase not configured yet.'); }
+// Čte se přes REST (viz shared.js) — veřejná stránka tak nestahuje SDK.
+const db = firestoreRest(firebaseConfig);
+if (!db) console.warn('Firebase not configured yet.');
 
 const observer = new IntersectionObserver(
   entries => entries.forEach(e => {
