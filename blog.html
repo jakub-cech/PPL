@@ -494,31 +494,10 @@
   <p class="footer-copy" data-i18n="footer.copy"></p>
 </footer>
 
+<script src="shared.js"></script>
 <script src="vendor/firebase-12.16.0-app-compat.js"></script>
 <script src="vendor/firebase-12.16.0-firestore-compat.js"></script>
 <script>
-// Vse, co prijde z Firestore, se pred vlozenim do HTML escapuje. Jedina
-// vyjimka je obsah prispevku, ktery je HTML zamerne.
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-// Do href pustime jen http(s) — jinak by sel do odkazu propasovat
-// javascript: a spustit skript kliknutim.
-function safeUrl(u) {
-  try {
-    const parsed = new URL(String(u), location.href);
-    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
-  } catch { return ''; }
-}
-
-// Fotky z galerie jsou vzdy data: URL vyrobene v adminu. Cokoli jineho
-// (treba odkaz na cizi server) do stranky nepustime.
-function safeImage(s) {
-  return /^data:image\//.test(String(s ?? '')) ? String(s) : '';
-}
-
 // Obalka karty blogu: fotka oznacena jako obalka (jinak prvni v galerii)
 // a zarovnani orezu podle post.coverAlign.
 function postCover(p) {
@@ -529,84 +508,6 @@ function postCover(p) {
   if (!thumb) return null;
   const align = { top: 'center top', bottom: 'center bottom' }[p.coverAlign] || 'center center';
   return { thumb, align };
-}
-
-// Z HTML obsahu vytahne cisty text pro ukazku na karte. DOMParser
-// na rozdil od innerHTML nic nespousti ani nenacita, takze je i na
-// neduveryhodny obsah bezpecny — a zaroven prelozi entity, takze se
-// "&amp;" neukaze doslova.
-function htmlToText(html) {
-  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
-  // Za blokove znacky doplnime mezeru, jinak by se sousedni odstavce
-  // a odrazky v ukazce slily do jednoho slova.
-  doc.body.querySelectorAll('p, div, li, br, h1, h2, h3, h4, h5, h6, blockquote, pre, tr')
-    .forEach(el => el.after(doc.createTextNode(' ')));
-  return doc.body.textContent || '';
-}
-
-// Obsah prispevku je HTML z editoru a vykresluje se jako HTML. Nez ho
-// vlozime do stranky, projdeme strom a nechame jen znacky a atributy,
-// ktere editor umi vyrobit. Kdyby nekdo ziskal admin ucet, dokaze tak
-// nanejvys pokazit formatovani, ne propasovat na web skript.
-const ALLOWED_TAGS = new Set([
-  'P','BR','HR','STRONG','B','EM','I','U','S','SUB','SUP',
-  'H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','A','IMG',
-  // Struktura: tabulky, decklisty, jednoduche rozlozeni
-  'TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','CAPTION','COLGROUP','COL',
-  'FIGURE','FIGCAPTION','DIV','SPAN'
-]);
-// Znacky, u kterych by rozbaleni obsahu vypsalo na stranku kod misto textu.
-const DROP_TAGS  = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META','SVG','MATH','TEMPLATE','FORM','INPUT','BUTTON','SELECT','TEXTAREA','NOSCRIPT']);
-// class povolujeme obecne (kvuli stylovani decklistu/tabulek); je to jen
-// kosmetika, skript ani onXxated atributy filtrem stejne neprojdou.
-const GLOBAL_ATTRS = ['class'];
-const ALLOWED_ATTRS = { A: ['href'], IMG: ['src','alt'],
-  TD: ['colspan','rowspan'], TH: ['colspan','rowspan','scope'], COL: ['span'] };
-
-function cleanElement(el) {
-  // Nejdriv deti — pracujeme nad kopii seznamu, protoze se meni za pochodu.
-  for (const node of [...el.childNodes]) {
-    if (node.nodeType === Node.ELEMENT_NODE) cleanElement(node);
-    else if (node.nodeType !== Node.TEXT_NODE) node.remove();
-  }
-  const tag = el.tagName;
-  if (DROP_TAGS.has(tag)) { el.remove(); return; }
-  if (!ALLOWED_TAGS.has(tag)) { el.replaceWith(...el.childNodes); return; }
-
-  const allowed = [...GLOBAL_ATTRS, ...(ALLOWED_ATTRS[tag] || [])];
-  for (const attr of [...el.attributes]) {
-    if (!allowed.includes(attr.name.toLowerCase())) el.removeAttribute(attr.name);
-  }
-  if (tag === 'A') {
-    const href = safeUrl(el.getAttribute('href'));
-    if (href) {
-      el.setAttribute('href', href);
-      el.setAttribute('target', '_blank');
-      el.setAttribute('rel', 'noopener noreferrer');
-    } else {
-      el.removeAttribute('href');
-    }
-  }
-  if (tag === 'IMG') {
-    const src = el.getAttribute('src') || '';
-    // Obrazek bud z galerie (data:), nebo odkaz vlozeny v editoru (https).
-    if (!/^data:image\//i.test(src) && !/^https:\/\//i.test(src)) el.remove();
-  }
-}
-
-function sanitizeHtml(html) {
-  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
-  // Prochazime az deti body — samotne body by se jinak rozbalilo.
-  for (const node of [...doc.body.childNodes]) {
-    if (node.nodeType === Node.ELEMENT_NODE) cleanElement(node);
-    else if (node.nodeType !== Node.TEXT_NODE) node.remove();
-  }
-  return doc.body.innerHTML;
-}
-
-function toMillis(ts) {
-  if (!ts) return 0;
-  return ts.toMillis ? ts.toMillis() : new Date(ts).getTime();
 }
 
 function excerptFromHtml(html, limit) {
@@ -836,45 +737,6 @@ async function submitComment(form, post, statusEl, t) {
   }
 }
 
-// ── Náhled karty ze Scryfallu ─────────────────────────────────
-// V decklistech a u [[Karta]] v textu se pri najeti/kliknuti ukaze
-// obrazek karty. Pouziva se obrazkovy endpoint Scryfallu primo jako
-// <img src>, takze zadny fetch ani zmena CSP — img-src https: staci.
-const CARD_IMG = name =>
-  `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}&format=image&version=normal`;
-
-let cardPreviewEl = null;
-function cardPreview() {
-  if (!cardPreviewEl) {
-    cardPreviewEl = document.createElement('div');
-    cardPreviewEl.className = 'card-preview';
-    cardPreviewEl.innerHTML = '<img alt="" />';
-    document.body.appendChild(cardPreviewEl);
-  }
-  return cardPreviewEl;
-}
-function positionCardPreview(x, y) {
-  const p = cardPreview();
-  const w = 244, h = 340, pad = 14;
-  let left = x + 22, top = y + 20;
-  if (left + w + pad > window.innerWidth) left = x - w - 22;
-  if (left < pad) left = pad;
-  if (top + h + pad > window.innerHeight) top = window.innerHeight - h - pad;
-  if (top < pad) top = pad;
-  p.style.left = left + 'px';
-  p.style.top = top + 'px';
-}
-function showCardPreview(name, x, y) {
-  const p = cardPreview();
-  const img = p.querySelector('img');
-  const src = CARD_IMG(name);
-  if (img.getAttribute('src') !== src) { img.removeAttribute('src'); img.src = src; }
-  p.dataset.for = name;
-  p.classList.add('show');
-  positionCardPreview(x, y);
-}
-function hideCardPreview() { if (cardPreviewEl) cardPreviewEl.classList.remove('show'); }
-
 // Z vykresleneho obsahu udela nazvy karet interaktivni.
 function enhanceCards(root) {
   // Decklist radky — cely radek je nahled.
@@ -909,33 +771,6 @@ function enhanceCards(root) {
       }
     });
     node.replaceWith(frag);
-  });
-}
-
-// Handlery navesime jednou na obsah modalu (delegaci).
-function bindCardHandlers(root) {
-  if (!root || root.dataset.cardsBound) return;
-  root.dataset.cardsBound = '1';
-  const touch = !window.matchMedia('(hover: hover)').matches;
-  root.addEventListener('mouseover', e => {
-    const el = e.target.closest('.mtg-card');
-    if (el && !touch) showCardPreview(el.dataset.card, e.clientX, e.clientY);
-  });
-  root.addEventListener('mousemove', e => {
-    if (touch || !cardPreviewEl || !cardPreviewEl.classList.contains('show')) return;
-    if (e.target.closest('.mtg-card')) positionCardPreview(e.clientX, e.clientY);
-  });
-  root.addEventListener('mouseout', e => {
-    const el = e.target.closest('.mtg-card');
-    if (el && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.mtg-card'))) hideCardPreview();
-  });
-  root.addEventListener('click', e => {
-    const el = e.target.closest('.mtg-card');
-    if (!el || !touch) return;
-    e.preventDefault();
-    const shown = cardPreviewEl && cardPreviewEl.classList.contains('show') && cardPreviewEl.dataset.for === el.dataset.card;
-    if (shown) hideCardPreview();
-    else { const r = el.getBoundingClientRect(); showCardPreview(el.dataset.card, r.left, r.bottom); }
   });
 }
 
