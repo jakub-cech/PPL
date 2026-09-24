@@ -5,7 +5,7 @@
   <!-- Content-Security-Policy: omezuje, odkud smi stranka nacitat kod a kam
        smi posilat data. frame-ancestors tu chybi zamerne — v <meta> ho
        prohlizec ignoruje a GitHub Pages vlastni hlavicky nastavit neumi. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://api.web3forms.com https://docs.google.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://docs.google.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Plzeňská Pauper Liga</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -449,9 +449,14 @@
        nenavazovaly. Pri zmene poradi sekci je potreba stridani dodrzet. */
     #vysledky { background: var(--bg-1); }
     .season-picker { margin-top: 36px; display: flex; justify-content: flex-end; }
-    /* width:auto prebiji .form-select, ktery je delany na formularova pole
-       pres celou sirku — prepinac ma byt jen tak siroky, jak je text. */
-    .season-picker select { width: auto; font-size: 0.85rem; padding: 8px 36px 8px 14px; background-color: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .season-picker select {
+      width: auto; font-size: 0.85rem; padding: 8px 36px 8px 14px;
+      font-family: inherit; color: var(--text-2); cursor: pointer; appearance: none;
+      background-color: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-md);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5445' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+    .season-picker select:focus { outline: none; border-color: var(--gold-dim); }
     .results-banner {
       display: flex; align-items: center; justify-content: space-between; gap: 20px;
       flex-wrap: wrap; margin-top: 52px; padding: 18px 24px; text-decoration: none;
@@ -874,26 +879,6 @@
       padding: 5px 14px; background: rgba(201,168,76,0.07);
     }
     .merch-coming-text { font-size: 0.9rem; color: var(--text-3); max-width: 46ch; line-height: 1.7; }
-    .merch-form-wrap { margin-top: 48px; max-width: 640px; }
-    .merch-form-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-    .merch-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group.full { grid-column: 1 / -1; }
-    .form-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
-    .form-input, .form-select, .form-textarea {
-      background: var(--bg-3); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 10px 14px;
-      font-family: 'Inter', sans-serif; font-size: 0.88rem;
-      color: var(--text-1); transition: border-color 0.2s; width: 100%;
-    }
-    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--gold-dim); }
-    .form-select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5445' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-    .form-textarea { resize: vertical; min-height: 80px; }
-    .form-input::placeholder, .form-textarea::placeholder { color: var(--text-3); }
-    .form-note { font-size: 0.78rem; color: var(--text-3); margin-top: 12px; }
-    .form-success { display: none; padding: 16px 20px; background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--gold); margin-top: 16px; }
-    .form-success.visible { display: block; }
-    @media (max-width: 600px) { .merch-form { grid-template-columns: 1fr; } }
   </style>
 </head>
 <!-- no-links drzi pozadi komunity spravne, nez se rozcestnik nacte;
@@ -1202,55 +1187,6 @@
       <div class="merch-coming-icon">🛡️</div>
       <span class="merch-badge" data-i18n="merch.badge"></span>
       <p class="merch-coming-text" data-i18n="merch.coming"></p>
-    </div>
-    <div class="merch-form-wrap reveal">
-      <div class="merch-form-title" data-i18n="merch.form.title"></div>
-      <form class="merch-form" id="merch-form" action="https://api.web3forms.com/submit" method="POST">
-        <input type="hidden" name="access_key" value="07712b78-b2ff-4833-8f16-109f0f06d16e" />
-        <input type="hidden" name="subject" value="Nová objednávka merch – PPL" />
-        <input type="hidden" name="from_name" value="PPL Merch" />
-        <!-- replyto se záměrně nenastavuje: Web3Forms použije adresu z pole email,
-             takže na notifikaci lze rovnou odpovědět zájemci -->
-        <!-- honeypot proti spamu – skutečný uživatel toto pole nikdy nevyplní -->
-        <input type="checkbox" name="botcheck" style="display:none" />
-        <div class="form-group">
-          <label class="form-label" data-i18n="merch.form.name"></label>
-          <input class="form-input" type="text" name="name" required placeholder="Jan Novák" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="merch.form.email"></label>
-          <input class="form-input" type="email" name="email" required placeholder="jan@email.cz" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="merch.form.item"></label>
-          <select class="form-select" name="item" required>
-            <option value="" data-i18n="merch.form.item.placeholder"></option>
-            <option value="tshirt" data-i18n="merch.form.item.tshirt"></option>
-            <option value="hoodie" data-i18n="merch.form.item.hoodie"></option>
-            <option value="other" data-i18n="merch.form.item.other"></option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="merch.form.size"></label>
-          <select class="form-select" name="size">
-            <option value="">—</option>
-            <option>XS</option><option>S</option><option>M</option>
-            <option>L</option><option>XL</option><option>XXL</option>
-          </select>
-        </div>
-        <div class="form-group full">
-          <label class="form-label" data-i18n="merch.form.note"></label>
-          <textarea class="form-textarea" name="note" rows="3"></textarea>
-        </div>
-        <div class="form-group full">
-          <button class="btn btn-primary form-submit" type="submit">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
-            <span data-i18n="merch.form.submit"></span>
-          </button>
-          <p class="form-note" data-i18n="merch.form.note.text"></p>
-        </div>
-      </form>
-      <div class="form-success" id="merch-success" data-i18n="merch.form.success"></div>
     </div>
   </div>
 </section>
@@ -1620,20 +1556,7 @@ const i18n = {
     "merch.title":        "Oblečení & Merch",
     "merch.desc":         "Trička, mikiny a další liga merch.",
     "merch.badge":        "Připravujeme",
-    "merch.coming":       "Kolekce zatím není v prodeji a nějakou dobu to ještě potrvá. Nech nám níže zájem a ozveme se, jakmile bude co objednat.",
-    "merch.form.title":   "Registrace Zájmu",
-    "merch.form.name":    "Jméno",
-    "merch.form.email":   "E-mail",
-    "merch.form.item":    "Typ",
-    "merch.form.item.placeholder": "— Vyber položku —",
-    "merch.form.item.tshirt": "Tričko",
-    "merch.form.item.hoodie": "Mikina",
-    "merch.form.item.other":  "Jiné",
-    "merch.form.size":    "Velikost",
-    "merch.form.note":    "Poznámka",
-    "merch.form.submit":  "Odeslat zájem",
-    "merch.form.note.text": "Nejde o závaznou objednávku. Ozvu se až bude merch připravený.",
-    "merch.form.success": "✓ Zájem zaregistrován, ozvu se!",
+    "merch.coming":       "Kolekce zatím není v prodeji a nějakou dobu to ještě potrvá. Až bude co objednat, dáme vědět tady a na Discordu.",
 
     "links.label": "Rozcestník",
     "links.title": "Užitečné odkazy",
@@ -1777,20 +1700,7 @@ const i18n = {
     "merch.title":        "Clothing & Merch",
     "merch.desc":         "T-shirts, hoodies and more.",
     "merch.badge":        "In preparation",
-    "merch.coming":       "The collection is not on sale yet and it will be a while. Leave your interest below and we'll get in touch once there is something to order.",
-    "merch.form.title":   "Interest Registration",
-    "merch.form.name":    "Name",
-    "merch.form.email":   "E-mail",
-    "merch.form.item":    "Item",
-    "merch.form.item.placeholder": "— Select item —",
-    "merch.form.item.tshirt": "T-shirt",
-    "merch.form.item.hoodie": "Hoodie",
-    "merch.form.item.other":  "Other",
-    "merch.form.size":    "Size",
-    "merch.form.note":    "Note",
-    "merch.form.submit":  "Submit interest",
-    "merch.form.note.text": "This is not a binding order. I'll reach out once merch is ready.",
-    "merch.form.success": "✓ Interest registered, I'll be in touch!",
+    "merch.coming":       "The collection is not on sale yet and it will be a while. We'll announce it here and on Discord once there is something to order.",
 
     "links.label": "Signpost",
     "links.title": "Useful links",
@@ -2265,7 +2175,7 @@ function renderSeasonPicker(lang) {
     const label = seasonLabel(s, lang) + (s.active ? '' : archived);
     return `<option value="${escapeHtml(s.id)}"${s.id === currentSeason.id ? ' selected' : ''}>${escapeHtml(label)}</option>`;
   }).join('');
-  return `<div class="season-picker"><select class="form-select" onchange="switchSeason(this.value)">${opts}</select></div>`;
+  return `<div class="season-picker"><select onchange="switchSeason(this.value)">${opts}</select></div>`;
 }
 
 function switchSeason(id) {
@@ -3027,32 +2937,6 @@ window.setLang = function(lang) {
   renderResults(lang);
   renderLinks(lang);
 };
-
-// ── Merch form ────────────────────────────────────────────────
-document.getElementById('merch-form').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const btn = this.querySelector('button[type=submit]');
-  const orig = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span>Odesílám…</span>';
-  try {
-    const res = await fetch(this.action, {
-      method: 'POST',
-      body: new FormData(this),
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      this.style.display = 'none';
-      document.getElementById('merch-success').classList.add('visible');
-    } else {
-      throw new Error();
-    }
-  } catch {
-    btn.disabled = false;
-    btn.innerHTML = orig;
-    alert('Odeslání se nezdařilo, zkus to prosím znovu.');
-  }
-});
 
 // ── Start ─────────────────────────────────────────────────────
 loadBlogPosts();
