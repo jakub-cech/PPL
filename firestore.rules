@@ -110,6 +110,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Rozcestnik uzitecnych odkazu a jejich kategorie. Cist je musi kazdy
+    // navstevnik, menit jen admin — stejne jako sezony.
+    match /linkCategories/{categoryId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /links/{linkId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     // Turnaje — stejny princip jako prispevky.
     match /tournaments/{tournamentId} {
       allow read:  if resource.data.published == true || isAdmin();
