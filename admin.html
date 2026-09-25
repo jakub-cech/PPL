@@ -3044,29 +3044,34 @@ function linkRowEl(l, i, total) {
   return row;
 }
 
-// Prohodi poradi se sousedem ve stejne skupine.
-async function swapOrder(collection, a, b) {
-  await Promise.all([
-    db.collection(collection).doc(a.id).update({ order: b.order ?? 0 }),
-    db.collection(collection).doc(b.id).update({ order: a.order ?? 0 })
-  ]);
+// Posune polozku o jedno misto a cele skupine prepise poradi na 0,1,2,…
+//
+// Prohodit dve cisla nestaci: kdyz maji sousedi stejne order — coz se
+// stane treba po presunu odkazu mezi kategoriemi — vymena zapise dvakrat
+// tutez hodnotu a navenek to vypada, ze tlacitko nefunguje. Prepsani cele
+// skupiny navic rovnou srovna poradi, ktere uz rozsypane je.
+async function reorderGroup(collection, list, i, dir) {
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  const next = list.slice();
+  [next[i], next[j]] = [next[j], next[i]];
+  await Promise.all(next
+    .map((x, k) => [x, k])
+    .filter(([x, k]) => x.order !== k)
+    .map(([x, k]) => db.collection(collection).doc(x.id).update({ order: k })));
   await loadLinkList();
 }
 
 async function moveLinkCat(id, dir) {
   const i = linkCats.findIndex(c => c.id === id);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= linkCats.length) return;
-  try { await swapOrder('linkCategories', linkCats[i], linkCats[j]); }
+  try { await reorderGroup('linkCategories', linkCats, i, dir); }
   catch(e) { console.error(e); alert('Přesun se nepodařil.'); }
 }
 
 async function moveLink(l, dir) {
   const siblings = allLinks.filter(x => x.categoryId === l.categoryId);
   const i = siblings.findIndex(x => x.id === l.id);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= siblings.length) return;
-  try { await swapOrder('links', siblings[i], siblings[j]); }
+  try { await reorderGroup('links', siblings, i, dir); }
   catch(e) { console.error(e); alert('Přesun se nepodařil.'); }
 }
 
@@ -3139,12 +3144,20 @@ async function saveLink() {
       description:   document.getElementById('l-desc').value.trim(),
       descriptionEn: document.getElementById('l-desc-en').value.trim()
     };
+    // Odkaz padne na konec sve kategorie.
+    const konecKategorie = () => {
+      const inCat = allLinks.filter(l => l.categoryId === categoryId && l.id !== editingLinkId);
+      return inCat.length ? Math.max(...inCat.map(l => l.order ?? 0)) + 1 : 0;
+    };
     if (editingLinkId) {
+      const puvodni = allLinks.find(l => l.id === editingLinkId);
+      // Pri prehozeni do jine kategorie se poradi musi prepsat. Jinak si
+      // odkaz odnese cislo ze stare kategorie, v nove se srazi s nekym
+      // jinym a presouvat se pak nedaji ani jeden.
+      if (!puvodni || puvodni.categoryId !== categoryId) data.order = konecKategorie();
       await db.collection('links').doc(editingLinkId).update(data);
     } else {
-      // Novy odkaz padne na konec sve kategorie.
-      const inCat = allLinks.filter(l => l.categoryId === categoryId);
-      data.order = inCat.length ? Math.max(...inCat.map(l => l.order ?? 0)) + 1 : 0;
+      data.order = konecKategorie();
       const ref = await db.collection('links').add(data);
       editingLinkId = ref.id;
     }
