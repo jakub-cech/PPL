@@ -16,6 +16,23 @@
 //
 // Kolekce admins zamerne neni verejne citelna a nikdo do ni nesmi zapisovat
 // z aplikace — meni se jen rucne z konzole.
+//
+// ── Co tahle pravidla neumi ───────────────────────────────────────────
+// Komentare a registrace smi zakladat i neprihlaseny navstevnik. Pravidla
+// hlidaji tvar a velikost zapisu, ale ne jeho cetnost — "nejvys jeden za
+// minutu" se tu vyjadrit neda. Stranka proto ma vlastni brzdu
+// (submitCooldown v shared.js), ta ale drzi jen v prohlizeci: kdo posle
+// pozadavek mimo nej, projde.
+//
+// Skutecna obrana je Firebase App Check. Zapina se v konzoli:
+//   Build → App Check → Apps → zaregistruj web s poskytovatelem
+//   reCAPTCHA v3 (nebo reCAPTCHA Enterprise), pak u Firestore zapni
+//   Enforcement. Dokud bezi rezim "Unenforced", v konzoli je videt, kolik
+//   pozadavku prichazi bez platneho tokenu — nez se prepne, vyplati se to
+//   par dni sledovat, at se neodrizne nekdo skutecny.
+// Pozor: stranky ctou i zapisuji pres REST, takze s vynucenim App Check
+// bude potreba posilat hlavicku X-Firebase-AppCheck (token se ziskava
+// pres App Check SDK) — jinak Firestore zacne odpovidat 403.
 
 rules_version = '2';
 

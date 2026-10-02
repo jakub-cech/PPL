@@ -31,6 +31,12 @@ function htmlToText(html) {
   return doc.body.textContent || '';
 }
 
+// Nahradí {placeholder} v řetězci. Neznámý klíč nechává být, aby byl
+// případný překlep vidět v textu a ne jako prázdné místo.
+function fillVars(str, vars) {
+  return String(str).replace(/\{(\w+)\}/g, (all, k) => (k in vars ? vars[k] : all));
+}
+
 function toMillis(ts) {
   if (!ts) return 0;
   return ts.toMillis ? ts.toMillis() : new Date(ts).getTime();
@@ -94,6 +100,31 @@ function cleanElement(el) {
     // Obrazek bud z galerie (data:), nebo odkaz vlozeny v editoru (https).
     if (!/^data:image\//i.test(src) && !/^https:\/\//i.test(src)) el.remove();
   }
+}
+
+// ── Brzda na odesílání formulářů ──────────────────────────────
+// Komentáře a registrace smí zakládat i nepřihlášený návštěvník, takže
+// jediné, co mezi ním a databází stojí, jsou pravidla Firestore — a ta
+// neumí říct „ne víckrát než jednou za chvíli".
+//
+// Tohle je rychlostní práh, ne ochrana: kdo si otevře konzoli nebo pošle
+// požadavek mimo prohlížeč, projde. Odradí to naslepo střílející roboty
+// a zabrání nechtěnému dvojímu odeslání. Proti cílenému spamu je správná
+// odpověď Firebase App Check — poznámka, jak ho zapnout, je ve
+// firestore.rules.
+const SUBMIT_GAP_MS = 20000;
+
+// Vrací, kolik sekund ještě zbývá. Nula znamená „můžeš odeslat".
+function submitCooldown(key, gap = SUBMIT_GAP_MS) {
+  try {
+    const last = Number(localStorage.getItem('ppl-sent-' + key) || 0);
+    const zbyva = gap - (Date.now() - last);
+    return zbyva > 0 ? Math.ceil(zbyva / 1000) : 0;
+  } catch { return 0; }
+}
+
+function rememberSubmit(key) {
+  try { localStorage.setItem('ppl-sent-' + key, String(Date.now())); } catch {}
 }
 
 // ── Firestore přes REST ───────────────────────────────────────
