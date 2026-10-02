@@ -1804,10 +1804,11 @@ function formatDate(ts) {
 // Obalka karty blogu: fotka oznacena jako obalka (jinak prvni v galerii)
 // a zarovnani orezu podle post.coverAlign.
 function postCover(p) {
+  // Obalka lezi primo u prispevku jako zmensenina. U prispevku ulozenych
+  // starsi verzi adminu sedi jeste v galerii — proto zaloha.
   const g = Array.isArray(p.gallery) ? p.gallery : [];
-  if (!g.length) return null;
-  const chosen = g.find(x => x && x.cover) || g[0];
-  const thumb = safeImage(chosen && chosen.thumb);
+  const stary = g.find(x => x && x.cover) || g[0];
+  const thumb = safeImage(p.cover) || safeImage(stary && stary.thumb);
   if (!thumb) return null;
   const align = { top: 'center top', bottom: 'center bottom' }[p.coverAlign] || 'center center';
   return { thumb, align };
@@ -2484,10 +2485,13 @@ async function loadTournaments() {
   }
 }
 
-function renderGallery(post, lang) {
+async function renderGallery(post, lang) {
   const wrap = document.getElementById('blog-modal-gallery');
   currentGallery = Array.isArray(post.gallery) ? post.gallery : [];
   if (!currentGallery.length) { wrap.innerHTML = ''; return; }
+  await fillGalleryThumbs(db, post);
+  // Nez nahledy dorazily, mohl ctenar otevrit jiny prispevek.
+  if (currentPostId !== (post.id || null)) return;
   const items = currentGallery.map((img, i) => `
     <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeHtml(img.caption) || 'Fotka ' + (i + 1)}">
       <img src="${escapeHtml(safeImage(img.thumb))}" alt="${escapeHtml(img.caption)}" loading="lazy" />

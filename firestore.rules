@@ -93,6 +93,16 @@ service cloud.firestore {
       function post() {
         return get(/databases/$(database)/documents/posts/$(postId)).data;
       }
+
+      // Nahledy fotek z galerie. Lezi stranou prispevku, protoze jinak by
+      // je stahoval kazdy, kdo otevre uvodni stranku — i kdyz si prispevek
+      // nerozklikne. Nactou se az pri otevreni, a to jednim ctenim.
+      // Viditelnost se ridi prispevkem, nekopiruje se.
+      match /media/{part} {
+        allow read:  if post().published == true || isAdmin();
+        allow write: if isAdmin();
+      }
+
       match /comments/{commentId} {
         allow read: if true;
         allow create: if request.resource.data.keys().hasOnly(['nick', 'text', 'createdAt'])
