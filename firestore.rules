@@ -82,6 +82,21 @@ service cloud.firestore {
                     && (!('authorId' in resource.data)
                         || resource.data.authorId == request.auth.uid);
 
+      // Pouziva se nize u nahledu i u komentaru.
+      function post() {
+        return get(/databases/$(database)/documents/posts/$(postId)).data;
+      }
+
+      // Nahledy fotek z galerie (posts/{id}/media/thumbs). Lezi stranou
+      // prispevku, protoze jinak by je stahoval kazdy, kdo otevre uvodni
+      // stranku — i kdyz si prispevek nerozklikne. Nactou se az pri jeho
+      // otevreni, a to jednim ctenim.
+      // Viditelnost se ridi prispevkem, nekopiruje se k nim.
+      match /media/{part} {
+        allow read:  if post().published == true || isAdmin();
+        allow write: if isAdmin();
+      }
+
       // Komentare. Druhe misto (vedle registraci), kam smi zapsat
       // i neprihlaseny navstevnik, proto tesna pravidla:
       //   - jen tri ocekavana pole, nic navic
@@ -90,19 +105,6 @@ service cloud.firestore {
       //   - prispevek musi byt zverejneny a mit povolene komentare
       //     (commentsEnabled chybi = bereme jako povolene)
       // Menit komentar nesmi nikdo, mazat jen admin.
-      function post() {
-        return get(/databases/$(database)/documents/posts/$(postId)).data;
-      }
-
-      // Nahledy fotek z galerie. Lezi stranou prispevku, protoze jinak by
-      // je stahoval kazdy, kdo otevre uvodni stranku — i kdyz si prispevek
-      // nerozklikne. Nactou se az pri otevreni, a to jednim ctenim.
-      // Viditelnost se ridi prispevkem, nekopiruje se.
-      match /media/{part} {
-        allow read:  if post().published == true || isAdmin();
-        allow write: if isAdmin();
-      }
-
       match /comments/{commentId} {
         allow read: if true;
         allow create: if request.resource.data.keys().hasOnly(['nick', 'text', 'createdAt'])
@@ -187,7 +189,8 @@ service cloud.firestore {
 
     // Plne verze fotek z galerie. Ctou se az pri otevreni lightboxu,
     // proto jsou v samostatne kolekci a ne primo u prispevku.
-    // Nahledy (thumb) lezi v poli gallery u prispevku a ridi se pravidly vyse.
+    // Nahledy lezi v posts/{id}/media/thumbs a ridi se pravidly vyse;
+    // zmensena obalka karty je jako jedina primo u prispevku.
     //
     // Dokument je rozdeleny na dve casti:
     //   postImages/{id}           metadata — podle nich admin pozna,
