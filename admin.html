@@ -671,6 +671,10 @@
           <span class="cleanup-text" id="cleanup-text"></span>
           <button class="btn-sm" id="cleanup-btn" onclick="cleanupOrphans()">Uklidit</button>
         </div>
+        <div class="cleanup-bar" id="migrate-bar">
+          <span class="cleanup-text" id="migrate-text"></span>
+          <button class="btn-sm" id="migrate-btn" onclick="migrateThumbs()">Přesunout</button>
+        </div>
         <div class="blog-filter" id="blog-filter"></div>
         <div class="blog-admin-grid" id="posts-list">
           <div class="posts-loading">Načítám…</div>
@@ -1404,15 +1408,26 @@ function decklistToHtml(raw) {
 // ── Nahrávání obrázků ─────────────────────────────────────────
 // Fotky se ukladaji jako base64 primo do Firestore — projekt tak zustava
 // cely na bezplatnem tarifu. Dokument ma limit 1 MiB, proto se kazda
-// fotka v prohlizeci zmensi, prevede do WebP a zabali do dvou velikosti:
-//   thumb — nahled v mrizce a cover na karte, lezi primo u prispevku
+// fotka v prohlizeci zmensi, prevede do WebP a zabali do tri velikosti:
+//   cover — obalka karty v seznamu; jen jedna na prispevek, lezi u nej
+//   thumb — nahled v mrizce galerie, lezi v posts/{id}/media/thumbs
 //   full  — plna verze ve zvlastni kolekci, nacte se az v lightboxu
+//
+// Proc nahledy nelezi primo u prispevku: uvodni stranka i blog nactou
+// vsechny zverejnene prispevky naraz, aby z nich vybraly karty. Kdyz u nich
+// visi base64 nahledy, stahuje je kazdy navstevnik — i tech jedenact fotek
+// z reportu, ktery si nikdo neotevre. Odsunutim stranou se stahnou az pri
+// otevreni prispevku.
 const FULL_MAX_BYTES  = 900 * 1024;   // rezerva pod limitem dokumentu (1 MiB)
 const THUMB_MAX_BYTES = 60 * 1024;
-const POST_MAX_BYTES  = 900 * 1024;   // strop pro prispevek i s nahledy
+const COVER_MAX_BYTES = 16 * 1024;
+const POST_MAX_BYTES  = 900 * 1024;   // strop pro prispevek i s obalkou
+const THUMBS_MAX_BYTES = 900 * 1024;  // strop pro dokument s nahledy
 // Postupne agresivnejsi nastaveni — bere se prvni, ktere se vejde do limitu.
 const FULL_STEPS  = [[1600, 0.80], [1400, 0.70], [1100, 0.62], [900, 0.55]];
 const THUMB_STEPS = [[420, 0.60], [360, 0.50], [300, 0.42]];
+// Obalka se zobrazuje v pasu 16:9 nad kartou, takze snese vyrazne min.
+const COVER_STEPS = [[320, 0.55], [260, 0.45], [220, 0.40]];
 
 function compressImage(file, maxDim, quality) {
   return new Promise((resolve, reject) => {
@@ -1461,6 +1476,32 @@ async function encodeWithin(file, steps, maxBytes) {
 function imageRef(imageId) { return db.collection('postImages').doc(imageId); }
 function imageDataRef(imageId) { return imageRef(imageId).collection('data').doc('full'); }
 
+// Obalka se pocita z nahledu, ne z puvodniho souboru — pri uprave
+// starsiho prispevku uz zadny soubor nemame, zato nahled ano, a prepnuti
+// hvezdicky na jinou fotku musi fungovat i tam.
+function coverFromThumb(thumbDataUrl) {
+  return new Promise((resolve, reject) => {
+    if (!thumbDataUrl) return resolve('');
+    const img = new Image();
+    img.onload = () => {
+      const [dim, q] = COVER_STEPS[0];
+      const scale = Math.min(1, dim / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.max(1, Math.round(img.width  * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      let out = canvas.toDataURL('image/webp', q);
+      // Kdyby to i tak bylo velke, prituhneme kvalitou.
+      for (let i = 1; i < COVER_STEPS.length && out.length > COVER_MAX_BYTES; i++) {
+        out = canvas.toDataURL('image/webp', COVER_STEPS[i][1]);
+      }
+      resolve(out);
+    };
+    img.onerror = () => reject(new Error('decode-failed'));
+    img.src = thumbDataUrl;
+  });
+}
+
 async function uploadImage(file) {
   const [full, thumb] = [
     await encodeWithin(file, FULL_STEPS,  FULL_MAX_BYTES),
@@ -1480,6 +1521,46 @@ async function uploadImage(file) {
 async function deleteImage(imageId) {
   await imageDataRef(imageId).delete();
   await imageRef(imageId).delete();
+}
+
+// ── Náhledy galerie ───────────────────────────────────────────
+// Lezi v jednom dokumentu vedle prispevku: jedno cteni pri otevreni
+// prispevku misto jednoho na kazdou fotku, a uvodni stranka je nevidi.
+function thumbsRef(postId) {
+  return db.collection('posts').doc(postId).collection('media').doc('thumbs');
+}
+
+async function loadThumbs(postId) {
+  try {
+    const d = await thumbsRef(postId).get();
+    return (d.exists && d.data().thumbs) || {};
+  } catch(e) { console.warn('Náhledy se nepodařilo načíst:', e); return {}; }
+}
+
+async function saveThumbs(postId) {
+  const thumbs = {};
+  gallery.forEach(g => { if (g.imageId && g.thumb) thumbs[g.imageId] = g.thumb; });
+  try {
+    if (Object.keys(thumbs).length) await thumbsRef(postId).set({ thumbs });
+    else await thumbsRef(postId).delete();
+  } catch(e) { console.warn('Náhledy se nepodařilo uložit:', e); }
+}
+
+// Obalkou je fotka s hvezdickou, jinak prvni v galerii.
+//
+// Pocita se z nahledu, ktery uz sam prosel kompresi. Kdyby se prepocitavala
+// pri kazdem ulozeni, kazde kolo by ubralo kousek kvality — proto si
+// pamatujeme, ze ktere fotky obalka pochazi, a dokud se nezmeni, drzime ji.
+async function aktualniObalka() {
+  const chosen = gallery.find(g => g && g.cover) || gallery[0];
+  if (!chosen) { coverFromId = ''; return ''; }
+  if (coverData && coverFromId && coverFromId === chosen.imageId) return coverData;
+  if (!chosen.thumb) return coverData || '';
+  try {
+    const out = await coverFromThumb(chosen.thumb);
+    coverFromId = chosen.imageId || '';
+    return out;
+  } catch(e) { console.warn('Obálku se nepodařilo zmenšit:', e); return ''; }
 }
 
 // Fotky nezverejneneho prispevku nemaji byt verejne citelne. Priznak proto
@@ -1502,12 +1583,15 @@ function uploadErrorText(e) {
   return 'Nahrávání selhalo. Zkus to prosím znovu.';
 }
 
-// Odhad velikosti prispevku, aby se dalo varovat driv, nez Firestore
-// zapis odmitne kvuli limitu dokumentu.
+// Odhady velikosti, aby se dalo varovat driv, nez Firestore zapis odmitne
+// kvuli limitu dokumentu. Prispevek a dokument s nahledy maji limit kazdy
+// zvlast, protoze lezi zvlast.
 function postSizeBytes() {
-  const content = getEditorContent().length;
-  const thumbs  = gallery.reduce((sum, g) => sum + (g.thumb?.length || 0), 0);
-  return content + thumbs;
+  return getEditorContent().length + (coverData?.length || 0);
+}
+
+function thumbsSizeBytes() {
+  return gallery.reduce((sum, g) => sum + (g.thumb?.length || 0), 0);
 }
 
 function setGalleryStatus(text, isError = false) {
@@ -1542,6 +1626,11 @@ let editingPostId = null;
 // posts/{id}/ jeste pred prvnim ulozenim prispevku.
 let draftId = db.collection('posts').doc().id;
 let gallery = [];
+// Obalka karty — zmensenina te fotky, ktera ma hvezdicku. Drzi se zvlast,
+// protoze jako jedina z galerie konci primo u prispevku. coverFromId rika,
+// ze ktere fotky pochazi, at se nemusi pocitat znovu.
+let coverData = '';
+let coverFromId = '';
 let allSections = [];        // [{ id, name, order }] — spravovane v adminu
 let postSectionIds = [];     // sekce prave editovaneho prispevku
 // Autor a nastaveni sdileni prave otevreneho prispevku. Diky tomu
@@ -1554,6 +1643,8 @@ function resetEditor() {
   editingPostId = null;
   draftId = db.collection('posts').doc().id;
   gallery = [];
+  coverData = '';
+  coverFromId = '';
   document.getElementById('cover-align').value = 'center';
   renderGallery();
   setGalleryStatus('');
@@ -1773,7 +1864,11 @@ async function savePost() {
     if (!confirm('Obsah příspěvku je prázdný — chceš ho přesto uložit?')) { return false; }
   }
   if (postSizeBytes() > POST_MAX_BYTES) {
-    setStatus('Příspěvek je i s náhledy moc velký — uber pár fotek z galerie.', 'err');
+    setStatus('Text příspěvku je moc dlouhý — zkrať ho prosím.', 'err');
+    return false;
+  }
+  if (thumbsSizeBytes() > THUMBS_MAX_BYTES) {
+    setStatus('Náhledy fotek se nevejdou do limitu — uber pár fotek z galerie.', 'err');
     return false;
   }
 
@@ -1785,11 +1880,17 @@ async function savePost() {
   // Vlastnikem jsi bud u noveho prispevku, nebo kdyz autorId sedi na tebe.
   const isOwner = creating || !editingAuthorId || editingAuthorId === user.uid;
   try {
+    // Obalka se dopocitava az tady — hvezdicka se mohla prehodit na jinou
+    // fotku, aniz by se cokoli nahravalo.
+    coverData = await aktualniObalka();
     const data = {
       title,
       content,
       published,
-      gallery:    gallery.map(({ imageId, thumb, caption, cover }) => ({ imageId, thumb, caption: caption || '', cover: !!cover })),
+      // Nahledy do prispevku nepatri, lezi v posts/{id}/media/thumbs.
+      gallery:    gallery.map(({ imageId, caption, cover }) => ({ imageId, caption: caption || '', cover: !!cover })),
+      cover:      coverData,
+      coverFrom:  coverFromId,
       coverAlign: document.getElementById('cover-align').value,
       sections:   postSectionIds.slice(),
       commentsEnabled: document.getElementById('comments-toggle').checked,
@@ -1814,6 +1915,7 @@ async function savePost() {
     editingAuthorId = data.authorId;
     editingAuthorName = data.authorName;
     editingEditable = data.editableByOthers;
+    await saveThumbs(editingPostId);
     await syncImageVisibility(editingPostId, published);
     setStatus('✓ Uloženo', 'ok');
     // Ulozeny stav je nova referencni podoba — editor uz neni "rozdelany".
@@ -1883,6 +1985,78 @@ async function cleanupOrphans() {
   loadAllPosts();
 }
 
+// ── Přesun náhledů mimo příspěvek ─────────────────────────────
+// Starší příspěvky nesou base64 náhledy přímo v poli gallery, takže je
+// stahuje každý, kdo otevře úvodní stránku — i fotky z reportů, které si
+// nikdo nerozklikne. Tohle je přesune do posts/{id}/media/thumbs
+// a u příspěvku nechá jen zmenšenou obálku karty.
+//
+// Běží jednou. Jakmile je hotovo, pruh se přestane ukazovat.
+let starePrispevky = [];
+
+function scanOldThumbs(posts) {
+  starePrispevky = posts
+    .filter(p => (p.gallery || []).some(g => g && g.thumb))
+    .map(p => p.id);
+  const bar = document.getElementById('migrate-bar');
+  bar.classList.toggle('show', starePrispevky.length > 0);
+  if (!starePrispevky.length) return;
+  const bajtu = posts.reduce((sum, p) =>
+    sum + (p.gallery || []).reduce((s, g) => s + (g?.thumb?.length || 0), 0), 0);
+  document.getElementById('migrate-text').textContent =
+    `${starePrispevky.length} ${plPrispevek(starePrispevky.length)} má náhledy fotek uložené u sebe `
+    + `(${Math.round(bajtu / 1024)} kB). Stahuje je každý návštěvník webu, i když příspěvek neotevře.`;
+}
+
+function plPrispevek(n) {
+  return n === 1 ? 'příspěvek' : (n >= 2 && n <= 4 ? 'příspěvky' : 'příspěvků');
+}
+
+async function migrateThumbs() {
+  const n = starePrispevky.length;
+  if (!n || !confirm(`Přesunout náhledy u ${n} ${plPrispevek(n)}?`)) return;
+  const btn  = document.getElementById('migrate-btn');
+  const text = document.getElementById('migrate-text');
+  btn.disabled = true;
+  let hotovo = 0, chyb = 0;
+  for (const id of starePrispevky) {
+    text.textContent = `Přesouvám ${hotovo + 1}/${n}…`;
+    try {
+      const doc = await db.collection('posts').doc(id).get();
+      const g = (doc.data().gallery || []).map(x => ({ ...x }));
+
+      const thumbs = {};
+      g.forEach(x => { if (x.imageId && x.thumb) thumbs[x.imageId] = x.thumb; });
+      if (Object.keys(thumbs).length) await thumbsRef(id).set({ thumbs });
+
+      const obalka = g.find(x => x && x.cover) || g[0];
+      let cover = doc.data().cover || '';
+      if (!cover && obalka?.thumb) {
+        // Kdyby se zmenseni nepovedlo, vezmeme radeji cely nahled nez nic —
+        // je vetsi, ale karta nezustane prazdna a migrace dobehne.
+        try { cover = await coverFromThumb(obalka.thumb); }
+        catch(e) { console.warn('Obálku se nepodařilo zmenšit, beru náhled:', e); cover = obalka.thumb; }
+      }
+      const coverFrom = doc.data().coverFrom || (cover ? (obalka?.imageId || '') : '');
+
+      // Náhledy z příspěvku odejdou až po úspěšném zápisu obou kousků —
+      // kdyby to spadlo dřív, zůstane starý tvar, který se pořád umí zobrazit.
+      await db.collection('posts').doc(id).update({
+        cover,
+        coverFrom,
+        gallery: g.map(({ imageId, caption, cover }) => ({ imageId, caption: caption || '', cover: !!cover }))
+      });
+      hotovo++;
+    } catch(e) {
+      console.warn('Přesun náhledů selhal u příspěvku', id, e);
+      chyb++;
+    }
+  }
+  btn.disabled = false;
+  if (chyb) alert(`Hotovo u ${hotovo} z ${n}. U ${chyb} se to nepovedlo — podrobnosti jsou v konzoli.`);
+  loadAllPosts();
+}
+
 // ── Posts list ────────────────────────────────────────────────
 let cachedAdminPosts = null;
 let activeBlogFilter = 'all';   // 'all' | 'drafts' | id sekce
@@ -1912,6 +2086,7 @@ async function loadAllPosts() {
     const snap = await db.collection('posts').orderBy('createdAt', 'desc').get();
     cachedAdminPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     scanOrphans(cachedAdminPosts);
+    scanOldThumbs(cachedAdminPosts);
     renderBlogList();
   } catch(e) {
     list.innerHTML = '<div class="blog-admin-empty">Chyba při načítání.</div>';
@@ -1957,7 +2132,10 @@ function renderBlogList() {
   posts.forEach(p => {
     const id = p.id;
     const date = p.createdAt?.toDate?.()?.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }) ?? '—';
-    const thumb = Array.isArray(p.gallery) && p.gallery[0]?.thumb ? p.gallery[0].thumb : '';
+    // Obalka lezi u prispevku; u starsich zaznamu jeste v galerii.
+    const thumb = p.cover
+      || (Array.isArray(p.gallery) && p.gallery.find(g => g?.thumb)?.thumb)
+      || '';
     const tags = postSectionIdsOf(p).map(sid => nameById[sid]).filter(Boolean)
       .map(n => `<span class="bac-tag">${escapeHtml(n)}</span>`).join('');
     // Cizi prispevek smis upravit jen kdyz to autor povolil; jinak jen nahled.
@@ -2006,6 +2184,14 @@ async function editPost(id) {
   editingPostId = id;
   draftId = id;
   gallery = Array.isArray(p.gallery) ? p.gallery.map(g => ({ ...g })) : [];
+  coverData = p.cover || '';
+  coverFromId = p.coverFrom || '';
+  // Nahledy lezi stranou. U prispevku ulozeneho starsi verzi adminu sedi
+  // jeste v galerii — v tom pripade se nic dotahovat nemusi.
+  if (gallery.some(g => g.imageId && !g.thumb)) {
+    const ulozene = await loadThumbs(id);
+    gallery.forEach(g => { if (!g.thumb && ulozene[g.imageId]) g.thumb = ulozene[g.imageId]; });
+  }
   document.getElementById('cover-align').value = ['top','center','bottom'].includes(p.coverAlign) ? p.coverAlign : 'center';
   // Sekce, ktere uz neexistuji (byly smazane), tise vypustime.
   postSectionIds = (Array.isArray(p.sections) ? p.sections : []).filter(id => allSections.some(s => s.id === id));
@@ -2091,6 +2277,8 @@ async function deletePost(id, btn) {
   } catch(e) {
     console.warn('Mazání komentářů selhalo:', e);
   }
+  try { await thumbsRef(id).delete(); }
+  catch(e) { console.warn('Mazání náhledů selhalo:', e); }
   await db.collection('posts').doc(id).delete();
   if (editingPostId === id) resetEditor();
   loadAllPosts();
@@ -3410,7 +3598,9 @@ function openPreview() {
 }
 
 // Nahled hotoveho prispevku ze seznamu (pro cizi prispevky bez prava upravy).
-function openPreviewPost(p) {
+// Galerie jde ze seznamu, kde nahledy nejsou — dotahnou se az tady.
+async function openPreviewPost(p) {
+  await fillGalleryThumbs(db, p);
   showPreview({
     title:   p.title,
     author:  p.authorName,

@@ -5,6 +5,24 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blog · Plzeňská Pauper Liga</title>
+  <meta name="description" content="Reporty z turnajů, decklisty a novinky z Pauper metagame od Plzeňské Pauper Ligy." />
+
+  <link rel="canonical" href="https://pilsenpauper.cz/blog.html" />
+  <meta property="og:type"        content="website" />
+  <meta property="og:site_name"   content="Plzeňská Pauper Liga" />
+  <meta property="og:locale"      content="cs_CZ" />
+  <meta property="og:url"         content="https://pilsenpauper.cz/blog.html" />
+  <meta property="og:title"       content="Blog · Plzeňská Pauper Liga" />
+  <meta property="og:description" content="Reporty z turnajů, decklisty a novinky z Pauper metagame." />
+  <meta property="og:image"       content="https://pilsenpauper.cz/share.jpg" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt"   content="Znak Plzeňské Pauper Ligy" />
+  <meta name="twitter:card"       content="summary_large_image" />
+  <meta name="theme-color"        content="#0d0d0f" />
+
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -499,10 +517,11 @@
 // Obalka karty blogu: fotka oznacena jako obalka (jinak prvni v galerii)
 // a zarovnani orezu podle post.coverAlign.
 function postCover(p) {
+  // Obalka lezi primo u prispevku jako zmensenina. U prispevku ulozenych
+  // starsi verzi adminu sedi jeste v galerii — proto zaloha.
   const g = Array.isArray(p.gallery) ? p.gallery : [];
-  if (!g.length) return null;
-  const chosen = g.find(x => x && x.cover) || g[0];
-  const thumb = safeImage(chosen && chosen.thumb);
+  const stary = g.find(x => x && x.cover) || g[0];
+  const thumb = safeImage(p.cover) || safeImage(stary && stary.thumb);
   if (!thumb) return null;
   const align = { top: 'center top', bottom: 'center bottom' }[p.coverAlign] || 'center center';
   return { thumb, align };
@@ -513,10 +532,13 @@ function excerptFromHtml(html, limit) {
   return text.length > limit ? text.slice(0, limit).trim() + '…' : text;
 }
 
-function renderGallery(post, lang) {
+async function renderGallery(post, lang) {
   const wrap = document.getElementById('blog-modal-gallery');
   currentGallery = Array.isArray(post.gallery) ? post.gallery : [];
   if (!currentGallery.length) { wrap.innerHTML = ''; return; }
+  await fillGalleryThumbs(db, post);
+  // Nez nahledy dorazily, mohl ctenar otevrit jiny prispevek.
+  if (currentPostId !== (post.id || null)) return;
   const items = currentGallery.map((img, i) => `
     <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeHtml(img.caption) || 'Fotka ' + (i + 1)}">
       <img src="${escapeHtml(safeImage(img.thumb))}" alt="${escapeHtml(img.caption)}" loading="lazy" />
@@ -720,6 +742,12 @@ async function submitComment(form, post, statusEl, t) {
   const nick = form.nick.value.trim().slice(0, COMMENT_NICK_MAX);
   const text = form.text.value.trim().slice(0, COMMENT_TEXT_MAX);
   if (text.length < 1) { statusEl.textContent = t['comments.needText']; statusEl.className = 'comment-status err'; return; }
+  const cekej = submitCooldown('comment');
+  if (cekej) {
+    statusEl.textContent = fillVars(t['form.tooSoon'], { s: cekej });
+    statusEl.className = 'comment-status err';
+    return;
+  }
   const btn = form.querySelector('.comment-submit');
   btn.disabled = true;
   statusEl.textContent = t['comments.sending']; statusEl.className = 'comment-status';
@@ -727,6 +755,7 @@ async function submitComment(form, post, statusEl, t) {
     const data = { text, createdAt: db.serverTimestamp() };
     if (nick) data.nick = nick;
     await db.collection('posts').doc(post.id).collection('comments').add(data);
+    rememberSubmit('comment');
     await renderComments(post);
   } catch(e) {
     console.error('Comment error:', e);
@@ -807,6 +836,7 @@ const observer = new IntersectionObserver(
 // ── i18n (jen co blog potrebuje) ──────────────────────────────
 const i18n = {
   cs: {
+    'page.title':   'Blog · Plzeňská Pauper Liga',
     'blog.title':   'Blog',
     'blog.desc':    'Reporty z turnajů, decklists, novinky z Pauper metagame.',
     'blog.loading': 'Načítám příspěvky…',
@@ -825,6 +855,7 @@ const i18n = {
     'comments.sending': 'Odesílám…',
     'comments.done':    'Díky za komentář.',
     'comments.needText':'Napiš prosím text komentáře.',
+    'form.tooSoon':     'Chvilku počkej — zkus to prosím za {s} s.',
     'comments.error':   'Komentář se nepodařilo odeslat. Zkus to prosím znovu.',
     'comments.off':     'Komentáře jsou u tohoto příspěvku vypnuté.',
     'blog.all':     'Vše',
@@ -833,6 +864,7 @@ const i18n = {
     'footer.copy':  '© 2026–2027 Plzeňská Pauper Liga · Vault 0, Plzeň'
   },
   en: {
+    'page.title':   'Blog · Pilsen Pauper League',
     'blog.title':   'Blog',
     'blog.desc':    'Tournament reports, decklists, and Pauper metagame updates.',
     'blog.loading': 'Loading posts…',
@@ -851,6 +883,7 @@ const i18n = {
     'comments.sending': 'Posting…',
     'comments.done':    'Thanks for your comment.',
     'comments.needText':'Please write a comment.',
+    'form.tooSoon':     'Hold on a moment — please try again in {s} s.',
     'comments.error':   'Couldn\'t post the comment. Please try again.',
     'comments.off':     'Comments are turned off for this post.',
     'blog.all':     'All',
@@ -968,6 +1001,11 @@ function setLang(lang) {
   document.getElementById('btn-cs').classList.toggle('active', lang === 'cs');
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
   const t = i18n[lang];
+  // Roboti pro nahledy odkazu JavaScript nespousti, takze ti vidi ceskou
+  // variantu primo v <head> — tohle je pro ctenare, ktery si prepne jazyk.
+  document.title = t['page.title'];
+  const desc = document.querySelector('meta[name="description"]');
+  if (desc) desc.setAttribute('content', t['blog.desc']);
   document.querySelectorAll('[data-i18n]').forEach(el => {
     if (t[el.getAttribute('data-i18n')] !== undefined) el.textContent = t[el.getAttribute('data-i18n')];
   });

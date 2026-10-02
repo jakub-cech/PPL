@@ -7,7 +7,27 @@
        prohlizec ignoruje a GitHub Pages vlastni hlavicky nastavit neumi. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://docs.google.com; form-action 'self'; base-uri 'self'; object-src 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plzeňská Pauper Liga</title>
+  <title>Plzeňská Pauper Liga — turnaje v Pauperu každý měsíc</title>
+  <meta name="description" content="Měsíční turnaje v Magic: The Gathering formátu Pauper v Plzni. Výsledky, průběžné pořadí ligy, reporty a decklisty." />
+
+  <!-- Jak odkaz vypada, kdyz ho nekdo posle na Discord, Facebook nebo X.
+       Bez techto znacek se ukaze jen hola adresa. URL musi byt absolutni. -->
+  <link rel="canonical" href="https://pilsenpauper.cz/" />
+  <meta property="og:type"        content="website" />
+  <meta property="og:site_name"   content="Plzeňská Pauper Liga" />
+  <meta property="og:locale"      content="cs_CZ" />
+  <meta property="og:url"         content="https://pilsenpauper.cz/" />
+  <meta property="og:title"       content="Plzeňská Pauper Liga" />
+  <meta property="og:description" content="Měsíční turnaje v Magic: The Gathering formátu Pauper v Plzni. Výsledky, průběžné pořadí ligy, reporty a decklisty." />
+  <meta property="og:image"       content="https://pilsenpauper.cz/share.jpg" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt"   content="Znak Plzeňské Pauper Ligy" />
+  <meta name="twitter:card"       content="summary_large_image" />
+  <meta name="theme-color"        content="#0d0d0f" />
+
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -1396,15 +1416,11 @@ function seasonNotStarted(s) {
   return seasonStart(s) > new Date();
 }
 
-// Nahradi {placeholder} v retezci. Neznamy klic nechava byt, aby byl
-// pripadny preklep videt v textu a ne jako prazdne misto.
-function fillVars(str, vars) {
-  return String(str).replace(/\{(\w+)\}/g, (all, k) => (k in vars ? vars[k] : all));
-}
-
 // ── Translations ──────────────────────────────────────────────
 const i18n = {
   cs: {
+    "page.title":      "Plzeňská Pauper Liga — turnaje v Pauperu každý měsíc",
+    "page.desc":       "Měsíční turnaje v Magic: The Gathering formátu Pauper v Plzni. Výsledky, průběžné pořadí ligy, reporty a decklisty.",
     "nav.info":        "Liga",
     "nav.format":      "Formát",
     "nav.community":   "Komunita",
@@ -1521,6 +1537,7 @@ const i18n = {
     "comments.sending": "Odesílám…",
     "comments.done":    "Díky za komentář.",
     "comments.needText":"Napiš prosím text komentáře.",
+    "form.tooSoon":    "Chvilku počkej — zkus to prosím za {s} s.",
     "comments.error":   "Komentář se nepodařilo odeslat. Zkus to prosím znovu.",
     "comments.off":     "Komentáře jsou u tohoto příspěvku vypnuté.",
 
@@ -1543,6 +1560,8 @@ const i18n = {
   },
 
   en: {
+    "page.title":      "Pilsen Pauper League — monthly Pauper events",
+    "page.desc":       "Monthly Magic: The Gathering Pauper tournaments in Pilsen, Czechia. Standings, results, reports and decklists.",
     "nav.info":        "League",
     "nav.format":      "Format",
     "nav.community":   "Community",
@@ -1659,6 +1678,7 @@ const i18n = {
     "comments.sending": "Posting…",
     "comments.done":    "Thanks for your comment.",
     "comments.needText":"Please write a comment.",
+    "form.tooSoon":    "Hold on a moment — please try again in {s} s.",
     "comments.error":   "Couldn't post the comment. Please try again.",
     "comments.off":     "Comments are turned off for this post.",
 
@@ -1691,6 +1711,13 @@ function setLang(lang) {
   // Retezce se sezonnimi udaji ({season}, {dates}, …) se dosazuji az tady,
   // aby se pri zmene sezony v adminu nemusely prepisovat preklady.
   const vars = seasonVars(activeSeason(), lang);
+
+  // Nazev zalozky a popis stranky. Roboti pro nahledy odkazu JavaScript
+  // nespousti, takze ti vidi ceskou variantu primo v <head> — tohle je
+  // pro ctenare, ktery si prepne jazyk.
+  document.title = t['page.title'];
+  const desc = document.querySelector('meta[name="description"]');
+  if (desc) desc.setAttribute('content', t['page.desc']);
 
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -1777,10 +1804,11 @@ function formatDate(ts) {
 // Obalka karty blogu: fotka oznacena jako obalka (jinak prvni v galerii)
 // a zarovnani orezu podle post.coverAlign.
 function postCover(p) {
+  // Obalka lezi primo u prispevku jako zmensenina. U prispevku ulozenych
+  // starsi verzi adminu sedi jeste v galerii — proto zaloha.
   const g = Array.isArray(p.gallery) ? p.gallery : [];
-  if (!g.length) return null;
-  const chosen = g.find(x => x && x.cover) || g[0];
-  const thumb = safeImage(chosen && chosen.thumb);
+  const stary = g.find(x => x && x.cover) || g[0];
+  const thumb = safeImage(p.cover) || safeImage(stary && stary.thumb);
   if (!thumb) return null;
   const align = { top: 'center top', bottom: 'center bottom' }[p.coverAlign] || 'center center';
   return { thumb, align };
@@ -2389,6 +2417,12 @@ async function submitRegistration(form, tournament, statusEl, t) {
     statusEl.className = 'reg-status err';
     return;
   }
+  const cekej = submitCooldown('reg');
+  if (cekej) {
+    statusEl.textContent = fillVars(t['form.tooSoon'], { s: cekej });
+    statusEl.className = 'reg-status err';
+    return;
+  }
   const btn = form.querySelector('.reg-submit');
   btn.disabled = true;
   statusEl.textContent = t['tournaments.reg.sending'];
@@ -2397,6 +2431,7 @@ async function submitRegistration(form, tournament, statusEl, t) {
     await db.collection('tournaments').doc(tournament.id).collection('registrations').add({
       name, note, createdAt: db.serverTimestamp()
     });
+    rememberSubmit('reg');
     rememberRegistered(tournament.id);
     await loadRegistrations([tournament]);
     renderTournaments(document.documentElement.lang || 'cs');
@@ -2450,10 +2485,13 @@ async function loadTournaments() {
   }
 }
 
-function renderGallery(post, lang) {
+async function renderGallery(post, lang) {
   const wrap = document.getElementById('blog-modal-gallery');
   currentGallery = Array.isArray(post.gallery) ? post.gallery : [];
   if (!currentGallery.length) { wrap.innerHTML = ''; return; }
+  await fillGalleryThumbs(db, post);
+  // Nez nahledy dorazily, mohl ctenar otevrit jiny prispevek.
+  if (currentPostId !== (post.id || null)) return;
   const items = currentGallery.map((img, i) => `
     <button class="blog-gallery-item" onclick="openLightbox(${i})" aria-label="${escapeHtml(img.caption) || 'Fotka ' + (i + 1)}">
       <img src="${escapeHtml(safeImage(img.thumb))}" alt="${escapeHtml(img.caption)}" loading="lazy" />
@@ -2594,6 +2632,12 @@ async function submitComment(form, post, statusEl, t) {
   const nick = form.nick.value.trim().slice(0, COMMENT_NICK_MAX);
   const text = form.text.value.trim().slice(0, COMMENT_TEXT_MAX);
   if (text.length < 1) { statusEl.textContent = t['comments.needText']; statusEl.className = 'comment-status err'; return; }
+  const cekej = submitCooldown('comment');
+  if (cekej) {
+    statusEl.textContent = fillVars(t['form.tooSoon'], { s: cekej });
+    statusEl.className = 'comment-status err';
+    return;
+  }
   const btn = form.querySelector('.comment-submit');
   btn.disabled = true;
   statusEl.textContent = t['comments.sending']; statusEl.className = 'comment-status';
@@ -2601,6 +2645,7 @@ async function submitComment(form, post, statusEl, t) {
     const data = { text, createdAt: db.serverTimestamp() };
     if (nick) data.nick = nick;
     await db.collection('posts').doc(post.id).collection('comments').add(data);
+    rememberSubmit('comment');
     await renderComments(post);
   } catch(e) {
     console.error('Comment error:', e);

@@ -31,6 +31,12 @@ function htmlToText(html) {
   return doc.body.textContent || '';
 }
 
+// Nahradí {placeholder} v řetězci. Neznámý klíč nechává být, aby byl
+// případný překlep vidět v textu a ne jako prázdné místo.
+function fillVars(str, vars) {
+  return String(str).replace(/\{(\w+)\}/g, (all, k) => (k in vars ? vars[k] : all));
+}
+
 function toMillis(ts) {
   if (!ts) return 0;
   return ts.toMillis ? ts.toMillis() : new Date(ts).getTime();
@@ -94,6 +100,31 @@ function cleanElement(el) {
     // Obrazek bud z galerie (data:), nebo odkaz vlozeny v editoru (https).
     if (!/^data:image\//i.test(src) && !/^https:\/\//i.test(src)) el.remove();
   }
+}
+
+// ── Brzda na odesílání formulářů ──────────────────────────────
+// Komentáře a registrace smí zakládat i nepřihlášený návštěvník, takže
+// jediné, co mezi ním a databází stojí, jsou pravidla Firestore — a ta
+// neumí říct „ne víckrát než jednou za chvíli".
+//
+// Tohle je rychlostní práh, ne ochrana: kdo si otevře konzoli nebo pošle
+// požadavek mimo prohlížeč, projde. Odradí to naslepo střílející roboty
+// a zabrání nechtěnému dvojímu odeslání. Proti cílenému spamu je správná
+// odpověď Firebase App Check — poznámka, jak ho zapnout, je ve
+// firestore.rules.
+const SUBMIT_GAP_MS = 20000;
+
+// Vrací, kolik sekund ještě zbývá. Nula znamená „můžeš odeslat".
+function submitCooldown(key, gap = SUBMIT_GAP_MS) {
+  try {
+    const last = Number(localStorage.getItem('ppl-sent-' + key) || 0);
+    const zbyva = gap - (Date.now() - last);
+    return zbyva > 0 ? Math.ceil(zbyva / 1000) : 0;
+  } catch { return 0; }
+}
+
+function rememberSubmit(key) {
+  try { localStorage.setItem('ppl-sent-' + key, String(Date.now())); } catch {}
 }
 
 // ── Firestore přes REST ───────────────────────────────────────
@@ -256,6 +287,29 @@ function firestoreRest(config) {
 
   return { collection: name => collectionRef('', name),
            serverTimestamp: () => REST_SERVER_TIME };
+}
+
+// ── Náhledy fotek z galerie ───────────────────────────────────
+// Leží v posts/{id}/media/thumbs, ne u příspěvku. Úvodní stránka i blog
+// načtou všechny zveřejněné příspěvky naráz, aby z nich vybraly karty —
+// kdyby u nich visely base64 náhledy, stahoval by je každý návštěvník
+// včetně fotek z reportů, které si nikdo neotevře.
+//
+// Doplňuje je rovnou do pole gallery, takže druhé otevření téhož
+// příspěvku už nic nestahuje.
+async function fillGalleryThumbs(db, post) {
+  const g = Array.isArray(post.gallery) ? post.gallery : [];
+  // Příspěvky uložené starší verzí adminu mají náhledy ještě u sebe.
+  if (!db || !post.id || !g.length || g.every(x => x && x.thumb)) return g;
+  try {
+    const d = await db.collection('posts').doc(post.id)
+                      .collection('media').doc('thumbs').get();
+    const thumbs = (d.exists && d.data().thumbs) || {};
+    g.forEach(x => { if (x && !x.thumb && thumbs[x.imageId]) x.thumb = thumbs[x.imageId]; });
+  } catch (e) {
+    console.warn('Gallery thumbs load error:', e);
+  }
+  return g;
 }
 
 // ── Náhled karty ze Scryfallu ─────────────────────────────────
